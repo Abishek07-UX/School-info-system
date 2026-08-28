@@ -1,7 +1,7 @@
 package com.schoolsystem.backend.security;
 
-import com.schoolsystem.backend.model.User;
-import com.schoolsystem.backend.repository.UserRepository;
+import com.schoolsystem.backend.user.model.User;
+import com.schoolsystem.backend.user.repository.UserRepository;
 import org.springframework.core.MethodParameter;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -54,6 +54,7 @@ public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolve
     }
 
     private UserPrincipal toPrincipal(User user) {
-        return new UserPrincipal(user.getId(), user.getClerkId(), user.getEmail(), user.getRole());
+        String roleStr = user.getRole() != null ? user.getRole().name() : "PENDING";
+        return new UserPrincipal(user.getId(), user.getClerkId(), user.getEmail(), roleStr);
     }
 }

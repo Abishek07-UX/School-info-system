@@ -79,10 +79,10 @@ export function AuthUserProvider({ children }) {
   const isTeacher = role === 'TEACHER'
   const isFinance = role === 'FINANCE_STAFF'
 
-  // Check if staff profile has all mandatory identification fields (NIC, phone, address, name, real email)
+  // Check if staff profile has all mandatory identification fields (valid NIC format, 10-digit phone, address, name, real email)
   const isProfileComplete = Boolean(
-    userProfile?.nicNumber && userProfile.nicNumber.trim() !== '' &&
-    userProfile?.phoneNumber && userProfile.phoneNumber.trim() !== '' &&
+    userProfile?.nicNumber && /^([0-9]{12}|[0-9]{9}[V])$/i.test(userProfile.nicNumber.trim()) &&
+    userProfile?.phoneNumber && /^[0-9]{10}$/.test(userProfile.phoneNumber.trim()) &&
     userProfile?.address && userProfile.address.trim() !== '' &&
     userProfile?.firstName && userProfile.firstName.trim() !== '' &&
     userProfile?.lastName && userProfile.lastName.trim() !== '' &&

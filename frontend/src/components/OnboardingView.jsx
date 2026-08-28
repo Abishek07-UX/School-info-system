@@ -42,17 +42,25 @@ export default function OnboardingView() {
       if (!formData.email.trim() || !formData.email.includes('@')) {
         throw new Error('A valid email address is required.')
       }
-      if (!formData.phoneNumber.trim()) {
-        throw new Error('Contact phone number is required.')
+      const cleanPhone = formData.phoneNumber.trim().replaceAll(/[\s\-()]/g, '')
+      if (!/^[0-9]{10}$/.test(cleanPhone)) {
+        throw new Error('Phone number must contain exactly 10 digits with no letters or symbols (e.g. 0771234567).')
       }
-      if (!formData.nicNumber.trim()) {
-        throw new Error('National Identity Card (NIC) number is required.')
+
+      const cleanNic = formData.nicNumber.trim().toUpperCase()
+      if (!/^([0-9]{12}|[0-9]{9}V)$/.test(cleanNic)) {
+        throw new Error("NIC number must be either 12 digits (e.g. 199012345678) or 9 digits followed by 'V' (e.g. 901234567V).")
       }
+
       if (!formData.address.trim()) {
         throw new Error('Residential address is required.')
       }
 
-      await updateProfile(formData)
+      await updateProfile({
+        ...formData,
+        phoneNumber: cleanPhone,
+        nicNumber: cleanNic
+      })
       await refreshUser()
     } catch (err) {
       setErrorMsg(err.message)
@@ -195,14 +203,15 @@ export default function OnboardingView() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-main)', marginBottom: '0.4rem' }}>
-                Phone Number <span style={{ color: '#f87171' }}>*</span>
+                Phone Number (10 Digits) <span style={{ color: '#f87171' }}>*</span>
               </label>
               <input
                 type="tel"
                 required
+                maxLength={10}
                 value={formData.phoneNumber}
-                onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
-                placeholder="e.g. +94 77 123 4567"
+                onChange={e => setFormData({ ...formData, phoneNumber: e.target.value.replace(/[^0-9]/g, '') })}
+                placeholder="e.g. 0771234567"
                 style={{
                   width: '100%',
                   padding: '0.75rem 1rem',

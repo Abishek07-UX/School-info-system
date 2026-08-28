@@ -5,7 +5,6 @@ import OnboardingView from './components/OnboardingView'
 import PendingApprovalView from './components/PendingApprovalView'
 import UserRoleManagement from './components/admin/UserRoleManagement'
 import StaffProfileModal from './components/StaffProfileModal'
-import TestApiView from './components/TestApiView'
 
 function DashboardView({ onOpenProfile }) {
   const { user } = useUser()
@@ -298,7 +297,6 @@ function LandingView({ isClerkConfigured }) {
 }
 
 function MainApp({ isClerkConfigured = true }) {
-  const [showTestApi, setShowTestApi] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
 
   return (
@@ -310,23 +308,6 @@ function MainApp({ isClerkConfigured = true }) {
         </div>
 
         <div className="user-nav">
-          <button
-            onClick={() => setShowTestApi(prev => !prev)}
-            style={{
-              background: showTestApi ? 'rgba(99,102,241,0.3)' : 'rgba(99,102,241,0.1)',
-              border: '1px solid rgba(99,102,241,0.5)',
-              color: '#a5b4fc',
-              padding: '0.4rem 0.9rem',
-              borderRadius: '8px',
-              fontSize: '0.85rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'background 0.2s ease'
-            }}
-          >
-            {showTestApi ? '← Back to Portal' : '⚡ Test API'}
-          </button>
-
           {isClerkConfigured ? (
             <>
               <Show when="signed-in">
@@ -365,9 +346,7 @@ function MainApp({ isClerkConfigured = true }) {
       </header>
 
       <main style={{ flex: 1 }}>
-        {showTestApi ? (
-          <TestApiView />
-        ) : isClerkConfigured ? (
+        {isClerkConfigured ? (
           <>
             <Show when="signed-in">
               <AuthenticatedPortal onOpenProfile={() => setShowProfileModal(true)} />

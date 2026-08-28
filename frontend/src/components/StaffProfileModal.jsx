@@ -45,12 +45,23 @@ export default function StaffProfileModal({ isOpen, onClose, required = false })
       if (!formData.email || !formData.email.includes('@')) {
         throw new Error('Please enter a valid email address.')
       }
-      if (!formData.firstName || !formData.lastName) {
-        throw new Error('First name and Last name are required.')
+      if (formData.phoneNumber) {
+        const cleanPhone = formData.phoneNumber.trim().replaceAll(/[\s\-()]/g, '')
+        if (!/^[0-9]{10}$/.test(cleanPhone)) {
+          throw new Error('Phone number must contain exactly 10 digits with no letters or symbols (e.g. 0771234567).')
+        }
+        formData.phoneNumber = cleanPhone
       }
-      if (!formData.nicNumber) {
+
+      if (!formData.nicNumber || !formData.nicNumber.trim()) {
         throw new Error('National Identity Card (NIC) number is required.')
       }
+
+      const cleanNic = formData.nicNumber.trim().toUpperCase()
+      if (!/^([0-9]{12}|[0-9]{9}V)$/.test(cleanNic)) {
+        throw new Error("NIC number must be either 12 digits (e.g. 199012345678) or 9 digits followed by 'V' (e.g. 901234567V).")
+      }
+      formData.nicNumber = cleanNic
 
       await updateProfile(formData)
       setSuccessMsg('Staff details saved successfully to database!')
@@ -219,14 +230,15 @@ export default function StaffProfileModal({ isOpen, onClose, required = false })
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
-                Phone Number *
+                Phone Number (10 Digits) *
               </label>
               <input
                 type="tel"
                 required
+                maxLength={10}
                 value={formData.phoneNumber}
-                onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
-                placeholder="e.g. +94 77 123 4567"
+                onChange={e => setFormData({ ...formData, phoneNumber: e.target.value.replace(/[^0-9]/g, '') })}
+                placeholder="e.g. 0771234567"
                 style={{
                   width: '100%',
                   padding: '0.6rem 0.8rem',
@@ -248,7 +260,7 @@ export default function StaffProfileModal({ isOpen, onClose, required = false })
                 type="text"
                 required
                 value={formData.nicNumber}
-                onChange={e => setFormData({ ...formData, nicNumber: e.target.value })}
+                onChange={e => setFormData({ ...formData, nicNumber: e.target.value.toUpperCase() })}
                 placeholder="e.g. 199012345678 or 901234567V"
                 style={{
                   width: '100%',

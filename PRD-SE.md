@@ -506,3 +506,154 @@ This table shows which modules a given module depends on for data or setup, base
 | Ticket Management | Administration Management (Users) | Needs staff accounts to know who raised/is assigned a ticket; can reference records from any other module |
 | Administration Management | — | Foundational module; other modules depend on it, it does not depend on them |
 
+---
+
+## 15. Object-Oriented Architecture & Design Patterns
+
+To promote clean code, maintainability, extensibility, and separation of concerns, the system leverages core **Object-Oriented Programming (OOP)** principles:
+
+### 15.1 Core OOP Principles Applied
+
+1. **Abstraction**:
+   - **Entity Abstraction**: An abstract base class `User` defines common identity attributes (`clerkId`, `email`, `firstName`, `lastName`, `phoneNumber`, `address`, `nicNumber`, `status`) and establishes abstract behavior contracts (`getRole()`, `getPermissions()`, `getRoleDisplayName()`, `canAccessModule(String module)`).
+   - **Service Abstraction**: High-level service interfaces (e.g., `UserService`, `StudentService`, `AttendanceService`) decouple service contracts from their underlying implementations (`UserServiceImpl`), supporting dependency inversion and easier unit testing.
+
+2. **Inheritance**:
+   - **JPA Single Table Inheritance**: Concrete staff user entities (`AdminUser`, `PrincipalUser`, `TeacherUser`, `FinanceStaffUser`, `PendingUser`) inherit from the abstract `User` base class.
+   - Using `@Inheritance(strategy = InheritanceType.SINGLE_TABLE)` and `@DiscriminatorColumn(name = "role")`, all subclasses map cleanly to the single PostgreSQL `users` table without schema overhead.
+
+3. **Polymorphism**:
+   - **Dynamic Method Dispatch**: Module access checks (`canAccessModule(...)`) and role-specific permissions (`getPermissions()`) execute polymorphically at runtime on the underlying subclass without procedural `if/else` or `switch` chains on role strings.
+   - **Polymorphic Entity References**: Cross-cutting modules like **Ticket Management** reference the base `User` entity (`@ManyToOne private User createdBy;`), allowing tickets to be raised polymorphically by any staff role (`TeacherUser`, `FinanceStaffUser`, `AdminUser`, etc.).
+   - **Creational Factory Pattern**: A dedicated `UserFactory` encapsulates the polymorphic instantiation of appropriate `User` subclasses based on `UserRole` enums.
+
+4. **Encapsulation**:
+   - **Domain Value Objects & Enums**: Strongly typed `UserRole` and `UserStatus` enums encapsulate role parsing, validation, and metadata.
+   - **Internal State Mutation**: Entity state updates (such as profile details and account status transitions) are encapsulated within domain methods (`updateProfileDetails()`, `changeStatus()`, `isProfileComplete()`), guarding business invariants.
+
+---
+
+## 16. Standardized Project Directory & Team Package Structure
+
+To ensure seamless collaboration among team members without file collisions or Git merge conflicts, the project follows a standardized package layout.
+
+### 16.1 Overall Backend Layout (`backend/src/main/java/com/schoolsystem/backend/`)
+
+```text
+com.schoolsystem.backend/
+├── common/                             # Shared utilities, responses, base exceptions
+│   ├── dto/
+│   │   ├── ApiResponse.java            # Standard JSON response envelope { success, data, message }
+│   │   ├── ApiError.java
+│   │   └── ErrorResponse.java
+│   └── exception/
+│       ├── GlobalExceptionHandler.java
+│       └── ResourceNotFoundException.java
+│
+├── security/                           # Authentication & JWT security (Clerk integration)
+│   ├── ClerkJwtAuthConverter.java
+│   ├── CurrentUser.java
+│   ├── CurrentUserArgumentResolver.java
+│   ├── SecurityConfig.java
+│   └── UserPrincipal.java
+│
+├── config/                             # Application configurations (WebConfig, CORS, etc.)
+│   └── WebConfig.java
+│
+├── user/                               # 👤 USER MANAGEMENT MODULE (Core User Domain & OOP Hierarchy)
+│   ├── controller/
+│   │   ├── UserController.java
+│   │   └── AdminUserController.java
+│   ├── service/
+│   │   ├── UserService.java            # (Interface - Abstraction)
+│   │   └── UserServiceImpl.java        # (Concrete Implementation)
+│   ├── repository/
+│   │   └── UserRepository.java
+│   ├── model/
+│   │   ├── User.java                   # (Abstract Base Entity)
+│   │   ├── AdminUser.java              # (Subclass)
+│   │   ├── PrincipalUser.java          # (Subclass)
+│   │   ├── TeacherUser.java            # (Subclass)
+│   │   ├── FinanceStaffUser.java       # (Subclass)
+│   │   ├── PendingUser.java            # (Subclass)
+│   │   ├── UserFactory.java            # (Creational Factory)
+│   │   ├── UserRole.java               # (Typed Role Enum)
+│   │   └── UserStatus.java             # (Typed Status Enum)
+│   └── dto/
+│       ├── request/
+│       │   ├── UpdateRoleRequest.java
+│       │   ├── UpdateStatusRequest.java
+│       │   └── UserProfileRequest.java
+│       └── response/
+│           └── UserDTO.java
+│
+└── [feature_modules]/                  # Domain Feature Modules (student, teacher, attendance, academic, finance, administration, ticket)
+```
+
+---
+
+### 16.2 Concrete Example: How a Teammate's Module Must Be Structured
+
+Each developer should structure their assigned feature module as a self-contained domain package. Here is a **complete, concrete example** using the **Student Management Module**:
+
+#### 📂 Backend Module Example: `com.schoolsystem.backend.student`
+
+```text
+com.schoolsystem.backend.student/
+├── controller/
+│   └── StudentController.java          # REST API endpoints (/api/students)
+│
+├── service/
+│   ├── StudentService.java             # Interface defining student business operations (Abstraction)
+│   └── StudentServiceImpl.java         # Concrete business logic implementation
+│
+├── repository/
+│   └── StudentRepository.java          # Spring Data JPA interface for Student entity
+│
+├── model/
+│   ├── Student.java                    # JPA Entity mapped to 'students' table
+│   ├── StudentStatus.java              # Enum: ACTIVE, INACTIVE, GRADUATED, TRANSFERRED
+│   └── GuardianInfo.java               # Embeddable or Value Object for guardian details
+│
+└── dto/
+    ├── request/
+    │   ├── CreateStudentRequest.java   # Payload for registering a student (with validation annotations)
+    │   ├── UpdateStudentRequest.java   # Payload for editing student profile
+    │   └── StudentFilterRequest.java   # Query parameters for search & filtering
+    └── response/
+        ├── StudentResponseDTO.java     # Sanitized response object for a student record
+        └── StudentSummaryDTO.java      # Lightweight DTO for list / table views
+```
+
+#### 📂 Frontend Module Example: `frontend/src/` (Student Module)
+
+```text
+frontend/src/
+├── services/
+│   └── studentService.js               # API client functions (fetchStudents, createStudent, updateStudent)
+│
+└── components/
+    └── student/
+        ├── StudentList.jsx             # Table component with search and filter controls
+        ├── StudentProfileModal.jsx     # View detailed student profile
+        ├── StudentRegistrationForm.jsx # Form modal for adding a new student
+        └── StudentCard.jsx             # Individual student summary card
+```
+
+---
+
+### 16.3 Module Collaboration Rules for Developers
+
+1. **Shared Foundation**: Do not modify files in `model/User.java` or `security/` without team alignment. When referencing staff members (e.g., the teacher who recorded marks or the admin who registered a student), use the shared base `User` entity:
+   ```java
+   @ManyToOne(fetch = FetchType.LAZY)
+   @JoinColumn(name = "recorded_by")
+   private User recordedBy;
+   ```
+2. **Response Standardization**: Always return responses wrapped in the standard `ApiResponse` envelope:
+   ```java
+   return ApiResponse.success(studentDTO, "Student registered successfully");
+   ```
+3. **Module Isolation**: Place your feature files inside your assigned domain directory (e.g., `com.schoolsystem.backend.student.*` or `components/student/`) to ensure zero Git merge conflicts.
+
+
