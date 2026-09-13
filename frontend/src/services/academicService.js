@@ -60,6 +60,13 @@ export const academicService = {
     }, getToken)
   },
 
+  async createExamWithTimetable(data, getToken) {
+    return request('/exams/with-timetable', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }, getToken)
+  },
+
   async updateExam(id, data, getToken) {
     return request(`/exams/${id}`, {
       method: 'PUT',
@@ -132,5 +139,13 @@ export const academicService = {
 
   async getAllSubjects(getToken) {
     return request('/academic/lookup/subjects', { method: 'GET' }, getToken)
+  },
+
+  async getSubjectsForGrade(gradeLevel, getToken) {
+    return request(`/academic/lookup/grades/${gradeLevel}/subjects`, { method: 'GET' }, getToken)
+  },
+
+  async getClassesForGrade(gradeLevel, getToken) {
+    return request(`/academic/lookup/grades/${gradeLevel}/classes`, { method: 'GET' }, getToken)
   }
 }

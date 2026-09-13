@@ -27,6 +27,7 @@ import { TeacherScheduleGrid } from './TeacherScheduleGrid'
 import { ExamScheduleModal } from './ExamScheduleModal'
 import { AutoGeneratorModal } from './AutoGeneratorModal'
 import { PrintableTimetable } from './PrintableTimetable'
+import ExamTimetableModal from '../academic/ExamTimetableModal'
 
 export function TimetableHub({ userRole = 'ADMIN', getToken }) {
   const isAdmin = userRole === 'ADMIN'
@@ -66,6 +67,7 @@ export function TimetableHub({ userRole = 'ADMIN', getToken }) {
   const [initialPeriod, setInitialPeriod] = useState(1)
 
   const [isExamModalOpen, setIsExamModalOpen] = useState(false)
+  const [isUnifiedExamModalOpen, setIsUnifiedExamModalOpen] = useState(false)
   const [examScheduleToEdit, setExamScheduleToEdit] = useState(null)
 
   const [isAutoGeneratorOpen, setIsAutoGeneratorOpen] = useState(false)
@@ -475,18 +477,30 @@ export function TimetableHub({ userRole = 'ADMIN', getToken }) {
             </div>
 
             {isAdmin && (
-              <Button
-                size="sm"
-                onClick={() => {
-                  setExamScheduleToEdit(null)
-                  setIsExamModalOpen(true)
-                }}
-                disabled={!selectedExamId}
-                className="h-8 text-xs gap-1.5"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Schedule Exam Session
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => setIsUnifiedExamModalOpen(true)}
+                  className="h-8 text-xs gap-1.5 bg-primary text-primary-foreground shadow-xs hover:bg-primary/90"
+                >
+                  <Calendar className="h-3.5 w-3.5" />
+                  Create Exam Timetable
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setExamScheduleToEdit(null)
+                    setIsExamModalOpen(true)
+                  }}
+                  disabled={!selectedExamId}
+                  className="h-8 text-xs gap-1.5"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Single Session
+                </Button>
+              </div>
             )}
           </div>
 
@@ -697,6 +711,26 @@ export function TimetableHub({ userRole = 'ADMIN', getToken }) {
           teachers={teachers}
           rooms={campusRooms}
           getToken={getToken}
+        />
+      )}
+
+      {isUnifiedExamModalOpen && (
+        <ExamTimetableModal
+          isOpen={isUnifiedExamModalOpen}
+          onClose={() => setIsUnifiedExamModalOpen(false)}
+          onSuccess={async () => {
+            try {
+              const exList = await academicService.getExams({ academicYear }, getToken)
+              setExams(exList || [])
+              if (exList && exList.length > 0) {
+                setSelectedExamId(String(exList[0].id))
+              }
+            } catch (e) {
+              console.warn("Failed to refresh exams after timetable creation", e)
+            }
+          }}
+          getToken={getToken}
+          initialGrade={selectedClass ? selectedClass.gradeLevel : 10}
         />
       )}
 

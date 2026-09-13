@@ -63,4 +63,18 @@ public class AcademicLookupController {
         List<CampusRoomDTO> rooms = academicLookupService.getAllCampusRooms();
         return ApiResponse.success(rooms, "Campus buildings and rooms retrieved successfully");
     }
+
+    @GetMapping("/grades/{gradeLevel}/subjects")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PRINCIPAL', 'TEACHER')")
+    public ApiResponse<List<SubjectSummaryDTO>> getSubjectsForGrade(@PathVariable Integer gradeLevel) {
+        List<SubjectSummaryDTO> subjects = academicLookupService.getSubjectsForGrade(gradeLevel);
+        return ApiResponse.success(subjects, "Curriculum subjects for grade " + gradeLevel + " retrieved successfully");
+    }
+
+    @GetMapping("/grades/{gradeLevel}/classes")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PRINCIPAL', 'TEACHER')")
+    public ApiResponse<List<ClassSummaryDTO>> getClassesForGrade(@PathVariable Integer gradeLevel) {
+        List<ClassSummaryDTO> classes = academicLookupService.getClassesForGrade(gradeLevel);
+        return ApiResponse.success(classes, "Active classes for grade " + gradeLevel + " retrieved successfully");
+    }
 }

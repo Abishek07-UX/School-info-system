@@ -26,6 +26,7 @@ import {
   AlertTriangle,
 } from "lucide-react"
 import ExamModal from "./ExamModal"
+import ExamTimetableModal from "./ExamTimetableModal"
 
 export default function ExamManagementTab({ classes, onSelectExamForMarkEntry }) {
   const { getToken, isAdmin, isPrincipal } = useAuthUser()
@@ -38,6 +39,7 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
   const [searchTerm, setSearchTerm] = useState("")
 
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isTimetableModalOpen, setIsTimetableModalOpen] = useState(false)
   const [editingExam, setEditingExam] = useState(null)
   const [feedback, setFeedback] = useState(null)
 
@@ -164,16 +166,27 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
           </Button>
 
           {(isAdmin || isPrincipal) && (
-            <Button
-              size="sm"
-              onClick={() => {
-                setEditingExam(null)
-                setIsModalOpen(true)
-              }}
-              className="gap-1.5 shadow-lg shadow-indigo-500/25"
-            >
-              <Plus className="h-4 w-4" /> Schedule Exam
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                onClick={() => setIsTimetableModalOpen(true)}
+                className="gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/25"
+              >
+                <Calendar className="h-4 w-4" /> Create Exam Timetable
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setEditingExam(null)
+                  setIsModalOpen(true)
+                }}
+                className="gap-1.5"
+              >
+                <Plus className="h-4 w-4" /> Single Exam
+              </Button>
+            </div>
           )}
         </div>
       </div>
@@ -421,6 +434,19 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
         onSave={handleSaveExam}
         examToEdit={editingExam}
         classes={classes}
+      />
+
+      <ExamTimetableModal
+        isOpen={isTimetableModalOpen}
+        onClose={() => setIsTimetableModalOpen(false)}
+        onSuccess={(result) => {
+          setFeedback({
+            type: "success",
+            message: result?.message || "Examination timetable created successfully!",
+          })
+          fetchExams()
+        }}
+        getToken={getToken}
       />
     </div>
   )

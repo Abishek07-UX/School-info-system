@@ -1,8 +1,10 @@
 package com.schoolsystem.backend.academic.controller;
 
 import com.schoolsystem.backend.academic.dto.request.CreateExamRequest;
+import com.schoolsystem.backend.academic.dto.request.CreateExamWithTimetableRequest;
 import com.schoolsystem.backend.academic.dto.request.UpdateExamRequest;
 import com.schoolsystem.backend.academic.dto.response.ExamResponseDTO;
+import com.schoolsystem.backend.academic.dto.response.ExamWithTimetableResponseDTO;
 import com.schoolsystem.backend.academic.model.ExamStatus;
 import com.schoolsystem.backend.academic.model.ExamTerm;
 import com.schoolsystem.backend.academic.service.ExamService;
@@ -60,6 +62,16 @@ public class ExamController {
         ExamResponseDTO created = examService.createExam(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(created, "Examination scheduled successfully"));
+    }
+
+    @PostMapping("/with-timetable")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PRINCIPAL', 'TEACHER')")
+    public ResponseEntity<ApiResponse<ExamWithTimetableResponseDTO>> createExamWithTimetable(
+            @Valid @RequestBody CreateExamWithTimetableRequest request
+    ) {
+        ExamWithTimetableResponseDTO created = examService.createExamWithTimetable(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(created, created.getMessage()));
     }
 
     @PutMapping("/{id}")

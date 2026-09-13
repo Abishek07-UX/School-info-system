@@ -21,4 +21,8 @@ public interface AcademicLookupService {
     List<UserDTO> getAllTeachers();
 
     List<CampusRoomDTO> getAllCampusRooms();
+
+    List<SubjectSummaryDTO> getSubjectsForGrade(Integer gradeLevel);
+
+    List<ClassSummaryDTO> getClassesForGrade(Integer gradeLevel);
 }

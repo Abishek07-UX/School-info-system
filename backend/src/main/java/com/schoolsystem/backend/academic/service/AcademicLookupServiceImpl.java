@@ -89,4 +89,18 @@ public class AcademicLookupServiceImpl implements AcademicLookupService {
                 .map(r -> new CampusRoomDTO(r.code(), r.name(), r.building(), r.floor(), r.type(), r.capacity()))
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<SubjectSummaryDTO> getSubjectsForGrade(Integer gradeLevel) {
+        return subjectRepository.findByGradeLevelOrderByNameAsc(gradeLevel).stream()
+                .map(SubjectSummaryDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ClassSummaryDTO> getClassesForGrade(Integer gradeLevel) {
+        return schoolClassRepository.findByGradeLevelOrderByNameAsc(gradeLevel).stream()
+                .map(ClassSummaryDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
 }
