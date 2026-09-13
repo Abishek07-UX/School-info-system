@@ -94,8 +94,8 @@ public class UserServiceImpl implements UserService {
 
         User user = userRepository.findByClerkId(clerkId)
                 .orElseGet(() -> {
-                    // Check if pre-registered by email
-                    String emailToCheck = request.getEmail() != null && !request.getEmail().isBlank()
+                    // Check if an account with this email was pre-registered by an Admin
+                    String emailToCheck = (request.getEmail() != null && !request.getEmail().isBlank())
                             ? request.getEmail().trim()
                             : jwtEmail;
 
