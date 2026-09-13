@@ -2,27 +2,28 @@ import { cva } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center gap-1.5 rounded-[5.26px] border px-2 py-0.5 text-[11px] font-medium transition-colors focus:outline-none",
   {
     variants: {
       variant: {
         default:
-          "border-transparent bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm",
+          "border-[#3b82f6]/30 bg-[#3b82f6]/10 text-[#60a5fa]",
         secondary:
-          "border-transparent bg-slate-800 text-slate-200 hover:bg-slate-700",
+          "border-white/10 bg-[#1f1f21] text-[#cececf]",
         destructive:
-          "border-transparent bg-rose-600/20 text-rose-300 border-rose-500/30 hover:bg-rose-600/30",
-        outline: "text-slate-300 border-slate-700 bg-slate-900/40",
+          "border-[#f87171]/30 bg-[#f87171]/10 text-[#f87171]",
+        outline:
+          "border-white/10 bg-transparent text-[#858687]",
         success:
-          "border-emerald-500/30 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25",
+          "border-[#4ade80]/40 bg-[#4ade80]/10 text-[#4ade80]",
         warning:
-          "border-amber-500/30 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25",
+          "border-[#ea580c]/30 bg-[#ea580c]/10 text-[#ea580c]",
         info:
-          "border-sky-500/30 bg-sky-500/15 text-sky-300 hover:bg-sky-500/25",
+          "border-[#3b82f6]/30 bg-[#3b82f6]/10 text-[#60a5fa]",
         purple:
-          "border-purple-500/30 bg-purple-500/15 text-purple-300 hover:bg-purple-500/25",
+          "border-white/15 bg-white/[0.04] text-[#cececf]",
         pink:
-          "border-pink-500/30 bg-pink-500/15 text-pink-300 hover:bg-pink-500/25",
+          "border-white/15 bg-white/[0.04] text-[#cececf]",
       },
     },
     defaultVariants: {

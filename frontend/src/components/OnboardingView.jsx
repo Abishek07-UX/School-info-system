@@ -15,7 +15,6 @@ import {
   MapPin,
   Mail,
   AlertCircle,
-  Sparkles,
   ArrowRight,
   User,
 } from "lucide-react"
@@ -94,35 +93,30 @@ export default function OnboardingView() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 sm:py-12">
-      <Card className="border-white/10 shadow-2xl overflow-hidden relative">
-        {/* Subtle decorative glow */}
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-
+    <div className="mx-auto max-w-xl px-4 py-12">
+      <Card className="p-2">
         <CardHeader className="text-center pb-6">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/30">
-            <UserCheck className="h-7 w-7 text-white" />
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[10px] bg-[#1f1f21] border-[0.5px] border-white/10 text-[#3b82f6]">
+            <UserCheck className="h-6 w-6" />
           </div>
 
           <div className="flex justify-center mb-2">
-            <Badge variant="default" className="text-xs px-3 py-1 font-semibold">
-              <Sparkles className="h-3.5 w-3.5 mr-1" />
+            <Badge variant="default" className="font-normal">
               Step 1 of 2: Staff Identification
             </Badge>
           </div>
 
-          <CardTitle className="text-2xl font-bold font-heading">
-            Complete Your Staff Registration
+          <CardTitle className="text-xl font-normal tracking-tight text-[#ffffff]">
+            Complete Staff Registration
           </CardTitle>
-          <CardDescription className="text-slate-400 text-sm max-w-lg mx-auto">
-            Please register your official identity credentials. Once submitted, your profile will be queued for Administrator verification and role assignment.
+          <CardDescription className="text-xs text-[#858687] max-w-md mx-auto">
+            Please register your official identity credentials. Once submitted, your profile will be queued for Administrator verification.
           </CardDescription>
         </CardHeader>
 
         <CardContent>
           {errorMsg && (
-            <Alert variant="destructive" className="mb-6 animate-in fade-in-0 zoom-in-95">
+            <Alert variant="destructive" className="mb-6">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Validation Error</AlertTitle>
               <AlertDescription>{errorMsg}</AlertDescription>
@@ -133,30 +127,30 @@ export default function OnboardingView() {
             {/* First & Last Name */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="firstName">
-                  <User className="h-3.5 w-3.5 text-indigo-400" />
-                  First Name <span className="text-rose-400">*</span>
+                <Label htmlFor="firstName" className="text-xs text-[#cececf] flex items-center gap-1.5">
+                  <User className="h-3 w-3 text-[#858687]" />
+                  First Name <span className="text-[#f87171]">*</span>
                 </Label>
                 <Input
                   id="firstName"
                   type="text"
                   required
-                  placeholder="e.g. Ruwan"
+                  placeholder="Ruwan"
                   value={formData.firstName}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="lastName">
-                  <User className="h-3.5 w-3.5 text-indigo-400" />
-                  Last Name <span className="text-rose-400">*</span>
+                <Label htmlFor="lastName" className="text-xs text-[#cececf] flex items-center gap-1.5">
+                  <User className="h-3 w-3 text-[#858687]" />
+                  Last Name <span className="text-[#f87171]">*</span>
                 </Label>
                 <Input
                   id="lastName"
                   type="text"
                   required
-                  placeholder="e.g. Perera"
+                  placeholder="Perera"
                   value={formData.lastName}
                   onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                 />
@@ -165,15 +159,15 @@ export default function OnboardingView() {
 
             {/* Email Address */}
             <div className="space-y-1.5">
-              <Label htmlFor="email">
-                <Mail className="h-3.5 w-3.5 text-indigo-400" />
-                Official Email Address <span className="text-rose-400">*</span>
+              <Label htmlFor="email" className="text-xs text-[#cececf] flex items-center gap-1.5">
+                <Mail className="h-3 w-3 text-[#858687]" />
+                Official Email Address <span className="text-[#f87171]">*</span>
               </Label>
               <Input
                 id="email"
                 type="email"
                 required
-                placeholder="e.g. ruwan.perera@school.lk"
+                placeholder="ruwan.perera@school.lk"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
@@ -182,16 +176,16 @@ export default function OnboardingView() {
             {/* Phone & NIC */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="phoneNumber">
-                  <Phone className="h-3.5 w-3.5 text-indigo-400" />
-                  Phone Number (10 Digits) <span className="text-rose-400">*</span>
+                <Label htmlFor="phoneNumber" className="text-xs text-[#cececf] flex items-center gap-1.5">
+                  <Phone className="h-3 w-3 text-[#858687]" />
+                  Phone (10 Digits) <span className="text-[#f87171]">*</span>
                 </Label>
                 <Input
                   id="phoneNumber"
                   type="tel"
                   required
                   maxLength={10}
-                  placeholder="e.g. 0771234567"
+                  placeholder="0771234567"
                   value={formData.phoneNumber}
                   onChange={(e) =>
                     setFormData({
@@ -203,15 +197,15 @@ export default function OnboardingView() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="nicNumber">
-                  <CreditCard className="h-3.5 w-3.5 text-indigo-400" />
-                  National ID (NIC) <span className="text-rose-400">*</span>
+                <Label htmlFor="nicNumber" className="text-xs text-[#cececf] flex items-center gap-1.5">
+                  <CreditCard className="h-3 w-3 text-[#858687]" />
+                  National ID (NIC) <span className="text-[#f87171]">*</span>
                 </Label>
                 <Input
                   id="nicNumber"
                   type="text"
                   required
-                  placeholder="e.g. 199012345678 or 901234567V"
+                  placeholder="199012345678 or 901234567V"
                   value={formData.nicNumber}
                   onChange={(e) =>
                     setFormData({ ...formData, nicNumber: e.target.value.toUpperCase() })
@@ -222,15 +216,15 @@ export default function OnboardingView() {
 
             {/* Address */}
             <div className="space-y-1.5">
-              <Label htmlFor="address">
-                <MapPin className="h-3.5 w-3.5 text-indigo-400" />
-                Residential Address <span className="text-rose-400">*</span>
+              <Label htmlFor="address" className="text-xs text-[#cececf] flex items-center gap-1.5">
+                <MapPin className="h-3 w-3 text-[#858687]" />
+                Residential Address <span className="text-[#f87171]">*</span>
               </Label>
               <Textarea
                 id="address"
                 required
                 rows={3}
-                placeholder="e.g. No. 120, Kandy Road, Colombo"
+                placeholder="No. 120, Kandy Road, Colombo"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               />
@@ -241,13 +235,13 @@ export default function OnboardingView() {
                 type="submit"
                 disabled={submitting}
                 size="lg"
-                className="w-full gap-2 text-base font-bold shadow-indigo-500/20"
+                className="w-full gap-2 text-sm"
               >
                 {submitting ? (
                   <>Saving Registration Details...</>
                 ) : (
                   <>
-                    Submit & Proceed to Approval Queue <ArrowRight className="h-4 w-4" />
+                    Submit Registration <ArrowRight className="h-3.5 w-3.5" />
                   </>
                 )}
               </Button>

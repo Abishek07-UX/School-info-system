@@ -19,6 +19,9 @@ import {
   School,
   LogIn,
   Calendar,
+  CreditCard,
+  Users,
+  Clock,
 } from "lucide-react"
 
 export default function Navbar({
@@ -32,17 +35,41 @@ export default function Navbar({
   const getRoleBadge = (r) => {
     switch (r) {
       case "ADMIN":
-        return <Badge variant="pink" className="shadow-sm">👑 Administrator</Badge>
+        return (
+          <Badge variant="default" className="gap-1 font-normal">
+            <Shield className="h-3 w-3 text-[#60a5fa]" /> Administrator
+          </Badge>
+        )
       case "PRINCIPAL":
-        return <Badge variant="purple" className="shadow-sm">🎓 Principal</Badge>
+        return (
+          <Badge variant="default" className="gap-1 font-normal">
+            <GraduationCap className="h-3 w-3 text-[#60a5fa]" /> Principal
+          </Badge>
+        )
       case "TEACHER":
-        return <Badge variant="default" className="shadow-sm">👨‍🏫 Teaching Staff</Badge>
+        return (
+          <Badge variant="secondary" className="gap-1 font-normal">
+            <Users className="h-3 w-3 text-[#858687]" /> Teaching Faculty
+          </Badge>
+        )
       case "FINANCE_STAFF":
-        return <Badge variant="success" className="shadow-sm">💰 Finance Staff</Badge>
+        return (
+          <Badge variant="success" className="gap-1 font-normal">
+            <CreditCard className="h-3 w-3 text-[#4ade80]" /> Finance Staff
+          </Badge>
+        )
       case "UNREGISTERED":
-        return <Badge variant="outline" className="text-slate-400 border-slate-700 shadow-sm">📝 Staff Registration</Badge>
+        return (
+          <Badge variant="outline" className="gap-1 font-normal">
+            <Clock className="h-3 w-3 text-[#858687]" /> Registration
+          </Badge>
+        )
       default:
-        return <Badge variant="warning" className="shadow-sm">⏳ Pending Approval</Badge>
+        return (
+          <Badge variant="warning" className="gap-1 font-normal">
+            <Clock className="h-3 w-3 text-[#ea580c]" /> Pending Approval
+          </Badge>
+        )
     }
   }
 
@@ -54,27 +81,27 @@ export default function Navbar({
     (userProfile?.lastName?.[0] || user?.lastName?.[0] || "M")
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-slate-950/80 backdrop-blur-xl transition-all">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-40 w-full border-b-[0.5px] border-white/[0.07] bg-[#0b0c0e]/85 backdrop-blur-md transition-all">
+      <div className="mx-auto flex h-[72px] max-w-[1080px] items-center justify-between px-4 sm:px-6">
         {/* Brand Logo */}
         <div
           onClick={() => setActiveTab && setActiveTab("overview")}
           className="flex cursor-pointer items-center gap-3 group"
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 shadow-md shadow-indigo-500/25 transition-transform group-hover:scale-105">
-            <School className="h-5 w-5 text-white" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[#131416] border-[0.5px] border-white/10 shadow-[0_1px_4px_rgba(0,0,0,0.1)] transition-transform group-hover:scale-105">
+            <School className="h-4 w-4 text-[#3b82f6]" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-heading text-lg font-bold tracking-tight bg-gradient-to-r from-white via-slate-100 to-indigo-200 bg-clip-text text-transparent">
+              <span className="text-sm font-normal tracking-tight text-[#ffffff]">
                 Vidyalaya SIS
               </span>
-              <span className="hidden sm:inline-block rounded-md bg-indigo-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-400 border border-indigo-500/20">
+              <span className="hidden sm:inline-block rounded-[5.26px] bg-[#1f1f21] px-1.5 py-0.5 text-[10px] font-normal text-[#858687] border-[0.5px] border-white/[0.07]">
                 Staff Portal
               </span>
             </div>
-            <p className="hidden text-[11px] text-slate-400 sm:block">
-              School Information & Operations
+            <p className="hidden text-[11px] text-[#858687] sm:block">
+              Operations & Scheduling
             </p>
           </div>
         </div>
@@ -92,16 +119,16 @@ export default function Navbar({
                 {/* Profile & User Menu */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-10 gap-2 rounded-xl px-2 hover:bg-slate-900 border border-transparent hover:border-white/10">
-                      <Avatar className="h-8 w-8">
+                    <Button variant="ghost" className="relative h-9 gap-2 rounded-[10px] px-2 hover:bg-white/[0.04]">
+                      <Avatar className="h-7 w-7">
                         <AvatarImage src={user?.imageUrl} alt={displayName} />
                         <AvatarFallback>{initials}</AvatarFallback>
                       </Avatar>
                       <div className="hidden text-left md:block">
-                        <div className="text-xs font-semibold text-slate-200 leading-tight">
+                        <div className="text-xs font-normal text-[#ffffff] leading-tight">
                           {displayName}
                         </div>
-                        <div className="text-[10px] text-slate-400 leading-tight">
+                        <div className="text-[10px] text-[#858687] leading-tight">
                           {role}
                         </div>
                       </div>
@@ -109,31 +136,31 @@ export default function Navbar({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuLabel>
-                      <div className="font-bold text-white">{displayName}</div>
-                      <div className="text-xs text-slate-400 truncate">{user?.primaryEmailAddress?.emailAddress || userProfile?.email}</div>
+                      <div className="font-normal text-[#ffffff]">{displayName}</div>
+                      <div className="text-[11px] text-[#858687] truncate">{user?.primaryEmailAddress?.emailAddress || userProfile?.email}</div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={onOpenProfile} className="cursor-pointer">
-                      <User className="mr-2 h-4 w-4 text-indigo-400" />
+                      <User className="mr-2 h-3.5 w-3.5 text-[#3b82f6]" />
                       <span>My Staff Profile</span>
                     </DropdownMenuItem>
                     {setActiveTab && (
                       <>
                         <DropdownMenuItem onClick={() => setActiveTab("overview")} className="cursor-pointer">
-                          <BookOpen className="mr-2 h-4 w-4 text-purple-400" />
+                          <BookOpen className="mr-2 h-3.5 w-3.5 text-[#858687]" />
                           <span>Dashboard Overview</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setActiveTab("timetable")} className="cursor-pointer">
-                          <Calendar className="mr-2 h-4 w-4 text-indigo-400" />
+                          <Calendar className="mr-2 h-3.5 w-3.5 text-[#3b82f6]" />
                           <span>Timetable & Schedules</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setActiveTab("academics")} className="cursor-pointer">
-                          <GraduationCap className="mr-2 h-4 w-4 text-sky-400" />
+                          <GraduationCap className="mr-2 h-3.5 w-3.5 text-[#60a5fa]" />
                           <span>Academics & Exams</span>
                         </DropdownMenuItem>
                         {(isAdmin || isPrincipal) && (
                           <DropdownMenuItem onClick={() => setActiveTab("admin")} className="cursor-pointer">
-                            <Shield className="mr-2 h-4 w-4 text-pink-400" />
+                            <Shield className="mr-2 h-3.5 w-3.5 text-[#858687]" />
                             <span>Staff Accounts Admin</span>
                           </DropdownMenuItem>
                         )}
@@ -147,7 +174,7 @@ export default function Navbar({
                     afterSignOutUrl="/"
                     appearance={{
                       elements: {
-                        avatarBox: "h-9 w-9 ring-2 ring-indigo-500/30 rounded-xl",
+                        avatarBox: "h-8 w-8 rounded-[8px]",
                       },
                     }}
                   />
@@ -156,15 +183,15 @@ export default function Navbar({
 
               <Show when="signed-out">
                 <SignInButton mode="modal">
-                  <Button size="sm" className="gap-1.5 shadow-lg">
-                    <LogIn className="h-4 w-4" />
+                  <Button size="sm" className="gap-1.5">
+                    <LogIn className="h-3.5 w-3.5" />
                     Sign In
                   </Button>
                 </SignInButton>
               </Show>
             </>
           ) : (
-            <Badge variant="warning">Preview Mode (No Clerk Key)</Badge>
+            <Badge variant="warning">Preview Mode (Demo)</Badge>
           )}
         </div>
       </div>

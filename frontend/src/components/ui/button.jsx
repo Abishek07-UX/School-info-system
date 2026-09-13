@@ -4,33 +4,31 @@ import { cva } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-semibold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98] cursor-pointer",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[10px] text-sm font-normal ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#3b82f6] disabled:pointer-events-none disabled:opacity-40 active:scale-[0.99] cursor-pointer",
   {
     variants: {
       variant: {
         default:
-          "bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:brightness-110",
-        destructive:
-          "bg-rose-600 text-white shadow-sm hover:bg-rose-700 focus-visible:ring-rose-500",
-        outline:
-          "border border-white/10 bg-slate-900/60 backdrop-blur-md hover:bg-slate-800/80 hover:border-indigo-500/40 text-slate-200 hover:text-white",
+          "bg-[#f2f2f2] text-[#333333] hover:bg-white shadow-[0_1px_4px_rgba(0,0,0,0.1),0_0_1px_rgba(0,0,0,0.1)] border-none",
         secondary:
-          "bg-slate-800/90 text-slate-100 hover:bg-slate-700/90 border border-slate-700/60 shadow-sm",
+          "bg-white/[0.05] text-[#ffffff] hover:bg-white/[0.08] border-none",
+        outline:
+          "border-[0.5px] border-white/10 bg-[#131416] text-[#cececf] hover:text-white hover:border-white/20 hover:bg-[#1a1b1e]",
         ghost:
-          "hover:bg-slate-800/60 text-slate-300 hover:text-white",
+          "bg-transparent text-[#858687] hover:text-white hover:bg-white/[0.04] border-none",
+        destructive:
+          "bg-[#f87171]/10 text-[#f87171] border-[0.5px] border-[#f87171]/30 hover:bg-[#f87171]/20",
         link:
-          "text-indigo-400 underline-offset-4 hover:underline hover:text-indigo-300",
-        glass:
-          "bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10 hover:border-indigo-400/40 backdrop-blur-md",
-        success:
-          "bg-emerald-600 text-white hover:bg-emerald-500 shadow-md shadow-emerald-600/20",
+          "text-[#3b82f6] underline-offset-4 hover:underline hover:text-[#60a5fa] p-0 h-auto bg-transparent border-none",
+        subtle:
+          "bg-[#1f1f21] text-[#cececf] hover:text-white border-[0.5px] border-white/10 hover:border-white/15",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-8 rounded-lg px-3 text-xs",
-        lg: "h-12 rounded-xl px-8 text-base",
-        icon: "h-9 w-9 rounded-lg",
-        xs: "h-7 rounded-md px-2.5 text-xs font-medium",
+        default: "h-9 px-4 py-2",
+        sm: "h-8 rounded-[8px] px-3 text-xs",
+        lg: "h-11 rounded-[10px] px-6 text-sm",
+        icon: "h-8 w-8 rounded-[8px]",
+        xs: "h-7 rounded-[6px] px-2.5 text-xs",
       },
     },
     defaultVariants: {

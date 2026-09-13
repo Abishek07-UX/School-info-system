@@ -195,28 +195,28 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Card className="border-white/10 p-4">
           <div className="text-xs text-slate-400 font-semibold">Total Scheduled</div>
-          <div className="text-2xl font-bold font-heading text-indigo-400 mt-1">
+          <div className="text-2xl font-normal text-white mt-1">
             {exams.length}
           </div>
         </Card>
 
         <Card className="border-white/10 p-4">
           <div className="text-xs text-slate-400 font-semibold">Completed</div>
-          <div className="text-2xl font-bold font-heading text-emerald-400 mt-1">
+          <div className="text-2xl font-normal text-white mt-1">
             {completedCount}
           </div>
         </Card>
 
         <Card className="border-white/10 p-4">
           <div className="text-xs text-slate-400 font-semibold">Upcoming</div>
-          <div className="text-2xl font-bold font-heading text-amber-400 mt-1">
+          <div className="text-2xl font-normal text-white mt-1">
             {upcomingCount}
           </div>
         </Card>
 
         <Card className="border-white/10 p-4">
           <div className="text-xs text-slate-400 font-semibold">Ongoing</div>
-          <div className="text-2xl font-bold font-heading text-sky-400 mt-1">
+          <div className="text-2xl font-normal text-white mt-1">
             {ongoingCount}
           </div>
         </Card>

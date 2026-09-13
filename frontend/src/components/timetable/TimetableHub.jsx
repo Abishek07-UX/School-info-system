@@ -339,7 +339,7 @@ export function TimetableHub({ userRole = 'ADMIN', getToken }) {
                   <Button
                     size="sm"
                     onClick={() => setIsAutoGeneratorOpen(true)}
-                    className="h-8 text-xs gap-1.5 bg-gradient-to-r from-indigo-600 to-primary text-primary-foreground shadow-sm"
+                    className="h-8 text-xs gap-1.5"
                   >
                     <Wand2 className="h-3.5 w-3.5" />
                     Auto-Generate Schedule

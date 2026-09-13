@@ -198,7 +198,7 @@ export default function ReportCardTab({ classes }) {
           <Button
             onClick={() => setShowPrintModal(true)}
             size="sm"
-            className="gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 shadow-lg shadow-indigo-500/25"
+            className="gap-2"
           >
             <Printer className="h-4 w-4" /> Printable Transcript
           </Button>
@@ -371,7 +371,7 @@ export default function ReportCardTab({ classes }) {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
                   <div className="text-xs text-slate-400 font-semibold">Total Score</div>
-                  <div className="text-2xl font-bold font-heading text-indigo-400 mt-1">
+                  <div className="text-2xl font-normal text-white mt-1">
                     {reportCardData.totalMarks}{" "}
                     <span className="text-xs text-slate-400 font-normal">
                       / {reportCardData.maxPossibleMarks}

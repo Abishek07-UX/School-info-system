@@ -3,19 +3,19 @@ import { cva } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const alertVariants = cva(
-  "relative w-full rounded-xl border p-4 text-sm [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground [&>svg~*]:pl-7 backdrop-blur-md transition-all",
+  "relative w-full rounded-[10px] border-[0.5px] p-4 text-xs [&>svg+div]:translate-y-[-2px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-[#ffffff] [&>svg~*]:pl-7 transition-all",
   {
     variants: {
       variant: {
-        default: "bg-slate-900/80 border-white/10 text-slate-100",
+        default: "bg-[#131416] border-white/10 text-[#cececf]",
         destructive:
-          "border-rose-500/40 bg-rose-950/40 text-rose-200 [&>svg]:text-rose-400",
+          "border-[#f87171]/30 bg-[#f87171]/10 text-[#f87171] [&>svg]:text-[#f87171]",
         success:
-          "border-emerald-500/40 bg-emerald-950/40 text-emerald-200 [&>svg]:text-emerald-400",
+          "border-[#4ade80]/30 bg-[#4ade80]/10 text-[#4ade80] [&>svg]:text-[#4ade80]",
         warning:
-          "border-amber-500/40 bg-amber-950/40 text-amber-200 [&>svg]:text-amber-400",
+          "border-[#ea580c]/30 bg-[#ea580c]/10 text-[#ea580c] [&>svg]:text-[#ea580c]",
         info:
-          "border-sky-500/40 bg-sky-950/40 text-sky-200 [&>svg]:text-sky-400",
+          "border-[#3b82f6]/30 bg-[#3b82f6]/10 text-[#60a5fa] [&>svg]:text-[#3b82f6]",
       },
     },
     defaultVariants: {
@@ -37,7 +37,7 @@ Alert.displayName = "Alert"
 const AlertTitle = React.forwardRef(({ className, ...props }, ref) => (
   <h5
     ref={ref}
-    className={cn("mb-1 font-semibold leading-none tracking-tight text-white", className)}
+    className={cn("mb-1 font-medium leading-none tracking-tight text-[#ffffff]", className)}
     {...props}
   />
 ))
@@ -46,7 +46,7 @@ AlertTitle.displayName = "AlertTitle"
 const AlertDescription = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("text-xs text-slate-300 [&_p]:leading-relaxed", className)}
+    className={cn("text-xs text-[#858687] [&_p]:leading-relaxed", className)}
     {...props}
   />
 ))
