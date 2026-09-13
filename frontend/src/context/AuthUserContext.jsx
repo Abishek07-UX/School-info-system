@@ -1,11 +1,10 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { useAuth, useUser } from '@clerk/react'
+import { useAuth } from '@clerk/react'
 
 const AuthUserContext = createContext(null)
 
 export function AuthUserProvider({ children }) {
   const { isSignedIn, getToken } = useAuth()
-  const { user: clerkUser } = useUser()
   const [userProfile, setUserProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -35,8 +34,8 @@ export function AuthUserProvider({ children }) {
       }
 
       const resData = await response.json()
-      if (resData.success && resData.data) {
-        setUserProfile(resData.data)
+      if (resData.success) {
+        setUserProfile(resData.data || null)
       } else {
         throw new Error(resData?.error?.message || 'Failed to load user profile')
       }
@@ -72,15 +71,17 @@ export function AuthUserProvider({ children }) {
     fetchUserProfile()
   }, [fetchUserProfile])
 
-  const role = userProfile?.role || 'PENDING'
-  const isPending = role === 'PENDING' || userProfile?.status === 'PENDING_APPROVAL'
-  const isAdmin = role === 'ADMIN'
-  const isPrincipal = role === 'PRINCIPAL'
-  const isTeacher = role === 'TEACHER'
-  const isFinance = role === 'FINANCE_STAFF'
+  const isRegistered = Boolean(userProfile && userProfile.id)
+  const role = userProfile?.role || (isRegistered ? 'PENDING' : 'UNREGISTERED')
+  const isPending = isRegistered && (role === 'PENDING' || userProfile?.status === 'PENDING_APPROVAL')
+  const isAdmin = isRegistered && role === 'ADMIN'
+  const isPrincipal = isRegistered && role === 'PRINCIPAL'
+  const isTeacher = isRegistered && role === 'TEACHER'
+  const isFinance = isRegistered && role === 'FINANCE_STAFF'
 
   // Check if staff profile has all mandatory identification fields (valid NIC format, 10-digit phone, address, name, real email)
   const isProfileComplete = Boolean(
+    isRegistered &&
     userProfile?.nicNumber && /^([0-9]{12}|[0-9]{9}[V])$/i.test(userProfile.nicNumber.trim()) &&
     userProfile?.phoneNumber && /^[0-9]{10}$/.test(userProfile.phoneNumber.trim()) &&
     userProfile?.address && userProfile.address.trim() !== '' &&
@@ -92,6 +93,7 @@ export function AuthUserProvider({ children }) {
   const value = {
     userProfile,
     role,
+    isRegistered,
     isPending,
     isAdmin,
     isPrincipal,
