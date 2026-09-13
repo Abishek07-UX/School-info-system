@@ -41,30 +41,40 @@ public class UserServiceImpl implements UserService {
                         User existingByEmail = userRepository.findByEmail(email).orElse(null);
                         if (existingByEmail != null) {
                             existingByEmail.setClerkId(clerkId);
-                            if (firstName != null) existingByEmail.setFirstName(firstName);
-                            if (lastName != null) existingByEmail.setLastName(lastName);
+                            if (firstName != null && (existingByEmail.getFirstName() == null || existingByEmail.getFirstName().isBlank())) {
+                                existingByEmail.setFirstName(firstName);
+                            }
+                            if (lastName != null && (existingByEmail.getLastName() == null || existingByEmail.getLastName().isBlank())) {
+                                existingByEmail.setLastName(lastName);
+                            }
                             return userRepository.save(existingByEmail);
                         }
                     }
 
-                    // Auto-bootstrap first user as ADMIN if database is empty
+                    // Auto-bootstrap first user as ADMIN only if database is completely empty
                     boolean isFirstUser = userRepository.count() == 0;
-                    UserRole initialRole = isFirstUser ? UserRole.ADMIN : UserRole.PENDING;
-                    UserStatus initialStatus = isFirstUser ? UserStatus.ACTIVE : UserStatus.PENDING_APPROVAL;
+                    if (isFirstUser) {
+                        User newUser = userFactory.createUserWithDetails(
+                                UserRole.ADMIN,
+                                clerkId,
+                                email != null ? email : (clerkId + "@placeholder.com"),
+                                firstName,
+                                lastName,
+                                null, // phoneNumber
+                                null, // address
+                                null, // nicNumber
+                                UserStatus.ACTIVE
+                        );
+                        return userRepository.save(newUser);
+                    }
 
-                    User newUser = userFactory.createUserWithDetails(
-                            initialRole,
-                            clerkId,
-                            email != null ? email : (clerkId + "@placeholder.com"),
-                            firstName,
-                            lastName,
-                            null, // phoneNumber
-                            null, // address
-                            null, // nicNumber
-                            initialStatus
-                    );
-                    return userRepository.save(newUser);
+                    // Do not persist unsubmitted new users into the database
+                    return null;
                 });
+
+        if (user == null) {
+            return null;
+        }
 
         if (email != null && !email.isBlank() && (user.getEmail() == null || user.getEmail().endsWith("@placeholder.com"))) {
             user.setEmail(email);
@@ -80,9 +90,23 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserDTO updateUserProfile(Jwt jwt, UserProfileRequest request) {
         String clerkId = jwt.getSubject();
+        String jwtEmail = extractEmail(jwt);
 
         User user = userRepository.findByClerkId(clerkId)
                 .orElseGet(() -> {
+                    // Check if pre-registered by email
+                    String emailToCheck = request.getEmail() != null && !request.getEmail().isBlank()
+                            ? request.getEmail().trim()
+                            : jwtEmail;
+
+                    if (emailToCheck != null && !emailToCheck.isBlank() && !emailToCheck.endsWith("@placeholder.com")) {
+                        User existingByEmail = userRepository.findByEmail(emailToCheck).orElse(null);
+                        if (existingByEmail != null) {
+                            existingByEmail.setClerkId(clerkId);
+                            return existingByEmail;
+                        }
+                    }
+
                     boolean isFirstUser = userRepository.count() == 0;
                     UserRole initialRole = isFirstUser ? UserRole.ADMIN : UserRole.PENDING;
                     UserStatus initialStatus = isFirstUser ? UserStatus.ACTIVE : UserStatus.PENDING_APPROVAL;
@@ -95,6 +119,8 @@ public class UserServiceImpl implements UserService {
 
         if (request.getEmail() != null && !request.getEmail().isBlank()) {
             user.setEmail(request.getEmail().trim());
+        } else if (user.getEmail() == null || user.getEmail().isBlank()) {
+            user.setEmail(jwtEmail != null ? jwtEmail : (clerkId + "@placeholder.com"));
         }
 
         user.updateProfileDetails(

@@ -22,6 +22,9 @@ public class UserController {
     @GetMapping("/me")
     public ApiResponse<UserDTO> getCurrentUser(@AuthenticationPrincipal Jwt jwt) {
         UserDTO user = userService.getOrCreateUser(jwt);
+        if (user == null) {
+            return ApiResponse.success(null, "User profile not registered yet in system");
+        }
         return ApiResponse.success(user, "User profile retrieved successfully");
     }
 

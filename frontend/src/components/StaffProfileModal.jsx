@@ -1,18 +1,38 @@
-import { useState, useEffect } from 'react'
-import { useAuthUser } from '../context/AuthUserContext'
-import { useUser } from '@clerk/react'
+import { useState, useEffect } from "react"
+import { useAuthUser } from "@/context/AuthUserContext"
+import { useUser } from "@clerk/react"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import {
+  User,
+  CheckCircle2,
+  AlertCircle,
+  Save,
+} from "lucide-react"
 
 export default function StaffProfileModal({ isOpen, onClose, required = false }) {
-  const { userProfile, updateProfile } = useAuthUser()
+  const { userProfile, updateProfile, role } = useAuthUser()
   const { user: clerkUser } = useUser()
 
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phoneNumber: '',
-    nicNumber: '',
-    address: ''
+    firstName: "",
+    lastName: "",
+    email: "",
+    phoneNumber: "",
+    nicNumber: "",
+    address: "",
   })
   const [saving, setSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState(null)
@@ -21,14 +41,16 @@ export default function StaffProfileModal({ isOpen, onClose, required = false })
   useEffect(() => {
     if (userProfile) {
       setFormData({
-        firstName: userProfile.firstName || clerkUser?.firstName || '',
-        lastName: userProfile.lastName || clerkUser?.lastName || '',
-        email: (!userProfile.email || userProfile.email.endsWith('@placeholder.com'))
-          ? (clerkUser?.primaryEmailAddress?.emailAddress || '')
-          : userProfile.email,
-        phoneNumber: userProfile.phoneNumber || clerkUser?.primaryPhoneNumber?.phoneNumber || '',
-        nicNumber: userProfile.nicNumber || '',
-        address: userProfile.address || ''
+        firstName: userProfile.firstName || clerkUser?.firstName || "",
+        lastName: userProfile.lastName || clerkUser?.lastName || "",
+        email:
+          !userProfile.email || userProfile.email.endsWith("@placeholder.com")
+            ? clerkUser?.primaryEmailAddress?.emailAddress || ""
+            : userProfile.email,
+        phoneNumber:
+          userProfile.phoneNumber || clerkUser?.primaryPhoneNumber?.phoneNumber || "",
+        nicNumber: userProfile.nicNumber || "",
+        address: userProfile.address || "",
       })
     }
   }, [userProfile, clerkUser])
@@ -42,29 +64,36 @@ export default function StaffProfileModal({ isOpen, onClose, required = false })
     setSuccessMsg(null)
 
     try {
-      if (!formData.email || !formData.email.includes('@')) {
-        throw new Error('Please enter a valid email address.')
+      if (!formData.email || !formData.email.includes("@")) {
+        throw new Error("Please enter a valid official email address.")
       }
+      let cleanPhone = formData.phoneNumber
       if (formData.phoneNumber) {
-        const cleanPhone = formData.phoneNumber.trim().replaceAll(/[\s\-()]/g, '')
+        cleanPhone = formData.phoneNumber.trim().replaceAll(/[\s\-()]/g, "")
         if (!/^[0-9]{10}$/.test(cleanPhone)) {
-          throw new Error('Phone number must contain exactly 10 digits with no letters or symbols (e.g. 0771234567).')
+          throw new Error(
+            "Phone number must contain exactly 10 digits with no special symbols (e.g. 0771234567)."
+          )
         }
-        formData.phoneNumber = cleanPhone
       }
 
       if (!formData.nicNumber || !formData.nicNumber.trim()) {
-        throw new Error('National Identity Card (NIC) number is required.')
+        throw new Error("National Identity Card (NIC) number is required.")
       }
 
       const cleanNic = formData.nicNumber.trim().toUpperCase()
       if (!/^([0-9]{12}|[0-9]{9}V)$/.test(cleanNic)) {
-        throw new Error("NIC number must be either 12 digits (e.g. 199012345678) or 9 digits followed by 'V' (e.g. 901234567V).")
+        throw new Error(
+          "NIC number must be either 12 digits (e.g. 199012345678) or 9 digits followed by 'V' (e.g. 901234567V)."
+        )
       }
-      formData.nicNumber = cleanNic
 
-      await updateProfile(formData)
-      setSuccessMsg('Staff details saved successfully to database!')
+      await updateProfile({
+        ...formData,
+        phoneNumber: cleanPhone,
+        nicNumber: cleanNic,
+      })
+      setSuccessMsg("Staff profile details updated successfully!")
       setTimeout(() => {
         if (onClose) onClose()
       }, 1200)
@@ -76,261 +105,150 @@ export default function StaffProfileModal({ isOpen, onClose, required = false })
   }
 
   return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      background: 'rgba(15, 23, 42, 0.85)',
-      backdropFilter: 'blur(8px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000,
-      padding: '1rem'
-    }}>
-      <div className="glass-panel" style={{
-        maxWidth: '560px',
-        width: '100%',
-        padding: '2rem',
-        maxHeight: '90vh',
-        overflowY: 'auto',
-        position: 'relative'
-      }}>
-        {!required && onClose && (
-          <button
-            onClick={onClose}
-            style={{
-              position: 'absolute',
-              top: '1.25rem',
-              right: '1.25rem',
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-muted)',
-              fontSize: '1.25rem',
-              cursor: 'pointer'
-            }}
-          >
-            ✕
-          </button>
-        )}
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-          <span style={{ fontSize: '1.8rem' }}>🪪</span>
-          <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.5rem', margin: 0 }}>
-            {required ? 'Complete Your Staff Profile' : 'Edit Staff Profile'}
-          </h2>
-        </div>
-
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: '1.5' }}>
-          Please provide your official staff identification details. This information is securely stored in the school database.
-        </p>
+    <Dialog open={isOpen} onOpenChange={!required ? onClose : undefined}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400">
+              <User className="h-5 w-5" />
+            </div>
+            <div>
+              <DialogTitle className="text-xl font-bold font-heading">
+                {required ? "Complete Staff Profile" : "Staff Profile & Credentials"}
+              </DialogTitle>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant="outline" className="text-xs">
+                  Role: {role}
+                </Badge>
+                <Badge variant="secondary" className="text-[10px]">
+                  ID: {userProfile?.id ? `#${userProfile.id}` : "Registered"}
+                </Badge>
+              </div>
+            </div>
+          </div>
+          <DialogDescription className="text-slate-400 text-xs mt-2">
+            View and update your registered identification and contact details in the school operational database.
+          </DialogDescription>
+        </DialogHeader>
 
         {errorMsg && (
-          <div style={{
-            background: 'rgba(239, 68, 68, 0.15)',
-            border: '1px solid rgba(239, 68, 68, 0.4)',
-            color: '#fca5a5',
-            padding: '0.75rem 1rem',
-            borderRadius: '8px',
-            fontSize: '0.85rem',
-            marginBottom: '1rem'
-          }}>
-            ⚠️ {errorMsg}
-          </div>
+          <Alert variant="destructive" className="my-2">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{errorMsg}</AlertDescription>
+          </Alert>
         )}
 
         {successMsg && (
-          <div style={{
-            background: 'rgba(16, 185, 129, 0.15)',
-            border: '1px solid rgba(16, 185, 129, 0.4)',
-            color: '#6ee7b7',
-            padding: '0.75rem 1rem',
-            borderRadius: '8px',
-            fontSize: '0.85rem',
-            marginBottom: '1rem'
-          }}>
-            ✅ {successMsg}
-          </div>
+          <Alert variant="success" className="my-2">
+            <CheckCircle2 className="h-4 w-4" />
+            <AlertTitle>Saved</AlertTitle>
+            <AlertDescription>{successMsg}</AlertDescription>
+          </Alert>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <form onSubmit={handleSubmit} className="space-y-3.5 my-2">
           {/* First & Last Name */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
-                First Name *
-              </label>
-              <input
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label htmlFor="prof-firstName">First Name *</Label>
+              <Input
+                id="prof-firstName"
                 type="text"
                 required
                 value={formData.firstName}
-                onChange={e => setFormData({ ...formData, firstName: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                 placeholder="e.g. John"
-                style={{
-                  width: '100%',
-                  padding: '0.6rem 0.8rem',
-                  background: 'rgba(15, 23, 42, 0.6)',
-                  border: '1px solid var(--border-glass)',
-                  borderRadius: '8px',
-                  color: 'var(--text-main)',
-                  outline: 'none',
-                  fontSize: '0.9rem'
-                }}
               />
             </div>
 
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
-                Last Name *
-              </label>
-              <input
+            <div className="space-y-1">
+              <Label htmlFor="prof-lastName">Last Name *</Label>
+              <Input
+                id="prof-lastName"
                 type="text"
                 required
                 value={formData.lastName}
-                onChange={e => setFormData({ ...formData, lastName: e.target.value })}
-                placeholder="e.g. Doe"
-                style={{
-                  width: '100%',
-                  padding: '0.6rem 0.8rem',
-                  background: 'rgba(15, 23, 42, 0.6)',
-                  border: '1px solid var(--border-glass)',
-                  borderRadius: '8px',
-                  color: 'var(--text-main)',
-                  outline: 'none',
-                  fontSize: '0.9rem'
-                }}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                placeholder="e.g. Silva"
               />
             </div>
           </div>
 
-          {/* Email Address */}
-          <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
-              Official Email Address *
-            </label>
-            <input
+          {/* Email */}
+          <div className="space-y-1">
+            <Label htmlFor="prof-email">Official Email Address *</Label>
+            <Input
+              id="prof-email"
               type="email"
               required
               value={formData.email}
-              onChange={e => setFormData({ ...formData, email: e.target.value })}
-              placeholder="e.g. john.doe@school.com"
-              style={{
-                width: '100%',
-                padding: '0.6rem 0.8rem',
-                background: 'rgba(15, 23, 42, 0.6)',
-                border: '1px solid var(--border-glass)',
-                borderRadius: '8px',
-                color: 'var(--text-main)',
-                outline: 'none',
-                fontSize: '0.9rem'
-              }}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="e.g. john.silva@school.lk"
             />
           </div>
 
-          {/* Phone & NIC Number */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
-                Phone Number (10 Digits) *
-              </label>
-              <input
+          {/* Phone & NIC */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label htmlFor="prof-phone">Phone Number (10 Digits) *</Label>
+              <Input
+                id="prof-phone"
                 type="tel"
                 required
                 maxLength={10}
                 value={formData.phoneNumber}
-                onChange={e => setFormData({ ...formData, phoneNumber: e.target.value.replace(/[^0-9]/g, '') })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    phoneNumber: e.target.value.replace(/[^0-9]/g, ""),
+                  })
+                }
                 placeholder="e.g. 0771234567"
-                style={{
-                  width: '100%',
-                  padding: '0.6rem 0.8rem',
-                  background: 'rgba(15, 23, 42, 0.6)',
-                  border: '1px solid var(--border-glass)',
-                  borderRadius: '8px',
-                  color: 'var(--text-main)',
-                  outline: 'none',
-                  fontSize: '0.9rem'
-                }}
               />
             </div>
 
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
-                NIC Number (National ID) *
-              </label>
-              <input
+            <div className="space-y-1">
+              <Label htmlFor="prof-nic">National ID (NIC) *</Label>
+              <Input
+                id="prof-nic"
                 type="text"
                 required
                 value={formData.nicNumber}
-                onChange={e => setFormData({ ...formData, nicNumber: e.target.value.toUpperCase() })}
-                placeholder="e.g. 199012345678 or 901234567V"
-                style={{
-                  width: '100%',
-                  padding: '0.6rem 0.8rem',
-                  background: 'rgba(15, 23, 42, 0.6)',
-                  border: '1px solid var(--border-glass)',
-                  borderRadius: '8px',
-                  color: 'var(--text-main)',
-                  outline: 'none',
-                  fontSize: '0.9rem'
-                }}
+                onChange={(e) =>
+                  setFormData({ ...formData, nicNumber: e.target.value.toUpperCase() })
+                }
+                placeholder="e.g. 199012345678"
               />
             </div>
           </div>
 
-          {/* Residential Address */}
-          <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
-              Residential Address *
-            </label>
-            <textarea
+          {/* Address */}
+          <div className="space-y-1">
+            <Label htmlFor="prof-address">Residential Address *</Label>
+            <Textarea
+              id="prof-address"
               required
-              rows={3}
+              rows={2}
               value={formData.address}
-              onChange={e => setFormData({ ...formData, address: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               placeholder="e.g. No. 45, Temple Road, Colombo"
-              style={{
-                width: '100%',
-                padding: '0.6rem 0.8rem',
-                background: 'rgba(15, 23, 42, 0.6)',
-                border: '1px solid var(--border-glass)',
-                borderRadius: '8px',
-                color: 'var(--text-main)',
-                outline: 'none',
-                fontSize: '0.9rem',
-                resize: 'vertical'
-              }}
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
+          <DialogFooter className="pt-2 gap-2 sm:gap-0">
             {!required && onClose && (
-              <button
-                type="button"
-                onClick={onClose}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid var(--border-glass)',
-                  color: 'var(--text-muted)',
-                  padding: '0.6rem 1.2rem',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '0.9rem'
-                }}
-              >
+              <Button type="button" variant="ghost" onClick={onClose}>
                 Cancel
-              </button>
+              </Button>
             )}
-
-            <button
-              type="submit"
-              disabled={saving}
-              className="btn-primary"
-              style={{ padding: '0.6rem 1.5rem', fontSize: '0.9rem' }}
-            >
-              {saving ? '💾 Saving Details...' : '💾 Save Profile Details'}
-            </button>
-          </div>
+            <Button type="submit" disabled={saving} className="gap-2">
+              <Save className="h-4 w-4" />
+              {saving ? "Saving..." : "Save Profile Details"}
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

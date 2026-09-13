@@ -1,5 +1,24 @@
-import { useState } from 'react'
-import { useAuthUser } from '../context/AuthUserContext'
+import { useState } from "react"
+import { useAuthUser } from "@/context/AuthUserContext"
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import {
+  Clock,
+  RefreshCw,
+  Edit,
+  UserCheck,
+  Mail,
+  Phone,
+  CreditCard,
+  MapPin,
+} from "lucide-react"
 
 export default function PendingApprovalView({ onEditProfile }) {
   const { userProfile, refreshUser, loading } = useAuthUser()
@@ -11,114 +30,115 @@ export default function PendingApprovalView({ onEditProfile }) {
     setChecking(false)
   }
 
-  const fullName = `${userProfile?.firstName || ''} ${userProfile?.lastName || ''}`.trim() || 'Staff Member'
+  const fullName =
+    `${userProfile?.firstName || ""} ${userProfile?.lastName || ""}`.trim() ||
+    "Staff Member"
 
   return (
-    <div style={{ maxWidth: '720px', margin: '3rem auto', padding: '0 1.5rem' }}>
-      <div className="glass-panel" style={{ padding: '2.5rem', textAlign: 'center' }}>
-        <div style={{
-          width: '72px',
-          height: '72px',
-          borderRadius: '50%',
-          background: 'rgba(245, 158, 11, 0.15)',
-          border: '2px solid rgba(245, 158, 11, 0.4)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '2.2rem',
-          margin: '0 auto 1.25rem auto'
-        }}>
-          ⏳
-        </div>
+    <div className="mx-auto max-w-2xl px-4 py-8 sm:py-14">
+      <Card className="border-amber-500/20 shadow-2xl overflow-hidden relative">
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <span className="role-badge" style={{
-          background: 'rgba(245, 158, 11, 0.2)',
-          borderColor: 'rgba(245, 158, 11, 0.5)',
-          color: '#fcd34d',
-          marginBottom: '1rem',
-          display: 'inline-block'
-        }}>
-          Status: Awaiting Role Assignment
-        </span>
-
-        <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.85rem', margin: '0.5rem 0 0.5rem 0' }}>
-          Registration Submitted, {fullName}!
-        </h1>
-
-        <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', fontSize: '0.98rem', marginBottom: '2rem' }}>
-          Your staff identification details are saved in the database. A School Administrator can now review your verified details in the management portal and assign your role (Teacher, Finance Staff, Principal, or Admin).
-        </p>
-
-        {/* Submitted Details Card */}
-        <div style={{
-          background: 'rgba(15, 23, 42, 0.6)',
-          border: '1px solid var(--border-glass)',
-          borderRadius: '14px',
-          padding: '1.5rem',
-          textAlign: 'left',
-          marginBottom: '2rem',
-          fontSize: '0.9rem'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
-            <span style={{ fontWeight: '700', color: 'var(--text-main)', fontSize: '0.95rem' }}>🪪 Submitted Staff Record</span>
-            {onEditProfile && (
-              <button
-                onClick={onEditProfile}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#818cf8',
-                  fontSize: '0.85rem',
-                  fontWeight: '600',
-                  cursor: 'pointer'
-                }}
-              >
-                ✏️ Edit Details
-              </button>
-            )}
+        <CardHeader className="text-center pb-6">
+          <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/15 border-2 border-amber-500/30 text-amber-400 shadow-lg shadow-amber-500/10">
+            <Clock className="h-8 w-8 animate-pulse" />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
-            <div>
-              <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem', display: 'block' }}>Full Name</span>
-              <strong style={{ color: 'var(--text-main)' }}>{fullName}</strong>
+          <div className="flex justify-center mb-2">
+            <Badge variant="warning" className="text-xs px-3 py-1 font-semibold">
+              Status: Awaiting Administrator Role Assignment
+            </Badge>
+          </div>
+
+          <CardTitle className="text-2xl font-bold font-heading">
+            Registration Submitted, {fullName}!
+          </CardTitle>
+          <CardDescription className="text-slate-400 text-sm max-w-lg mx-auto">
+            Your staff identification details are securely logged in the school database. An Administrator will review your verified details and assign your appropriate role (Teacher, Finance Staff, Principal, or Admin).
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="space-y-6">
+          {/* Submitted Staff Summary Record */}
+          <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-5 backdrop-blur-md">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
+              <div className="flex items-center gap-2 text-sm font-bold text-white">
+                <UserCheck className="h-4 w-4 text-indigo-400" />
+                Submitted Staff Record
+              </div>
+              {onEditProfile && (
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  onClick={onEditProfile}
+                  className="gap-1 text-xs text-indigo-400 hover:text-indigo-300"
+                >
+                  <Edit className="h-3 w-3" /> Edit Details
+                </Button>
+              )}
             </div>
 
-            <div>
-              <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem', display: 'block' }}>Official Email</span>
-              <strong style={{ color: '#93c5fd' }}>{userProfile?.email || 'N/A'}</strong>
-            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-xs">
+              <div className="space-y-1">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <UserCheck className="h-3.5 w-3.5 text-slate-500" /> Full Name
+                </span>
+                <div className="font-semibold text-slate-100 text-sm">{fullName}</div>
+              </div>
 
-            <div>
-              <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem', display: 'block' }}>National ID (NIC)</span>
-              <strong style={{ color: '#fcd34d', fontFamily: 'monospace' }}>{userProfile?.nicNumber || 'N/A'}</strong>
-            </div>
+              <div className="space-y-1">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <Mail className="h-3.5 w-3.5 text-slate-500" /> Official Email
+                </span>
+                <div className="font-semibold text-indigo-300 truncate">
+                  {userProfile?.email || "N/A"}
+                </div>
+              </div>
 
-            <div>
-              <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem', display: 'block' }}>Phone Number</span>
-              <strong style={{ color: 'var(--text-main)' }}>{userProfile?.phoneNumber || 'N/A'}</strong>
-            </div>
+              <div className="space-y-1">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <CreditCard className="h-3.5 w-3.5 text-slate-500" /> National ID (NIC)
+                </span>
+                <div className="font-mono font-semibold text-amber-300">
+                  {userProfile?.nicNumber || "N/A"}
+                </div>
+              </div>
 
-            <div style={{ gridColumn: 'span 2' }}>
-              <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem', display: 'block' }}>Residential Address</span>
-              <span style={{ color: 'var(--text-muted)' }}>{userProfile?.address || 'N/A'}</span>
+              <div className="space-y-1">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <Phone className="h-3.5 w-3.5 text-slate-500" /> Phone Number
+                </span>
+                <div className="font-semibold text-slate-100">
+                  {userProfile?.phoneNumber || "N/A"}
+                </div>
+              </div>
+
+              <div className="sm:col-span-2 space-y-1 pt-1 border-t border-white/5">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5 text-slate-500" /> Residential Address
+                </span>
+                <div className="text-slate-300">
+                  {userProfile?.address || "N/A"}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <button
-          onClick={handleCheckStatus}
-          disabled={checking || loading}
-          className="btn-primary"
-          style={{ width: '100%', justifyContent: 'center', opacity: checking ? 0.7 : 1, padding: '0.85rem' }}
-        >
-          {checking ? '🔄 Checking Status...' : '🔄 Check Approval Status'}
-        </button>
+          <Button
+            onClick={handleCheckStatus}
+            disabled={checking || loading}
+            size="lg"
+            className="w-full gap-2 text-base font-bold shadow-indigo-500/20"
+          >
+            <RefreshCw className={`h-4 w-4 ${checking ? "animate-spin" : ""}`} />
+            {checking ? "Verifying Approval Status..." : "Check Approval Status"}
+          </Button>
 
-        <p style={{ fontSize: '0.85rem', color: 'var(--text-dim)', marginTop: '1.5rem' }}>
-          💡 Once an Administrator assigns your role, clicking "Check Approval Status" will immediately unlock your portal.
-        </p>
-      </div>
+          <p className="text-center text-xs text-slate-500 leading-relaxed">
+            💡 Once an Administrator assigns your role in the User Management console, clicking <strong>"Check Approval Status"</strong> will instantly unlock your modules.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   )
 }
