@@ -19,7 +19,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   Shield,
   Users,
-  UserCheck,
   Clock,
   Trash2,
   RefreshCw,
@@ -33,11 +32,11 @@ import {
 } from "lucide-react"
 
 const ROLES = [
-  { value: "PENDING", label: "⏳ PENDING (Unassigned)", badgeVariant: "warning" },
-  { value: "TEACHER", label: "👨‍🏫 Teacher", badgeVariant: "default" },
-  { value: "FINANCE_STAFF", label: "💰 Finance Staff", badgeVariant: "success" },
-  { value: "PRINCIPAL", label: "🎓 Principal", badgeVariant: "purple" },
-  { value: "ADMIN", label: "👑 Administrator", badgeVariant: "pink" },
+  { value: "PENDING", label: "PENDING (Unassigned)", badgeVariant: "warning" },
+  { value: "TEACHER", label: "Teacher", badgeVariant: "secondary" },
+  { value: "FINANCE_STAFF", label: "Finance Staff", badgeVariant: "success" },
+  { value: "PRINCIPAL", label: "Principal", badgeVariant: "default" },
+  { value: "ADMIN", label: "Administrator", badgeVariant: "default" },
 ]
 
 export default function UserRoleManagement() {
@@ -228,37 +227,37 @@ export default function UserRoleManagement() {
       </div>
 
       {/* Metric Cards Row */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card className="border-white/10 p-4 flex items-center justify-between">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Card className="p-4 flex items-center justify-between">
           <div className="space-y-1">
-            <div className="text-xs font-semibold text-slate-400">Total Registered Staff</div>
-            <div className="text-2xl font-bold font-heading text-indigo-400">{users.length}</div>
+            <div className="text-xs text-[#858687]">Total Registered Staff</div>
+            <div className="text-2xl font-normal text-white">{users.length}</div>
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-400">
-            <Users className="h-5 w-5" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#1f1f21] border-[0.5px] border-white/10 text-[#3b82f6]">
+            <Users className="h-4 w-4" />
           </div>
         </Card>
 
-        <Card className={`border-white/10 p-4 flex items-center justify-between ${pendingCount > 0 ? "border-amber-500/40 bg-amber-500/5" : ""}`}>
+        <Card className={`p-4 flex items-center justify-between ${pendingCount > 0 ? "border-[#ea580c]/30" : ""}`}>
           <div className="space-y-1">
-            <div className="text-xs font-semibold text-slate-400">Pending Role Assignment</div>
-            <div className="text-2xl font-bold font-heading text-amber-400 flex items-center gap-2">
+            <div className="text-xs text-[#858687]">Pending Role Assignment</div>
+            <div className="text-2xl font-normal text-white flex items-center gap-2">
               {pendingCount}
               {pendingCount > 0 && <Badge variant="warning" className="text-[10px]">Action Required</Badge>}
             </div>
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400">
-            <Clock className="h-5 w-5" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#1f1f21] border-[0.5px] border-white/10 text-[#ea580c]">
+            <Clock className="h-4 w-4" />
           </div>
         </Card>
 
-        <Card className="border-white/10 p-4 flex items-center justify-between">
+        <Card className="p-4 flex items-center justify-between">
           <div className="space-y-1">
-            <div className="text-xs font-semibold text-slate-400">Active Accounts</div>
-            <div className="text-2xl font-bold font-heading text-emerald-400">{activeCount}</div>
+            <div className="text-xs text-[#858687]">Active Accounts</div>
+            <div className="text-2xl font-normal text-white">{activeCount}</div>
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
-            <UserCheck className="h-5 w-5" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#1f1f21] border-[0.5px] border-white/10 text-[#4ade80]">
+            <CheckCircle2 className="h-4 w-4" />
           </div>
         </Card>
       </div>

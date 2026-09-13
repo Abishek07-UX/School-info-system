@@ -35,35 +35,33 @@ export default function PendingApprovalView({ onEditProfile }) {
     "Staff Member"
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 sm:py-14">
-      <Card className="border-amber-500/20 shadow-2xl overflow-hidden relative">
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-
+    <div className="mx-auto max-w-xl px-4 py-12">
+      <Card className="p-2">
         <CardHeader className="text-center pb-6">
-          <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/15 border-2 border-amber-500/30 text-amber-400 shadow-lg shadow-amber-500/10">
-            <Clock className="h-8 w-8 animate-pulse" />
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[10px] bg-[#1f1f21] border-[0.5px] border-white/10 text-[#ea580c]">
+            <Clock className="h-6 w-6" />
           </div>
 
           <div className="flex justify-center mb-2">
-            <Badge variant="warning" className="text-xs px-3 py-1 font-semibold">
-              Status: Awaiting Administrator Role Assignment
+            <Badge variant="warning" className="font-normal">
+              Status: Awaiting Role Assignment
             </Badge>
           </div>
 
-          <CardTitle className="text-2xl font-bold font-heading">
-            Registration Submitted, {fullName}!
+          <CardTitle className="text-xl font-normal tracking-tight text-[#ffffff]">
+            Registration Submitted, {fullName}
           </CardTitle>
-          <CardDescription className="text-slate-400 text-sm max-w-lg mx-auto">
-            Your staff identification details are securely logged in the school database. An Administrator will review your verified details and assign your appropriate role (Teacher, Finance Staff, Principal, or Admin).
+          <CardDescription className="text-xs text-[#858687] max-w-md mx-auto">
+            Your staff identification details are logged in the school database. An Administrator will review your credentials and assign your operational role.
           </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-6">
           {/* Submitted Staff Summary Record */}
-          <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-5 backdrop-blur-md">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
-              <div className="flex items-center gap-2 text-sm font-bold text-white">
-                <UserCheck className="h-4 w-4 text-indigo-400" />
+          <div className="rounded-[10px] border-[0.5px] border-white/10 bg-[#1f1f21] p-4">
+            <div className="flex items-center justify-between border-b-[0.5px] border-white/10 pb-3 mb-3">
+              <div className="flex items-center gap-2 text-xs font-medium text-white">
+                <UserCheck className="h-3.5 w-3.5 text-[#3b82f6]" />
                 Submitted Staff Record
               </div>
               {onEditProfile && (
@@ -71,53 +69,53 @@ export default function PendingApprovalView({ onEditProfile }) {
                   variant="ghost"
                   size="xs"
                   onClick={onEditProfile}
-                  className="gap-1 text-xs text-indigo-400 hover:text-indigo-300"
+                  className="gap-1 text-xs text-[#3b82f6] hover:text-white"
                 >
                   <Edit className="h-3 w-3" /> Edit Details
                 </Button>
               )}
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-xs">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 text-xs">
               <div className="space-y-1">
-                <span className="text-slate-400 flex items-center gap-1.5">
-                  <UserCheck className="h-3.5 w-3.5 text-slate-500" /> Full Name
+                <span className="text-[#858687] flex items-center gap-1.5 text-[11px]">
+                  <UserCheck className="h-3 w-3 text-[#858687]" /> Full Name
                 </span>
-                <div className="font-semibold text-slate-100 text-sm">{fullName}</div>
+                <div className="text-[#ffffff] font-normal">{fullName}</div>
               </div>
 
               <div className="space-y-1">
-                <span className="text-slate-400 flex items-center gap-1.5">
-                  <Mail className="h-3.5 w-3.5 text-slate-500" /> Official Email
+                <span className="text-[#858687] flex items-center gap-1.5 text-[11px]">
+                  <Mail className="h-3 w-3 text-[#858687]" /> Official Email
                 </span>
-                <div className="font-semibold text-indigo-300 truncate">
+                <div className="text-[#ffffff] font-normal truncate">
                   {userProfile?.email || "N/A"}
                 </div>
               </div>
 
               <div className="space-y-1">
-                <span className="text-slate-400 flex items-center gap-1.5">
-                  <CreditCard className="h-3.5 w-3.5 text-slate-500" /> National ID (NIC)
+                <span className="text-[#858687] flex items-center gap-1.5 text-[11px]">
+                  <CreditCard className="h-3 w-3 text-[#858687]" /> National ID (NIC)
                 </span>
-                <div className="font-mono font-semibold text-amber-300">
+                <div className="font-mono text-[#ffffff]">
                   {userProfile?.nicNumber || "N/A"}
                 </div>
               </div>
 
               <div className="space-y-1">
-                <span className="text-slate-400 flex items-center gap-1.5">
-                  <Phone className="h-3.5 w-3.5 text-slate-500" /> Phone Number
+                <span className="text-[#858687] flex items-center gap-1.5 text-[11px]">
+                  <Phone className="h-3 w-3 text-[#858687]" /> Phone Number
                 </span>
-                <div className="font-semibold text-slate-100">
+                <div className="text-[#ffffff] font-normal">
                   {userProfile?.phoneNumber || "N/A"}
                 </div>
               </div>
 
-              <div className="sm:col-span-2 space-y-1 pt-1 border-t border-white/5">
-                <span className="text-slate-400 flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5 text-slate-500" /> Residential Address
+              <div className="sm:col-span-2 space-y-1 pt-2 border-t-[0.5px] border-white/[0.05]">
+                <span className="text-[#858687] flex items-center gap-1.5 text-[11px]">
+                  <MapPin className="h-3 w-3 text-[#858687]" /> Residential Address
                 </span>
-                <div className="text-slate-300">
+                <div className="text-[#cececf]">
                   {userProfile?.address || "N/A"}
                 </div>
               </div>
@@ -128,14 +126,14 @@ export default function PendingApprovalView({ onEditProfile }) {
             onClick={handleCheckStatus}
             disabled={checking || loading}
             size="lg"
-            className="w-full gap-2 text-base font-bold shadow-indigo-500/20"
+            className="w-full gap-2 text-sm"
           >
-            <RefreshCw className={`h-4 w-4 ${checking ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-3.5 w-3.5 ${checking ? "animate-spin" : ""}`} />
             {checking ? "Verifying Approval Status..." : "Check Approval Status"}
           </Button>
 
-          <p className="text-center text-xs text-slate-500 leading-relaxed">
-            💡 Once an Administrator assigns your role in the User Management console, clicking <strong>"Check Approval Status"</strong> will instantly unlock your modules.
+          <p className="text-center text-[11px] text-[#858687] leading-relaxed">
+            Once an Administrator assigns your role in User Management, checking approval status will unlock your operational modules.
           </p>
         </CardContent>
       </Card>

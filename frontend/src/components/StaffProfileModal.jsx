@@ -93,7 +93,7 @@ export default function StaffProfileModal({ isOpen, onClose, required = false })
         phoneNumber: cleanPhone,
         nicNumber: cleanNic,
       })
-      setSuccessMsg("Staff profile details updated successfully!")
+      setSuccessMsg("Staff profile details updated successfully.")
       setTimeout(() => {
         if (onClose) onClose()
       }, 1200)
@@ -109,24 +109,24 @@ export default function StaffProfileModal({ isOpen, onClose, required = false })
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400">
-              <User className="h-5 w-5" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#1f1f21] border-[0.5px] border-white/10 text-[#3b82f6]">
+              <User className="h-4 w-4" />
             </div>
             <div>
-              <DialogTitle className="text-xl font-bold font-heading">
+              <DialogTitle className="text-lg font-normal tracking-tight text-white">
                 {required ? "Complete Staff Profile" : "Staff Profile & Credentials"}
               </DialogTitle>
               <div className="flex items-center gap-2 mt-1">
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="default" className="font-normal text-[10px]">
                   Role: {role}
                 </Badge>
-                <Badge variant="secondary" className="text-[10px]">
+                <Badge variant="secondary" className="font-normal text-[10px]">
                   ID: {userProfile?.id ? `#${userProfile.id}` : "Registered"}
                 </Badge>
               </div>
             </div>
           </div>
-          <DialogDescription className="text-slate-400 text-xs mt-2">
+          <DialogDescription className="text-[#858687] text-xs mt-2">
             View and update your registered identification and contact details in the school operational database.
           </DialogDescription>
         </DialogHeader>
@@ -151,47 +151,47 @@ export default function StaffProfileModal({ isOpen, onClose, required = false })
           {/* First & Last Name */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1">
-              <Label htmlFor="prof-firstName">First Name *</Label>
+              <Label htmlFor="prof-firstName" className="text-xs text-[#cececf]">First Name *</Label>
               <Input
                 id="prof-firstName"
                 type="text"
                 required
                 value={formData.firstName}
                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                placeholder="e.g. John"
+                placeholder="John"
               />
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="prof-lastName">Last Name *</Label>
+              <Label htmlFor="prof-lastName" className="text-xs text-[#cececf]">Last Name *</Label>
               <Input
                 id="prof-lastName"
                 type="text"
                 required
                 value={formData.lastName}
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                placeholder="e.g. Silva"
+                placeholder="Silva"
               />
             </div>
           </div>
 
           {/* Email */}
           <div className="space-y-1">
-            <Label htmlFor="prof-email">Official Email Address *</Label>
+            <Label htmlFor="prof-email" className="text-xs text-[#cececf]">Official Email Address *</Label>
             <Input
               id="prof-email"
               type="email"
               required
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="e.g. john.silva@school.lk"
+              placeholder="john.silva@school.lk"
             />
           </div>
 
           {/* Phone & NIC */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1">
-              <Label htmlFor="prof-phone">Phone Number (10 Digits) *</Label>
+              <Label htmlFor="prof-phone" className="text-xs text-[#cececf]">Phone (10 Digits) *</Label>
               <Input
                 id="prof-phone"
                 type="tel"
@@ -204,12 +204,12 @@ export default function StaffProfileModal({ isOpen, onClose, required = false })
                     phoneNumber: e.target.value.replace(/[^0-9]/g, ""),
                   })
                 }
-                placeholder="e.g. 0771234567"
+                placeholder="0771234567"
               />
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="prof-nic">National ID (NIC) *</Label>
+              <Label htmlFor="prof-nic" className="text-xs text-[#cececf]">National ID (NIC) *</Label>
               <Input
                 id="prof-nic"
                 type="text"
@@ -218,32 +218,32 @@ export default function StaffProfileModal({ isOpen, onClose, required = false })
                 onChange={(e) =>
                   setFormData({ ...formData, nicNumber: e.target.value.toUpperCase() })
                 }
-                placeholder="e.g. 199012345678"
+                placeholder="199012345678"
               />
             </div>
           </div>
 
           {/* Address */}
           <div className="space-y-1">
-            <Label htmlFor="prof-address">Residential Address *</Label>
+            <Label htmlFor="prof-address" className="text-xs text-[#cececf]">Residential Address *</Label>
             <Textarea
               id="prof-address"
               required
               rows={2}
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              placeholder="e.g. No. 45, Temple Road, Colombo"
+              placeholder="No. 45, Temple Road, Colombo"
             />
           </div>
 
           <DialogFooter className="pt-2 gap-2 sm:gap-0">
             {!required && onClose && (
-              <Button type="button" variant="ghost" onClick={onClose}>
+              <Button type="button" variant="ghost" onClick={onClose} className="text-xs">
                 Cancel
               </Button>
             )}
-            <Button type="submit" disabled={saving} className="gap-2">
-              <Save className="h-4 w-4" />
+            <Button type="submit" disabled={saving} className="gap-2 text-xs">
+              <Save className="h-3.5 w-3.5" />
               {saving ? "Saving..." : "Save Profile Details"}
             </Button>
           </DialogFooter>

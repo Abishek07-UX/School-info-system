@@ -264,35 +264,35 @@ export default function PerformanceAnalyticsTab({ classes }) {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
                 <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
                   <div className="text-xs text-slate-400 font-semibold">Class Average Score</div>
-                  <div className="text-2xl font-bold font-heading text-indigo-400 mt-1">
+                  <div className="text-2xl font-normal text-white mt-1">
                     {classAnalytics.overallClassAverage}%
                   </div>
                 </div>
 
                 <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
                   <div className="text-xs text-slate-400 font-semibold">Overall Pass Rate</div>
-                  <div className="text-2xl font-bold font-heading text-emerald-400 mt-1">
+                  <div className="text-2xl font-normal text-white mt-1">
                     {classAnalytics.overallPassRate}%
                   </div>
                 </div>
 
                 <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
                   <div className="text-xs text-slate-400 font-semibold">Highest Average</div>
-                  <div className="text-2xl font-bold font-heading text-amber-400 mt-1">
+                  <div className="text-2xl font-normal text-white mt-1">
                     {classAnalytics.highestAverage}%
                   </div>
                 </div>
 
                 <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
                   <div className="text-xs text-slate-400 font-semibold">Lowest Average</div>
-                  <div className="text-2xl font-bold font-heading text-rose-400 mt-1">
+                  <div className="text-2xl font-normal text-white mt-1">
                     {classAnalytics.lowestAverage}%
                   </div>
                 </div>
 
                 <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
                   <div className="text-xs text-slate-400 font-semibold">Cohort Size</div>
-                  <div className="text-2xl font-bold font-heading text-purple-400 mt-1">
+                  <div className="text-2xl font-normal text-white mt-1">
                     {classAnalytics.totalStudents} Students
                   </div>
                 </div>
