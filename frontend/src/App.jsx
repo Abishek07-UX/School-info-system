@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Show, SignInButton, UserButton, useUser } from '@clerk/react'
 import TestApiView from './components/TestApiView'
 
+import TeacherManagement from './components/TeacherManagement'
+
 function DashboardView() {
   const { user } = useUser()
   const [activeTab, setActiveTab] = useState('students')
@@ -87,6 +89,9 @@ function DashboardView() {
           </div>
         ))}
       </div>
+            {activeTab === 'teachers' && (
+        <TeacherManagement />
+      )}
     </div>
   )
 }
