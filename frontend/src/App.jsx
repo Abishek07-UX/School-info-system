@@ -111,41 +111,6 @@ function DashboardView({ onOpenProfile }) {
     ? `${userProfile.firstName} ${userProfile.lastName || ""}`.trim()
     : user?.firstName || "Staff Member"
 
-  const getRoleBadge = (r) => {
-    switch (r) {
-      case "ADMIN":
-        return (
-          <Badge variant="default" className="gap-1 font-normal">
-            <Shield className="h-3 w-3 text-[#60a5fa]" /> Administrator
-          </Badge>
-        )
-      case "PRINCIPAL":
-        return (
-          <Badge variant="default" className="gap-1 font-normal">
-            <GraduationCap className="h-3 w-3 text-[#60a5fa]" /> Principal
-          </Badge>
-        )
-      case "TEACHER":
-        return (
-          <Badge variant="secondary" className="gap-1 font-normal">
-            <Users className="h-3 w-3 text-[#858687]" /> Teaching Faculty
-          </Badge>
-        )
-      case "FINANCE_STAFF":
-        return (
-          <Badge variant="success" className="gap-1 font-normal">
-            <CreditCard className="h-3 w-3 text-[#4ade80]" /> Finance Staff
-          </Badge>
-        )
-      default:
-        return (
-          <Badge variant="warning" className="gap-1 font-normal">
-            <Clock className="h-3 w-3 text-[#ea580c]" /> Pending Approval
-          </Badge>
-        )
-    }
-  }
-
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-[#858687]">
@@ -164,7 +129,6 @@ function DashboardView({ onOpenProfile }) {
             <h1 className="text-2xl sm:text-3xl font-normal tracking-tight text-[#ffffff]">
               Welcome back, {displayName}
             </h1>
-            {getRoleBadge(role)}
           </div>
           <p className="text-xs text-[#858687]">
             Vidyalaya School Information System &bull; Academic Operations Portal
@@ -173,16 +137,6 @@ function DashboardView({ onOpenProfile }) {
 
         {/* Action Bar Tabs */}
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onOpenProfile}
-            className="gap-1.5 text-xs"
-          >
-            <User className="h-3.5 w-3.5 text-[#3b82f6]" />
-            My Profile
-          </Button>
-
           <Button
             variant={activeTab === "overview" ? "default" : "outline"}
             size="sm"

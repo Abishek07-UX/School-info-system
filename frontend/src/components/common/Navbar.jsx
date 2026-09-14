@@ -1,4 +1,4 @@
-import { Show, SignInButton, UserButton, useUser } from "@clerk/react"
+import { Show, SignInButton, useUser, useClerk } from "@clerk/react"
 import { useAuthUser } from "@/context/AuthUserContext"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -15,10 +15,9 @@ import {
   GraduationCap,
   User,
   Shield,
-  BookOpen,
   School,
   LogIn,
-  Calendar,
+  LogOut,
   CreditCard,
   Users,
   Clock,
@@ -30,6 +29,7 @@ export default function Navbar({
   setActiveTab,
 }) {
   const { user } = useUser()
+  const { signOut } = useClerk()
   const { userProfile, role, isAdmin, isPrincipal } = useAuthUser()
 
   const getRoleBadge = (r) => {
@@ -137,48 +137,25 @@ export default function Navbar({
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuLabel>
                       <div className="font-normal text-[#ffffff]">{displayName}</div>
-                      <div className="text-[11px] text-[#858687] truncate">{user?.primaryEmailAddress?.emailAddress || userProfile?.email}</div>
+                      <div className="text-[11px] text-[#858687] truncate">
+                        {user?.primaryEmailAddress?.emailAddress || userProfile?.email}
+                      </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={onOpenProfile} className="cursor-pointer">
                       <User className="mr-2 h-3.5 w-3.5 text-[#3b82f6]" />
-                      <span>My Staff Profile</span>
+                      <span>Edit Profile</span>
                     </DropdownMenuItem>
-                    {setActiveTab && (
-                      <>
-                        <DropdownMenuItem onClick={() => setActiveTab("overview")} className="cursor-pointer">
-                          <BookOpen className="mr-2 h-3.5 w-3.5 text-[#858687]" />
-                          <span>Dashboard Overview</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setActiveTab("timetable")} className="cursor-pointer">
-                          <Calendar className="mr-2 h-3.5 w-3.5 text-[#3b82f6]" />
-                          <span>Timetable & Schedules</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setActiveTab("academics")} className="cursor-pointer">
-                          <GraduationCap className="mr-2 h-3.5 w-3.5 text-[#60a5fa]" />
-                          <span>Academics & Exams</span>
-                        </DropdownMenuItem>
-                        {(isAdmin || isPrincipal) && (
-                          <DropdownMenuItem onClick={() => setActiveTab("admin")} className="cursor-pointer">
-                            <Shield className="mr-2 h-3.5 w-3.5 text-[#858687]" />
-                            <span>Staff Accounts Admin</span>
-                          </DropdownMenuItem>
-                        )}
-                      </>
-                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => signOut({ redirectUrl: "/" })}
+                      className="cursor-pointer text-rose-400 focus:text-rose-400 focus:bg-rose-500/10"
+                    >
+                      <LogOut className="mr-2 h-3.5 w-3.5 text-rose-400" />
+                      <span>Log Out</span>
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-
-                <div className="flex items-center pl-1">
-                  <UserButton
-                    afterSignOutUrl="/"
-                    appearance={{
-                      elements: {
-                        avatarBox: "h-8 w-8 rounded-[8px]",
-                      },
-                    }}
-                  />
-                </div>
               </Show>
 
               <Show when="signed-out">
