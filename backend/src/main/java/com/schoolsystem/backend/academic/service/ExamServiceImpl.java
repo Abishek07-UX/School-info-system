@@ -79,13 +79,18 @@ public class ExamServiceImpl implements ExamService {
             throw new IllegalArgumentException("Start date cannot be after end date");
         }
 
-        SchoolClass schoolClass = schoolClassRepository.findById(request.getClassId())
-                .orElseThrow(() -> new ResourceNotFoundException("Class not found with id: " + request.getClassId(), "CLASS_NOT_FOUND"));
+        SchoolClass schoolClass = null;
+        if (request.getClassId() != null) {
+            schoolClass = schoolClassRepository.findById(request.getClassId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Class not found with id: " + request.getClassId(), "CLASS_NOT_FOUND"));
+        }
+
+        ExamTerm term = request.getTerm() != null ? request.getTerm() : ExamTerm.OTHER;
 
         Exam exam = new Exam(
                 request.getName(),
                 request.getAcademicYear(),
-                request.getTerm(),
+                term,
                 schoolClass,
                 request.getStartDate(),
                 request.getEndDate(),

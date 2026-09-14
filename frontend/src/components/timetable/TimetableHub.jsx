@@ -17,6 +17,8 @@ import {
   Loader2,
   RefreshCw,
   BookOpen,
+  Award,
+  Sparkles,
 } from 'lucide-react'
 import { timetableService } from '../../services/timetableService'
 import { examScheduleService } from '../../services/examScheduleService'
@@ -25,6 +27,7 @@ import { ClassTimetableGrid } from './ClassTimetableGrid'
 import { TimetableSlotModal } from './TimetableSlotModal'
 import { TeacherScheduleGrid } from './TeacherScheduleGrid'
 import { ExamScheduleModal } from './ExamScheduleModal'
+import { GeneralExamModal } from './GeneralExamModal'
 import { AutoGeneratorModal } from './AutoGeneratorModal'
 import { PrintableTimetable } from './PrintableTimetable'
 import ExamTimetableModal from '../academic/ExamTimetableModal'
@@ -68,6 +71,7 @@ export function TimetableHub({ userRole = 'ADMIN', getToken }) {
 
   const [isExamModalOpen, setIsExamModalOpen] = useState(false)
   const [isUnifiedExamModalOpen, setIsUnifiedExamModalOpen] = useState(false)
+  const [isGeneralExamModalOpen, setIsGeneralExamModalOpen] = useState(false)
   const [examScheduleToEdit, setExamScheduleToEdit] = useState(null)
 
   const [isAutoGeneratorOpen, setIsAutoGeneratorOpen] = useState(false)
@@ -450,7 +454,7 @@ export function TimetableHub({ userRole = 'ADMIN', getToken }) {
         <TabsContent value="exams" className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/70 bg-card p-3 shadow-xs">
             <div className="flex items-center gap-3">
-              <div className="w-56">
+              <div className="w-64">
                 <select
                   value={selectedExamId}
                   onChange={(e) => setSelectedExamId(e.target.value)}
@@ -458,11 +462,18 @@ export function TimetableHub({ userRole = 'ADMIN', getToken }) {
                 >
                   {exams.map((ex) => (
                     <option key={ex.id} value={ex.id}>
-                      {ex.name} ({ex.academicYear})
+                      {ex.name} {ex.className && !ex.className.toLowerCase().includes('school-wide') ? `(${ex.className})` : '(School-wide)'} • {ex.academicYear}
                     </option>
                   ))}
                 </select>
               </div>
+
+              {selectedExam && (!selectedExam.classId || selectedExam.term === 'OTHER') && (
+                <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[11px] gap-1 py-0.5 font-medium">
+                  <Award className="h-3 w-3" />
+                  School-wide / No Class
+                </Badge>
+              )}
 
               <Button
                 variant="outline"
@@ -478,6 +489,16 @@ export function TimetableHub({ userRole = 'ADMIN', getToken }) {
 
             {isAdmin && (
               <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsGeneralExamModalOpen(true)}
+                  className="h-8 text-xs gap-1.5 border-primary/40 text-primary hover:bg-primary/10 shadow-xs"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  New General Exam
+                </Button>
+
                 <Button
                   size="sm"
                   onClick={() => setIsUnifiedExamModalOpen(true)}
@@ -519,15 +540,25 @@ export function TimetableHub({ userRole = 'ADMIN', getToken }) {
                 <Card key={item.id} className="border-border/70 shadow-xs hover:shadow-md transition-shadow">
                   <CardContent className="p-4 space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <Badge variant="secondary" className="font-bold text-xs">
-                        {item.className}
+                      <Badge
+                        variant={item.classId ? "secondary" : "outline"}
+                        className={`font-bold text-xs ${!item.classId ? "border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-400" : ""}`}
+                      >
+                        {item.className || 'School-wide'}
                       </Badge>
                       <span className="text-xs font-semibold text-primary">{item.examDate}</span>
                     </div>
 
                     <div>
-                      <h4 className="text-sm font-semibold text-foreground">{item.subjectName}</h4>
-                      <p className="text-xs text-muted-foreground">{item.subjectCode} • Max Marks: {item.maxMarks}</p>
+                      <h4 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                        <span>{item.subjectName || item.customSubjectName || 'Assessment'}</span>
+                        {(!item.subjectId || item.customSubjectName) && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-indigo-500/30 text-indigo-400 bg-indigo-500/10 font-normal">
+                            Custom
+                          </Badge>
+                        )}
+                      </h4>
+                      <p className="text-xs text-muted-foreground">{item.subjectCode && item.subjectCode !== 'OTHER' ? `${item.subjectCode} • ` : ''}Max Marks: {item.maxMarks}</p>
                     </div>
 
                     <div className="rounded-md bg-muted/40 p-2 text-xs space-y-1 border border-border/40">
@@ -731,6 +762,28 @@ export function TimetableHub({ userRole = 'ADMIN', getToken }) {
           }}
           getToken={getToken}
           initialGrade={selectedClass ? selectedClass.gradeLevel : 10}
+        />
+      )}
+
+      {isGeneralExamModalOpen && (
+        <GeneralExamModal
+          isOpen={isGeneralExamModalOpen}
+          onClose={() => setIsGeneralExamModalOpen(false)}
+          onSuccess={async (createdExam) => {
+            try {
+              const exList = await academicService.getExams({ academicYear }, getToken)
+              setExams(exList || [])
+              if (createdExam?.id) {
+                setSelectedExamId(String(createdExam.id))
+              } else if (exList && exList.length > 0) {
+                setSelectedExamId(String(exList[0].id))
+              }
+            } catch (e) {
+              console.warn("Failed to refresh exams after general exam creation", e)
+            }
+          }}
+          getToken={getToken}
+          initialAcademicYear={academicYear}
         />
       )}
 

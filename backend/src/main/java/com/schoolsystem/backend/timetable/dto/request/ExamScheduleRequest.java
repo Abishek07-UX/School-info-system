@@ -9,11 +9,11 @@ public class ExamScheduleRequest {
     @NotNull(message = "Exam ID is required")
     private Long examId;
 
-    @NotNull(message = "Class ID is required")
     private Long classId;
 
-    @NotNull(message = "Subject ID is required")
     private Long subjectId;
+
+    private String customSubjectName;
 
     @NotNull(message = "Exam date is required")
     private LocalDate examDate;
@@ -76,6 +76,14 @@ public class ExamScheduleRequest {
 
     public void setSubjectId(Long subjectId) {
         this.subjectId = subjectId;
+    }
+
+    public String getCustomSubjectName() {
+        return customSubjectName;
+    }
+
+    public void setCustomSubjectName(String customSubjectName) {
+        this.customSubjectName = customSubjectName;
     }
 
     public LocalDate getExamDate() {

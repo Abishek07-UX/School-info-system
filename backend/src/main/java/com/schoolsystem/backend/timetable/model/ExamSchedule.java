@@ -22,12 +22,15 @@ public class ExamSchedule {
     private Exam exam;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "class_id", nullable = false)
+    @JoinColumn(name = "class_id", nullable = true)
     private SchoolClass schoolClass;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subject_id", nullable = false)
+    @JoinColumn(name = "subject_id", nullable = true)
     private Subject subject;
+
+    @Column(name = "custom_subject_name", length = 150)
+    private String customSubjectName;
 
     @Column(name = "exam_date", nullable = false)
     private LocalDate examDate;
@@ -121,6 +124,14 @@ public class ExamSchedule {
 
     public void setSubject(Subject subject) {
         this.subject = subject;
+    }
+
+    public String getCustomSubjectName() {
+        return customSubjectName;
+    }
+
+    public void setCustomSubjectName(String customSubjectName) {
+        this.customSubjectName = customSubjectName;
     }
 
     public LocalDate getExamDate() {

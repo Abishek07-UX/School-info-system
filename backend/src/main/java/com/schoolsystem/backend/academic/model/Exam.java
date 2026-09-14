@@ -24,7 +24,7 @@ public class Exam {
     private ExamTerm term;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "class_id", nullable = false)
+    @JoinColumn(name = "class_id", nullable = true)
     private SchoolClass schoolClass;
 
     @Column(name = "start_date", nullable = false)

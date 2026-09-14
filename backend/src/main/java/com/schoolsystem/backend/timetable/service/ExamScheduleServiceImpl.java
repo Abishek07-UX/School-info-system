@@ -86,12 +86,22 @@ public class ExamScheduleServiceImpl implements ExamScheduleService {
             throw new IllegalArgumentException(clash.getMessage());
         }
 
+        if (req.getSubjectId() == null && (req.getCustomSubjectName() == null || req.getCustomSubjectName().isBlank())) {
+            throw new IllegalArgumentException("Either Subject or Custom Subject Name is required");
+        }
+
         Exam exam = examRepository.findById(req.getExamId())
                 .orElseThrow(() -> new IllegalArgumentException("Exam not found: " + req.getExamId()));
-        SchoolClass sc = schoolClassRepository.findById(req.getClassId())
-                .orElseThrow(() -> new IllegalArgumentException("Class not found: " + req.getClassId()));
-        Subject sub = subjectRepository.findById(req.getSubjectId())
-                .orElseThrow(() -> new IllegalArgumentException("Subject not found: " + req.getSubjectId()));
+        SchoolClass sc = null;
+        if (req.getClassId() != null) {
+            sc = schoolClassRepository.findById(req.getClassId())
+                    .orElseThrow(() -> new IllegalArgumentException("Class not found: " + req.getClassId()));
+        }
+        Subject sub = null;
+        if (req.getSubjectId() != null) {
+            sub = subjectRepository.findById(req.getSubjectId())
+                    .orElseThrow(() -> new IllegalArgumentException("Subject not found: " + req.getSubjectId()));
+        }
         User invigilator = userRepository.findById(req.getInvigilatorId())
                 .orElseThrow(() -> new IllegalArgumentException("Invigilator not found: " + req.getInvigilatorId()));
         User coInvigilator = req.getCoInvigilatorId() != null
@@ -102,6 +112,9 @@ public class ExamScheduleServiceImpl implements ExamScheduleService {
                 exam, sc, sub, req.getExamDate(), req.getStartTime(), req.getEndTime(),
                 req.getRoom(), invigilator, coInvigilator, req.getMaxMarks(), req.getInstructions()
         );
+        if (req.getCustomSubjectName() != null && !req.getCustomSubjectName().isBlank()) {
+            schedule.setCustomSubjectName(req.getCustomSubjectName().trim());
+        }
 
         ExamSchedule saved = examScheduleRepository.save(schedule);
         return conflictService.toResponseDTO(saved);
@@ -129,10 +142,16 @@ public class ExamScheduleServiceImpl implements ExamScheduleService {
 
         Exam exam = examRepository.findById(req.getExamId())
                 .orElseThrow(() -> new IllegalArgumentException("Exam not found: " + req.getExamId()));
-        SchoolClass sc = schoolClassRepository.findById(req.getClassId())
-                .orElseThrow(() -> new IllegalArgumentException("Class not found: " + req.getClassId()));
-        Subject sub = subjectRepository.findById(req.getSubjectId())
-                .orElseThrow(() -> new IllegalArgumentException("Subject not found: " + req.getSubjectId()));
+        SchoolClass sc = null;
+        if (req.getClassId() != null) {
+            sc = schoolClassRepository.findById(req.getClassId())
+                    .orElseThrow(() -> new IllegalArgumentException("Class not found: " + req.getClassId()));
+        }
+        Subject sub = null;
+        if (req.getSubjectId() != null) {
+            sub = subjectRepository.findById(req.getSubjectId())
+                    .orElseThrow(() -> new IllegalArgumentException("Subject not found: " + req.getSubjectId()));
+        }
         User invigilator = userRepository.findById(req.getInvigilatorId())
                 .orElseThrow(() -> new IllegalArgumentException("Invigilator not found: " + req.getInvigilatorId()));
         User coInvigilator = req.getCoInvigilatorId() != null
@@ -142,6 +161,11 @@ public class ExamScheduleServiceImpl implements ExamScheduleService {
         schedule.setExam(exam);
         schedule.setSchoolClass(sc);
         schedule.setSubject(sub);
+        if (req.getCustomSubjectName() != null && !req.getCustomSubjectName().isBlank()) {
+            schedule.setCustomSubjectName(req.getCustomSubjectName().trim());
+        } else if (req.getSubjectId() != null) {
+            schedule.setCustomSubjectName(null);
+        }
         schedule.setExamDate(req.getExamDate());
         schedule.setStartTime(req.getStartTime());
         schedule.setEndTime(req.getEndTime());

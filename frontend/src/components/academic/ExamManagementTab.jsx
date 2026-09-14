@@ -284,6 +284,7 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
               <option value="TERM_1">📘 Term 1</option>
               <option value="TERM_2">📗 Term 2</option>
               <option value="TERM_3">📙 Term 3</option>
+              <option value="OTHER">🌐 Other / School-wide</option>
             </select>
 
             {/* Class */}
@@ -357,8 +358,8 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
 
                   {/* Class */}
                   <TableCell>
-                    <Badge variant="default" className="font-semibold">
-                      {exam.className || `Class #${exam.classId}`}
+                    <Badge variant={exam.classId ? "default" : "outline"} className={`font-semibold ${!exam.classId ? "border-amber-500/50 bg-amber-500/10 text-amber-400" : ""}`}>
+                      {exam.className || "School-wide"}
                     </Badge>
                   </TableCell>
 

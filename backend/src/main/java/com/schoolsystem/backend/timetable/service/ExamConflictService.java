@@ -68,7 +68,7 @@ public class ExamConflictService {
             }
 
             // 1. Class Exam Overlap
-            if (other.getSchoolClass().getId().equals(classId)) {
+            if (classId != null && other.getSchoolClass() != null && other.getSchoolClass().getId().equals(classId)) {
                 SchoolClass sc = schoolClassRepository.findById(classId).orElse(other.getSchoolClass());
                 return ExamConflictCheckResponse.classExamClash(toResponseDTO(other), sc.getName());
             }
@@ -129,12 +129,27 @@ public class ExamConflictService {
                     schedule.getSchoolClass().getGradeLevel(),
                     schedule.getSchoolClass().getName()
             ));
+        } else {
+            dto.setClassId(null);
+            dto.setClassName("School-wide");
+            dto.setGradeLevel(null);
+            dto.setBuilding("Campus");
+            dto.setDefaultRoom(schedule.getRoom() != null ? schedule.getRoom() : "General Hall");
         }
 
         if (schedule.getSubject() != null) {
             dto.setSubjectId(schedule.getSubject().getId());
             dto.setSubjectName(schedule.getSubject().getName());
             dto.setSubjectCode(schedule.getSubject().getCode());
+            dto.setCustomSubjectName(schedule.getCustomSubjectName());
+        } else if (schedule.getCustomSubjectName() != null && !schedule.getCustomSubjectName().isBlank()) {
+            dto.setSubjectId(null);
+            dto.setSubjectName(schedule.getCustomSubjectName());
+            dto.setSubjectCode("OTHER");
+            dto.setCustomSubjectName(schedule.getCustomSubjectName());
+        } else {
+            dto.setSubjectName("General Assessment");
+            dto.setSubjectCode("GEN");
         }
 
         dto.setExamDate(schedule.getExamDate());

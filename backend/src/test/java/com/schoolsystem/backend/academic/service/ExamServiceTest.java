@@ -200,4 +200,32 @@ class ExamServiceTest {
 
         assertTrue(ex.getMessage().contains("must be within the exam date range"));
     }
+
+    @Test
+    @DisplayName("Successfully creates general/school-wide examination without assigning a grade or class")
+    void testCreateExam_WithoutClass_Success() {
+        com.schoolsystem.backend.academic.dto.request.CreateExamRequest request = new com.schoolsystem.backend.academic.dto.request.CreateExamRequest();
+        request.setName("National Science Olympiad 2026");
+        request.setAcademicYear(2026);
+        request.setTerm(ExamTerm.OTHER);
+        request.setClassId(null); // No class assigned
+        request.setStartDate(LocalDate.of(2026, 4, 10));
+        request.setEndDate(LocalDate.of(2026, 4, 12));
+        request.setStatus(ExamStatus.UPCOMING);
+        request.setDescription("All-school science competition");
+
+        when(examRepository.save(any(Exam.class))).thenAnswer(invocation -> {
+            Exam exam = invocation.getArgument(0);
+            setId(exam, 999L);
+            return exam;
+        });
+
+        com.schoolsystem.backend.academic.dto.response.ExamResponseDTO response = examService.createExam(request);
+
+        assertNotNull(response);
+        assertEquals("National Science Olympiad 2026", response.getName());
+        assertNull(response.getClassId());
+        assertEquals("School-wide / General", response.getClassName());
+        assertEquals(ExamTerm.OTHER, response.getTerm());
+    }
 }

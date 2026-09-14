@@ -71,10 +71,6 @@ export default function ExamModal({
       setError("Please enter an exam title/name.")
       return
     }
-    if (!formData.classId) {
-      setError("Please select a target class.")
-      return
-    }
     if (!formData.startDate || !formData.endDate) {
       setError("Please specify both start and end dates.")
       return
@@ -89,7 +85,7 @@ export default function ExamModal({
       await onSave({
         ...formData,
         academicYear: parseInt(formData.academicYear, 10),
-        classId: parseInt(formData.classId, 10),
+        classId: formData.classId ? parseInt(formData.classId, 10) : null,
       })
       onClose()
     } catch (err) {
@@ -133,7 +129,7 @@ export default function ExamModal({
             <Input
               id="exam-name"
               required
-              placeholder="e.g. Grade 10 - Term 1 Examination 2026"
+              placeholder="e.g. Grade 10 - Term 1 Examination 2026 or Science Olympiad"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             />
@@ -157,7 +153,7 @@ export default function ExamModal({
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="exam-term">Evaluation Term *</Label>
+              <Label htmlFor="exam-term">Evaluation Term / Category</Label>
               <select
                 id="exam-term"
                 value={formData.term}
@@ -167,6 +163,7 @@ export default function ExamModal({
                 <option value="TERM_1">📘 Term 1 (First Term)</option>
                 <option value="TERM_2">📗 Term 2 (Second Term)</option>
                 <option value="TERM_3">📙 Term 3 (Third Term)</option>
+                <option value="OTHER">🌐 Other / School-wide Exam</option>
               </select>
             </div>
           </div>
@@ -174,13 +171,14 @@ export default function ExamModal({
           {/* Class & Status */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="exam-class">Target Class *</Label>
+              <Label htmlFor="exam-class">Target Class (Optional)</Label>
               <select
                 id="exam-class"
                 value={formData.classId}
                 onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
                 className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               >
+                <option value="">Open / School-wide (No specific class)</option>
                 {classes.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name} (Grade {c.gradeLevel})

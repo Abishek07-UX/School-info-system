@@ -28,6 +28,8 @@ export function ExamScheduleModal({
 }) {
   const [classId, setClassId] = useState('')
   const [subjectId, setSubjectId] = useState('')
+  const [isCustomSubject, setIsCustomSubject] = useState(false)
+  const [customSubjectName, setCustomSubjectName] = useState('')
   const [examDate, setExamDate] = useState('')
   const [startTime, setStartTime] = useState('08:30')
   const [endTime, setEndTime] = useState('11:30')
@@ -45,7 +47,10 @@ export function ExamScheduleModal({
   useEffect(() => {
     if (scheduleToEdit) {
       setClassId(scheduleToEdit.classId ? String(scheduleToEdit.classId) : '')
-      setSubjectId(scheduleToEdit.subjectId ? String(scheduleToEdit.subjectId) : '')
+      const hasCustom = !scheduleToEdit.subjectId || !!scheduleToEdit.customSubjectName
+      setIsCustomSubject(hasCustom)
+      setCustomSubjectName(scheduleToEdit.customSubjectName || scheduleToEdit.subjectName || '')
+      setSubjectId(scheduleToEdit.subjectId ? String(scheduleToEdit.subjectId) : (hasCustom ? '__CUSTOM__' : ''))
       setExamDate(scheduleToEdit.examDate || '')
       setStartTime(scheduleToEdit.startTime ? scheduleToEdit.startTime.substring(0, 5) : '08:30')
       setEndTime(scheduleToEdit.endTime ? scheduleToEdit.endTime.substring(0, 5) : '11:30')
@@ -55,7 +60,10 @@ export function ExamScheduleModal({
       setMaxMarks(scheduleToEdit.maxMarks || 100)
       setInstructions(scheduleToEdit.instructions || '')
     } else {
-      setClassId(classes[0]?.id ? String(classes[0].id) : '')
+      // If the selected exam is school-wide / has no class, default to no class
+      setClassId(selectedExam?.classId ? String(selectedExam.classId) : '')
+      setIsCustomSubject(false)
+      setCustomSubjectName('')
       setSubjectId(subjects[0]?.id ? String(subjects[0].id) : '')
       setExamDate(selectedExam?.startDate || new Date().toISOString().split('T')[0])
       setStartTime('08:30')
@@ -72,7 +80,7 @@ export function ExamScheduleModal({
 
   // Live conflict checking
   useEffect(() => {
-    if (!isOpen || !classId || !invigilatorId || !examDate || !startTime || !endTime) {
+    if (!isOpen || !invigilatorId || !examDate || !startTime || !endTime) {
       return
     }
 
@@ -81,7 +89,7 @@ export function ExamScheduleModal({
       try {
         const res = await examScheduleService.checkConflict(
           {
-            classId: Number(classId),
+            classId: classId ? Number(classId) : null,
             invigilatorId: Number(invigilatorId),
             coInvigilatorId: coInvigilatorId ? Number(coInvigilatorId) : null,
             examDate,
@@ -115,13 +123,23 @@ export function ExamScheduleModal({
       return
     }
 
+    if (isCustomSubject && !customSubjectName.trim()) {
+      setErrorMsg('Please enter a custom subject name.')
+      return
+    }
+    if (!isCustomSubject && (!subjectId || subjectId === '__CUSTOM__')) {
+      setErrorMsg('Please select a subject or enter a custom subject name.')
+      return
+    }
+
     setSaving(true)
     setErrorMsg(null)
     try {
       const payload = {
         examId: selectedExam.id,
-        classId: Number(classId),
-        subjectId: Number(subjectId),
+        classId: classId ? Number(classId) : null,
+        subjectId: isCustomSubject ? null : Number(subjectId),
+        customSubjectName: isCustomSubject ? customSubjectName.trim() : null,
         examDate,
         startTime: startTime.length === 5 ? `${startTime}:00` : startTime,
         endTime: endTime.length === 5 ? `${endTime}:00` : endTime,
@@ -170,23 +188,61 @@ export function ExamScheduleModal({
                 onChange={(e) => setClassId(e.target.value)}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
               >
+                <option value="">Open / School-wide (No class)</option>
                 {classes.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
+                  <option key={c.id} value={c.id}>{c.name} (Grade {c.gradeLevel})</option>
                 ))}
               </select>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs">Subject</Label>
-              <select
-                value={subjectId}
-                onChange={(e) => setSubjectId(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
-              >
-                {subjects.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
-                ))}
-              </select>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">Subject</Label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !isCustomSubject
+                    setIsCustomSubject(next)
+                    if (next) {
+                      setSubjectId('__CUSTOM__')
+                    } else {
+                      setSubjectId(subjects[0]?.id ? String(subjects[0].id) : '')
+                    }
+                  }}
+                  className="text-[11px] text-primary hover:underline cursor-pointer font-medium"
+                >
+                  {isCustomSubject ? 'Select from list' : '+ Enter custom subject'}
+                </button>
+              </div>
+
+              {!isCustomSubject ? (
+                <select
+                  value={subjectId}
+                  onChange={(e) => {
+                    if (e.target.value === '__CUSTOM__') {
+                      setIsCustomSubject(true)
+                      setSubjectId('__CUSTOM__')
+                    } else {
+                      setSubjectId(e.target.value)
+                    }
+                  }}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  {subjects.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
+                  ))}
+                  <option value="__CUSTOM__">✨ Other / Enter Custom Subject...</option>
+                </select>
+              ) : (
+                <Input
+                  value={customSubjectName}
+                  onChange={(e) => setCustomSubjectName(e.target.value)}
+                  placeholder="e.g. General Knowledge & Logical Reasoning"
+                  className="h-9 text-xs"
+                  required
+                  autoFocus
+                />
+              )}
             </div>
           </div>
 

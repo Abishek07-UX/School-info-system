@@ -20,6 +20,7 @@ public class ExamScheduleResponse {
     private Long subjectId;
     private String subjectName;
     private String subjectCode;
+    private String customSubjectName;
 
     private LocalDate examDate;
     private LocalTime startTime;
@@ -141,6 +142,14 @@ public class ExamScheduleResponse {
 
     public void setSubjectCode(String subjectCode) {
         this.subjectCode = subjectCode;
+    }
+
+    public String getCustomSubjectName() {
+        return customSubjectName;
+    }
+
+    public void setCustomSubjectName(String customSubjectName) {
+        this.customSubjectName = customSubjectName;
     }
 
     public LocalDate getExamDate() {

@@ -14,10 +14,8 @@ public class CreateExamRequest {
     @NotNull(message = "Academic year is required")
     private Integer academicYear;
 
-    @NotNull(message = "Term is required (TERM_1, TERM_2, TERM_3)")
-    private ExamTerm term;
-
-    @NotNull(message = "Class ID is required")
+    private ExamTerm term = ExamTerm.OTHER;
+ 
     private Long classId;
 
     @NotNull(message = "Start date is required")

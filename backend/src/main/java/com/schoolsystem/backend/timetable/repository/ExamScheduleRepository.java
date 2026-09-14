@@ -22,8 +22,8 @@ public interface ExamScheduleRepository extends JpaRepository<ExamSchedule, Long
 
     @Query("SELECT s FROM ExamSchedule s " +
            "JOIN FETCH s.exam " +
-           "JOIN FETCH s.schoolClass " +
-           "JOIN FETCH s.subject " +
+           "LEFT JOIN FETCH s.schoolClass " +
+           "LEFT JOIN FETCH s.subject " +
            "JOIN FETCH s.invigilator " +
            "LEFT JOIN FETCH s.coInvigilator " +
            "WHERE s.exam.id = :examId " +
@@ -32,8 +32,8 @@ public interface ExamScheduleRepository extends JpaRepository<ExamSchedule, Long
 
     @Query("SELECT s FROM ExamSchedule s " +
            "JOIN FETCH s.exam " +
-           "JOIN FETCH s.schoolClass " +
-           "JOIN FETCH s.subject " +
+           "LEFT JOIN FETCH s.schoolClass " +
+           "LEFT JOIN FETCH s.subject " +
            "JOIN FETCH s.invigilator " +
            "LEFT JOIN FETCH s.coInvigilator " +
            "WHERE s.schoolClass.id = :classId AND s.exam.id = :examId " +
@@ -42,8 +42,8 @@ public interface ExamScheduleRepository extends JpaRepository<ExamSchedule, Long
 
     @Query("SELECT s FROM ExamSchedule s " +
            "JOIN FETCH s.exam " +
-           "JOIN FETCH s.schoolClass " +
-           "JOIN FETCH s.subject " +
+           "LEFT JOIN FETCH s.schoolClass " +
+           "LEFT JOIN FETCH s.subject " +
            "JOIN FETCH s.invigilator " +
            "LEFT JOIN FETCH s.coInvigilator " +
            "WHERE s.invigilator.id = :teacherId OR s.coInvigilator.id = :teacherId " +

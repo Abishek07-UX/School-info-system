@@ -39,6 +39,10 @@ public class ExamResponseDTO {
             dto.setClassId(exam.getSchoolClass().getId());
             dto.setClassName(exam.getSchoolClass().getName());
             dto.setGradeLevel(exam.getSchoolClass().getGradeLevel());
+        } else {
+            dto.setClassId(null);
+            dto.setClassName("School-wide / General");
+            dto.setGradeLevel(null);
         }
         dto.setStartDate(exam.getStartDate());
         dto.setEndDate(exam.getEndDate());
