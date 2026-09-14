@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Card, CardContent } from '../ui/card'
 import { Button } from '../ui/button'
+import { Input } from '../ui/input'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs'
 import { Badge } from '../ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
@@ -19,6 +20,9 @@ import {
   BookOpen,
   Award,
   Sparkles,
+  Search,
+  X,
+  Filter,
 } from 'lucide-react'
 import { timetableService } from '../../services/timetableService'
 import { examScheduleService } from '../../services/examScheduleService'
@@ -49,6 +53,7 @@ export function TimetableHub({ userRole = 'ADMIN', getToken }) {
   const [selectedClassId, setSelectedClassId] = useState('')
   const [selectedTeacherId, setSelectedTeacherId] = useState('')
   const [selectedExamId, setSelectedExamId] = useState('')
+  const [teacherSearchTerm, setTeacherSearchTerm] = useState('')
 
   // Data states
   const [classTimetable, setClassTimetable] = useState(null)
@@ -144,9 +149,55 @@ export function TimetableHub({ userRole = 'ADMIN', getToken }) {
     }
   }, [activeTab, selectedClassId, fetchClassTimetable])
 
+  // Filter teachers by search query (name, email, phone, role)
+  const filteredTeachers = useMemo(() => {
+    const query = teacherSearchTerm.trim().toLowerCase()
+    if (!query) return teachers
+
+    return teachers.filter((t) => {
+      const fullName = `${t.firstName || ''} ${t.lastName || ''}`.toLowerCase()
+      const email = (t.email || '').toLowerCase()
+      const phone = (t.phoneNumber || '').toLowerCase()
+      const nic = (t.nicNumber || '').toLowerCase()
+      const roleDisplayName = (t.roleDisplayName || '').toLowerCase()
+      return (
+        fullName.includes(query) ||
+        email.includes(query) ||
+        phone.includes(query) ||
+        nic.includes(query) ||
+        roleDisplayName.includes(query)
+      )
+    })
+  }, [teachers, teacherSearchTerm])
+
+  // Synchronize selected teacher when search query or filtered list changes
+  useEffect(() => {
+    if (!teacherSearchTerm.trim()) {
+      if (!selectedTeacherId && teachers.length > 0) {
+        setSelectedTeacherId(teachers[0].id)
+      }
+      return
+    }
+
+    const isCurrentSelectedInFiltered = filteredTeachers.some(
+      (t) => String(t.id) === String(selectedTeacherId)
+    )
+
+    if (!isCurrentSelectedInFiltered) {
+      if (filteredTeachers.length > 0) {
+        setSelectedTeacherId(filteredTeachers[0].id)
+      } else {
+        setSelectedTeacherId('')
+      }
+    }
+  }, [teacherSearchTerm, filteredTeachers, teachers, selectedTeacherId])
+
   // Fetch Teacher Timetable
   const fetchTeacherSchedule = useCallback(async () => {
-    if (!selectedTeacherId) return
+    if (!selectedTeacherId) {
+      setTeacherSchedule(null)
+      return
+    }
     setLoadingTeacher(true)
     setErrorMsg(null)
     try {
@@ -160,8 +211,12 @@ export function TimetableHub({ userRole = 'ADMIN', getToken }) {
   }, [selectedTeacherId, academicYear, getToken])
 
   useEffect(() => {
-    if (activeTab === 'teachers' && selectedTeacherId) {
-      fetchTeacherSchedule()
+    if (activeTab === 'teachers') {
+      if (selectedTeacherId) {
+        fetchTeacherSchedule()
+      } else {
+        setTeacherSchedule(null)
+      }
     }
   }, [activeTab, selectedTeacherId, fetchTeacherSchedule])
 
@@ -395,50 +450,138 @@ export function TimetableHub({ userRole = 'ADMIN', getToken }) {
 
         {/* TAB 2: TEACHER SCHEDULES & ROUTING */}
         <TabsContent value="teachers" className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/70 bg-card p-3 shadow-xs">
-            <div className="flex items-center gap-3">
-              <div className="w-64">
-                <select
-                  value={selectedTeacherId}
-                  onChange={(e) => setSelectedTeacherId(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+          <div className="flex flex-col gap-3 rounded-lg border border-border/70 bg-card p-3 shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2.5">
+                {/* Search Input for Teacher Name */}
+                <div className="relative w-64 sm:w-72">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                  <Input
+                    type="text"
+                    placeholder="Search teacher by name or email..."
+                    value={teacherSearchTerm}
+                    onChange={(e) => setTeacherSearchTerm(e.target.value)}
+                    className="h-8 pl-8 pr-7 text-xs bg-background"
+                  />
+                  {teacherSearchTerm && (
+                    <button
+                      type="button"
+                      onClick={() => setTeacherSearchTerm('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-sm"
+                      title="Clear search"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Filtered Teachers Select Dropdown */}
+                <div className="w-64 sm:w-72">
+                  <select
+                    value={selectedTeacherId}
+                    onChange={(e) => setSelectedTeacherId(e.target.value)}
+                    disabled={filteredTeachers.length === 0}
+                    className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
+                  >
+                    {filteredTeachers.length === 0 ? (
+                      <option value="" disabled>No matching teachers</option>
+                    ) : (
+                      filteredTeachers.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.firstName} {t.lastName} ({t.email})
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+
+                {/* Filter Count Badge */}
+                {teacherSearchTerm.trim() && (
+                  <Badge
+                    variant="outline"
+                    className="text-[11px] h-7 px-2.5 bg-primary/5 text-primary border-primary/20 flex items-center gap-1 font-medium"
+                  >
+                    <Filter className="h-3 w-3" />
+                    {filteredTeachers.length} of {teachers.length} teachers
+                  </Badge>
+                )}
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchTeacherSchedule}
+                  disabled={loadingTeacher || !selectedTeacherId}
+                  className="h-8 text-xs"
                 >
-                  {teachers.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.firstName} {t.lastName} ({t.email})
-                    </option>
-                  ))}
-                </select>
+                  <RefreshCw className={`h-3 w-3 mr-1.5 ${loadingTeacher ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
               </div>
 
               <Button
                 variant="outline"
                 size="sm"
-                onClick={fetchTeacherSchedule}
-                disabled={loadingTeacher}
-                className="h-8 text-xs"
+                onClick={() => {
+                  setIsPrintTeacher(true)
+                  setIsPrintOpen(true)
+                }}
+                disabled={!teacherSchedule || filteredTeachers.length === 0}
+                className="h-8 text-xs gap-1.5"
               >
-                <RefreshCw className={`h-3 w-3 mr-1.5 ${loadingTeacher ? 'animate-spin' : ''}`} />
-                Refresh
+                <Printer className="h-3.5 w-3.5" />
+                Print Teacher Schedule
               </Button>
             </div>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setIsPrintTeacher(true)
-                setIsPrintOpen(true)
-              }}
-              disabled={!teacherSchedule}
-              className="h-8 text-xs gap-1.5"
-            >
-              <Printer className="h-3.5 w-3.5" />
-              Print Teacher Schedule
-            </Button>
+            {/* Quick-Select pills when search filter matches multiple teachers */}
+            {teacherSearchTerm.trim() && filteredTeachers.length > 1 && filteredTeachers.length <= 8 && (
+              <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/40 text-xs">
+                <span className="text-muted-foreground text-[11px] font-medium mr-1 flex items-center gap-1">
+                  Matching Teachers:
+                </span>
+                {filteredTeachers.map((t) => {
+                  const isSelected = String(t.id) === String(selectedTeacherId)
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setSelectedTeacherId(t.id)}
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                        isSelected
+                          ? 'bg-primary text-primary-foreground shadow-xs'
+                          : 'bg-muted/60 text-foreground hover:bg-muted border border-border/50'
+                      }`}
+                    >
+                      {t.firstName} {t.lastName}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
-          {loadingTeacher ? (
+          {filteredTeachers.length === 0 ? (
+            <Card className="border-dashed p-10 text-center text-xs space-y-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/60 mx-auto text-muted-foreground">
+                <Users className="h-6 w-6" />
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-foreground">No faculty members found</h4>
+                <p className="text-xs text-muted-foreground mt-1">
+                  No teachers match your search query &ldquo;{teacherSearchTerm}&rdquo;.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setTeacherSearchTerm('')}
+                className="text-xs h-8 gap-1.5"
+              >
+                <X className="h-3.5 w-3.5" />
+                Clear Search Filter
+              </Button>
+            </Card>
+          ) : loadingTeacher ? (
             <div className="flex min-h-[300px] items-center justify-center rounded-xl border border-border bg-card">
               <div className="flex flex-col items-center gap-2 text-muted-foreground text-xs">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />

@@ -20,6 +20,8 @@ public interface ExamService {
 
     ExamWithTimetableResponseDTO createExamWithTimetable(CreateExamWithTimetableRequest request);
 
+    ExamWithTimetableResponseDTO updateExamWithTimetable(Long id, CreateExamWithTimetableRequest request);
+
     ExamResponseDTO updateExam(Long id, UpdateExamRequest request);
 
     void deleteExam(Long id);

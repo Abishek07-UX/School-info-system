@@ -7,9 +7,10 @@ import {
   DialogFooter,
 } from '../ui/dialog'
 import { Button } from '../ui/button'
+import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
-import { AlertTriangle, CheckCircle2, Loader2, Sparkles } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Loader2, Sparkles, Search, X } from 'lucide-react'
 import { timetableService } from '../../services/timetableService'
 
 const DAYS = [
@@ -53,6 +54,7 @@ export function TimetableSlotModal({
   const [conflictState, setConflictState] = useState(null)
   const [saving, setSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState(null)
+  const [teacherSearch, setTeacherSearch] = useState('')
 
   useEffect(() => {
     if (slotToEdit) {
@@ -68,6 +70,7 @@ export function TimetableSlotModal({
     }
     setConflictState(null)
     setErrorMsg(null)
+    setTeacherSearch('')
   }, [isOpen, slotToEdit, initialDay, initialPeriod, subjects, teachers])
 
   // Real-time conflict checking when teacher, day, or period changes
@@ -213,6 +216,28 @@ export function TimetableSlotModal({
                 </span>
               )}
             </div>
+
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+              <Input
+                type="text"
+                placeholder="Search teacher by name or email..."
+                value={teacherSearch}
+                onChange={(e) => setTeacherSearch(e.target.value)}
+                className="h-8 pl-8 pr-7 text-xs bg-background mb-1"
+              />
+              {teacherSearch && (
+                <button
+                  type="button"
+                  onClick={() => setTeacherSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-sm"
+                  title="Clear search"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+
             <select
               id="teacherSelect"
               value={teacherId}
@@ -220,11 +245,19 @@ export function TimetableSlotModal({
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
             >
               <option value="" disabled>-- Select Teacher --</option>
-              {teachers.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.firstName} {t.lastName} ({t.email})
-                </option>
-              ))}
+              {teachers
+                .filter((t) => {
+                  if (!teacherSearch.trim()) return true
+                  const q = teacherSearch.trim().toLowerCase()
+                  const name = `${t.firstName || ''} ${t.lastName || ''}`.toLowerCase()
+                  const email = (t.email || '').toLowerCase()
+                  return name.includes(q) || email.includes(q)
+                })
+                .map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.firstName} {t.lastName} ({t.email})
+                  </option>
+                ))}
             </select>
           </div>
 

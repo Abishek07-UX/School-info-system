@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { academicService } from "@/services/academicService"
 import { useAuthUser } from "@/context/AuthUserContext"
 import { Card } from "@/components/ui/card"
@@ -32,7 +32,7 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
   const { getToken, isAdmin, isPrincipal } = useAuthUser()
   const [exams, setExams] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filterYear, setFilterYear] = useState("2026")
+  const [filterYear, setFilterYear] = useState("ALL")
   const [filterTerm, setFilterTerm] = useState("ALL")
   const [filterClass, setFilterClass] = useState("ALL")
   const [filterStatus, setFilterStatus] = useState("ALL")
@@ -42,6 +42,30 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
   const [isTimetableModalOpen, setIsTimetableModalOpen] = useState(false)
   const [editingExam, setEditingExam] = useState(null)
   const [feedback, setFeedback] = useState(null)
+
+  const availableYears = useMemo(() => {
+    const currentYear = new Date().getFullYear()
+    const yearsSet = new Set([
+      currentYear - 2,
+      currentYear - 1,
+      currentYear,
+      currentYear + 1,
+      currentYear + 2,
+      currentYear + 3,
+      currentYear + 4,
+      2024,
+      2025,
+      2026,
+      2027,
+      2028,
+      2029,
+      2030,
+    ])
+    exams.forEach((e) => {
+      if (e.academicYear) yearsSet.add(e.academicYear)
+    })
+    return Array.from(yearsSet).sort((a, b) => b - a)
+  }, [exams])
 
   const fetchExams = useCallback(async () => {
     try {
@@ -169,7 +193,10 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
             <div className="flex items-center gap-2">
               <Button
                 size="sm"
-                onClick={() => setIsTimetableModalOpen(true)}
+                onClick={() => {
+                  setEditingExam(null)
+                  setIsTimetableModalOpen(true)
+                }}
                 className="gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/25"
               >
                 <Calendar className="h-4 w-4" /> Create Exam Timetable
@@ -269,9 +296,11 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
               className="h-10 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             >
               <option value="ALL">All Years</option>
-              <option value="2026">Year 2026</option>
-              <option value="2025">Year 2025</option>
-              <option value="2024">Year 2024</option>
+              {availableYears.map((yr) => (
+                <option key={yr} value={yr}>
+                  Year {yr}
+                </option>
+              ))}
             </select>
 
             {/* Term */}
@@ -401,10 +430,10 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
                             variant="ghost"
                             onClick={() => {
                               setEditingExam(exam)
-                              setIsModalOpen(true)
+                              setIsTimetableModalOpen(true)
                             }}
                             className="h-7 w-7 text-slate-400 hover:text-white"
-                            title="Edit exam"
+                            title="Edit exam timetable"
                           >
                             <Edit className="h-3.5 w-3.5" />
                           </Button>
@@ -431,7 +460,10 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
 
       <ExamModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false)
+          setEditingExam(null)
+        }}
         onSave={handleSaveExam}
         examToEdit={editingExam}
         classes={classes}
@@ -439,15 +471,20 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
 
       <ExamTimetableModal
         isOpen={isTimetableModalOpen}
-        onClose={() => setIsTimetableModalOpen(false)}
+        onClose={() => {
+          setIsTimetableModalOpen(false)
+          setEditingExam(null)
+        }}
         onSuccess={(result) => {
           setFeedback({
             type: "success",
-            message: result?.message || "Examination timetable created successfully!",
+            message: result?.message || (editingExam ? "Examination timetable updated successfully!" : "Examination timetable created successfully!"),
           })
           fetchExams()
         }}
         getToken={getToken}
+        examToEdit={editingExam}
+        classes={classes}
       />
     </div>
   )

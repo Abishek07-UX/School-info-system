@@ -228,4 +228,62 @@ class ExamServiceTest {
         assertEquals("School-wide / General", response.getClassName());
         assertEquals(ExamTerm.OTHER, response.getTerm());
     }
+
+    @Test
+    @DisplayName("Successfully updates exam and replaces timetable schedule slots")
+    void testUpdateExamWithTimetable_Success() {
+        Exam existingExam = new Exam("Old Name", 2026, ExamTerm.TERM_1, class10A,
+                LocalDate.of(2026, 3, 20), LocalDate.of(2026, 3, 25), ExamStatus.UPCOMING, "Old desc");
+        setId(existingExam, 55L);
+
+        when(examRepository.findById(55L)).thenReturn(java.util.Optional.of(existingExam));
+        when(examRepository.save(any(Exam.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ExamSchedule oldSlot = new ExamSchedule(existingExam, class10A, math,
+                LocalDate.of(2026, 3, 21), LocalTime.of(8, 30), LocalTime.of(11, 30),
+                "G-101", teacher1, null, 100, null);
+        when(examScheduleRepository.findByExamId(55L)).thenReturn(new java.util.ArrayList<>(List.of(oldSlot)));
+
+        CreateExamWithTimetableRequest updateReq = new CreateExamWithTimetableRequest();
+        updateReq.setName("Updated Term 1 Exam");
+        updateReq.setAcademicYear(2027);
+        updateReq.setTerm(ExamTerm.TERM_1);
+        updateReq.setGradeLevel(10);
+        updateReq.setClassIds(List.of(1L));
+        updateReq.setStartDate(LocalDate.of(2027, 3, 20));
+        updateReq.setEndDate(LocalDate.of(2027, 3, 28));
+        updateReq.setStatus(ExamStatus.UPCOMING);
+
+        List<ExamSlotItemRequest> newSlots = List.of(
+                new ExamSlotItemRequest(201L, LocalDate.of(2027, 3, 22), LocalTime.of(9, 0), LocalTime.of(12, 0), teacher1.getId(), null, 100, "Updated math"),
+                new ExamSlotItemRequest(202L, LocalDate.of(2027, 3, 25), LocalTime.of(9, 0), LocalTime.of(12, 0), teacher1.getId(), null, 100, "Updated science")
+        );
+        updateReq.setSlots(newSlots);
+
+        when(schoolClassRepository.findById(1L)).thenReturn(java.util.Optional.of(class10A));
+        when(subjectRepository.findById(201L)).thenReturn(java.util.Optional.of(math));
+        when(subjectRepository.findById(202L)).thenReturn(java.util.Optional.of(science));
+        when(userRepository.findById(teacher1.getId())).thenReturn(java.util.Optional.of(teacher1));
+        when(conflictService.checkConflict(any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(ExamConflictCheckResponse.noConflict());
+        when(examScheduleRepository.save(any(ExamSchedule.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(conflictService.toResponseDTO(any(ExamSchedule.class))).thenAnswer(inv -> {
+            ExamSchedule s = inv.getArgument(0);
+            ExamScheduleResponse r = new ExamScheduleResponse();
+            r.setId(s.getId());
+            r.setSubjectName(s.getSubject().getName());
+            return r;
+        });
+
+        ExamWithTimetableResponseDTO result = examService.updateExamWithTimetable(55L, updateReq);
+
+        assertNotNull(result);
+        assertEquals(1, result.getExams().size());
+        assertEquals(2027, result.getExams().get(0).getAcademicYear());
+        assertEquals("Updated Term 1 Exam", result.getExams().get(0).getName());
+        assertEquals(2, result.getSchedules().size());
+
+        verify(examScheduleRepository).deleteAll(anyList());
+        verify(examScheduleRepository, times(2)).save(any(ExamSchedule.class));
+    }
 }

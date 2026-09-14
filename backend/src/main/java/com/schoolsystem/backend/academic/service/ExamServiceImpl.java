@@ -272,4 +272,137 @@ public class ExamServiceImpl implements ExamService {
 
         return new ExamWithTimetableResponseDTO(createdExams, createdSchedules, summary);
     }
+
+    @Override
+    public ExamWithTimetableResponseDTO updateExamWithTimetable(Long id, CreateExamWithTimetableRequest request) {
+        if (request.getStartDate().isAfter(request.getEndDate())) {
+            throw new IllegalArgumentException("Exam start date cannot be after end date");
+        }
+        if (request.getSlots() == null || request.getSlots().isEmpty()) {
+            throw new IllegalArgumentException("At least one subject exam slot is required");
+        }
+
+        // Validate all slot dates and times
+        for (ExamSlotItemRequest slot : request.getSlots()) {
+            if (slot.getExamDate().isBefore(request.getStartDate()) || slot.getExamDate().isAfter(request.getEndDate())) {
+                throw new IllegalArgumentException("Subject exam date (" + slot.getExamDate() + ") must be within the exam date range ["
+                        + request.getStartDate() + " to " + request.getEndDate() + "]");
+            }
+            if (!slot.getStartTime().isBefore(slot.getEndTime())) {
+                throw new IllegalArgumentException("Start time must be before end time for subject exam on " + slot.getExamDate());
+            }
+        }
+
+        Exam exam = examRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Exam not found with id: " + id, "EXAM_NOT_FOUND"));
+
+        if (request.getName() != null && !request.getName().isBlank()) {
+            exam.setName(request.getName().trim());
+        }
+        if (request.getAcademicYear() != null) {
+            exam.setAcademicYear(request.getAcademicYear());
+        }
+        if (request.getTerm() != null) {
+            exam.setTerm(request.getTerm());
+        }
+        if (request.getStartDate() != null) {
+            exam.setStartDate(request.getStartDate());
+        }
+        if (request.getEndDate() != null) {
+            exam.setEndDate(request.getEndDate());
+        }
+        if (request.getStatus() != null) {
+            exam.setStatus(request.getStatus());
+        }
+        if (request.getDescription() != null) {
+            exam.setDescription(request.getDescription().trim());
+        }
+
+        if (request.getClassIds() != null && !request.getClassIds().isEmpty()) {
+            Long primaryClassId = request.getClassIds().get(0);
+            SchoolClass schoolClass = schoolClassRepository.findById(primaryClassId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Class not found with id: " + primaryClassId, "CLASS_NOT_FOUND"));
+            exam.setSchoolClass(schoolClass);
+        }
+
+        Exam savedExam = examRepository.save(exam);
+
+        // Remove existing schedules for this exam before saving the updated ones
+        List<ExamSchedule> existingSchedules = examScheduleRepository.findByExamId(savedExam.getId());
+        if (!existingSchedules.isEmpty()) {
+            examScheduleRepository.deleteAll(existingSchedules);
+            examScheduleRepository.flush();
+        }
+
+        SchoolClass targetClass = savedExam.getSchoolClass();
+        String roomCode = targetClass != null
+                ? CampusFacility.getDefaultRoomForClass(targetClass.getGradeLevel(), targetClass.getName())
+                : "MAIN-HALL";
+
+        List<User> allStaff = userRepository.findAll();
+        List<ExamScheduleResponse> updatedSchedules = new ArrayList<>();
+
+        for (ExamSlotItemRequest slotReq : request.getSlots()) {
+            Subject subject = subjectRepository.findById(slotReq.getSubjectId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Subject not found with id: " + slotReq.getSubjectId(), "SUBJECT_NOT_FOUND"));
+
+            User invigilator = null;
+            if (slotReq.getInvigilatorId() != null) {
+                invigilator = userRepository.findById(slotReq.getInvigilatorId()).orElse(null);
+            }
+            if (invigilator == null && targetClass != null && targetClass.getClassTeacher() != null) {
+                invigilator = targetClass.getClassTeacher();
+            }
+            if (invigilator == null) {
+                invigilator = allStaff.stream()
+                        .filter(u -> u.getRole() == UserRole.TEACHER || u.getRole() == UserRole.ADMIN || u.getRole() == UserRole.PRINCIPAL)
+                        .findFirst()
+                        .orElse(allStaff.isEmpty() ? null : allStaff.get(0));
+            }
+            if (invigilator == null) {
+                throw new IllegalStateException("No staff found in system to assign as invigilator");
+            }
+
+            User coInvigilator = slotReq.getCoInvigilatorId() != null
+                    ? userRepository.findById(slotReq.getCoInvigilatorId()).orElse(null)
+                    : null;
+
+            if (targetClass != null) {
+                ExamConflictCheckResponse clash = conflictService.checkConflict(
+                        targetClass.getId(),
+                        invigilator.getId(),
+                        coInvigilator != null ? coInvigilator.getId() : null,
+                        slotReq.getExamDate(),
+                        slotReq.getStartTime(),
+                        slotReq.getEndTime(),
+                        roomCode,
+                        null
+                );
+                if (clash.isHasConflict()) {
+                    throw new IllegalArgumentException("Scheduling conflict in " + targetClass.getName() + " (" + subject.getName() + "): " + clash.getMessage());
+                }
+            }
+
+            ExamSchedule schedule = new ExamSchedule(
+                    savedExam,
+                    targetClass,
+                    subject,
+                    slotReq.getExamDate(),
+                    slotReq.getStartTime(),
+                    slotReq.getEndTime(),
+                    roomCode,
+                    invigilator,
+                    coInvigilator,
+                    slotReq.getMaxMarks() != null ? slotReq.getMaxMarks() : 100,
+                    slotReq.getInstructions()
+            );
+            ExamSchedule savedSchedule = examScheduleRepository.save(schedule);
+            updatedSchedules.add(conflictService.toResponseDTO(savedSchedule));
+        }
+
+        String summary = String.format("Successfully updated examination timetable with %d subject exam slots.",
+                updatedSchedules.size());
+
+        return new ExamWithTimetableResponseDTO(List.of(ExamResponseDTO.fromEntity(savedExam)), updatedSchedules, summary);
+    }
 }

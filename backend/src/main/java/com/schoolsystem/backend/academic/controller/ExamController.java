@@ -74,6 +74,16 @@ public class ExamController {
                 .body(ApiResponse.success(created, created.getMessage()));
     }
 
+    @PutMapping("/{id}/with-timetable")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PRINCIPAL', 'TEACHER')")
+    public ResponseEntity<ApiResponse<ExamWithTimetableResponseDTO>> updateExamWithTimetable(
+            @PathVariable Long id,
+            @Valid @RequestBody CreateExamWithTimetableRequest request
+    ) {
+        ExamWithTimetableResponseDTO updated = examService.updateExamWithTimetable(id, request);
+        return ResponseEntity.ok(ApiResponse.success(updated, updated.getMessage()));
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'PRINCIPAL', 'TEACHER')")
     public ApiResponse<ExamResponseDTO> updateExam(

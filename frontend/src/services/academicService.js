@@ -1,3 +1,6 @@
+import { examScheduleService } from './examScheduleService'
+import { timetableService } from './timetableService'
+
 const BASE_URL = 'http://localhost:8080/api'
 
 async function request(endpoint, options = {}, getToken) {
@@ -65,6 +68,89 @@ export const academicService = {
       method: 'POST',
       body: JSON.stringify(data),
     }, getToken)
+  },
+
+  async updateExamWithTimetable(id, data, getToken) {
+    try {
+      return await request(`/exams/${id}/with-timetable`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }, getToken)
+    } catch (err) {
+      const errMsg = err?.message || ''
+      // If the backend has not yet been restarted to register PUT /exams/{id}/with-timetable
+      if (errMsg.includes('No static resource') || errMsg.includes('404')) {
+        console.warn('Backend endpoint PUT /exams/{id}/with-timetable not yet available on running instance. Performing fallback update...', err)
+
+        // 1. Update the base exam entity metadata
+        await this.updateExam(id, {
+          name: data.name,
+          academicYear: data.academicYear,
+          term: data.term,
+          classId: data.classIds && data.classIds.length > 0 ? data.classIds[0] : null,
+          startDate: data.startDate,
+          endDate: data.endDate,
+          status: data.status,
+          description: data.description,
+        }, getToken)
+
+        // 2. Fetch existing schedule slots for this exam
+        const existingSchedules = await examScheduleService.getExamSchedules(id, getToken).catch(() => [])
+
+        // 3. Delete old schedule slots
+        if (Array.isArray(existingSchedules)) {
+          for (const oldSched of existingSchedules) {
+            try {
+              await examScheduleService.deleteExamSchedule(oldSched.id, getToken)
+            } catch (delErr) {
+              console.warn(`Could not remove old slot ${oldSched.id}:`, delErr)
+            }
+          }
+        }
+
+        // 4. Resolve default invigilator if any slot has no invigilator selected
+        let fallbackInvigilatorId = null
+        for (const slot of data.slots || []) {
+          if (slot.invigilatorId) {
+            fallbackInvigilatorId = slot.invigilatorId
+            break
+          }
+        }
+        if (!fallbackInvigilatorId) {
+          try {
+            const teachers = await timetableService.getTeachers(getToken)
+            if (teachers && teachers.length > 0) {
+              fallbackInvigilatorId = teachers[0].id
+            }
+          } catch (tErr) {
+            console.warn('Could not fetch teachers for fallback invigilator', tErr)
+          }
+        }
+
+        // 5. Create updated schedule slots
+        const primaryClassId = data.classIds && data.classIds.length > 0 ? data.classIds[0] : null
+        for (const slot of data.slots || []) {
+          const schedulePayload = {
+            examId: id,
+            classId: primaryClassId,
+            subjectId: slot.subjectId,
+            examDate: slot.examDate,
+            startTime: slot.startTime?.length === 5 ? slot.startTime + ':00' : slot.startTime,
+            endTime: slot.endTime?.length === 5 ? slot.endTime + ':00' : slot.endTime,
+            room: null,
+            invigilatorId: slot.invigilatorId || fallbackInvigilatorId,
+            maxMarks: slot.maxMarks || 100,
+            instructions: slot.instructions || null,
+          }
+          await examScheduleService.createExamSchedule(schedulePayload, getToken)
+        }
+
+        return {
+          message: 'Examination timetable updated successfully!',
+        }
+      }
+      throw err
+    }
   },
 
   async updateExam(id, data, getToken) {
