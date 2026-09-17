@@ -5,6 +5,7 @@ import OnboardingView from './components/OnboardingView'
 import PendingApprovalView from './components/PendingApprovalView'
 import UserRoleManagement from './components/admin/UserRoleManagement'
 import StaffProfileModal from './components/StaffProfileModal'
+import TeacherManagement from './components/teacher/TeacherManagement'
 
 function DashboardView({ onOpenProfile }) {
   const { user } = useUser()
