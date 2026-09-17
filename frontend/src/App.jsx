@@ -192,7 +192,7 @@ function DashboardView({ onOpenProfile }) {
           >
             ← Back to Overview
           </Button>
-          <TimetableHub userRole={role} getToken={getToken} />
+          <TimetableHub userRole={role} userProfile={userProfile} getToken={getToken} />
         </div>
       ) : activeTab === "academics" ? (
         <AcademicDashboard onBack={() => setActiveTab("overview")} />

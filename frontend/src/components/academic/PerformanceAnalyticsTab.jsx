@@ -22,11 +22,22 @@ import {
   Trophy,
 } from "lucide-react"
 
-export default function PerformanceAnalyticsTab({ classes }) {
-  const { getToken } = useAuthUser()
+export default function PerformanceAnalyticsTab({ classes = [] }) {
+  const { getToken, userProfile } = useAuthUser()
+  const assignedClass = classes?.find((c) => c.classTeacherId === userProfile?.id)
   const [selectedClassId, setSelectedClassId] = useState(
-    classes.length > 0 ? classes[0].id : ""
+    assignedClass?.id ? assignedClass.id : classes.length > 0 ? classes[0].id : ""
   )
+
+  useEffect(() => {
+    if (classes && classes.length > 0) {
+      const assigned = classes.find((c) => c.classTeacherId === userProfile?.id)
+      if (assigned && (!selectedClassId || selectedClassId === classes[0]?.id)) {
+        setSelectedClassId(assigned.id)
+      }
+    }
+  }, [classes, userProfile?.id])
+
   const [analyticsMode, setAnalyticsMode] = useState("CLASS_METRICS") // 'CLASS_METRICS' or 'STUDENT_TRAJECTORY'
   const [academicYear, setAcademicYear] = useState("2026")
 
@@ -158,7 +169,14 @@ export default function PerformanceAnalyticsTab({ classes }) {
 
           {/* Class */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-400">Class / Grade</label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-400">Class / Grade</label>
+              {assignedClass && String(assignedClass.id) === String(selectedClassId) && (
+                <Badge variant="default" className="text-[9px] py-0 px-1.5 ml-2">
+                  Your Class
+                </Badge>
+              )}
+            </div>
             <select
               value={selectedClassId}
               onChange={(e) => setSelectedClassId(e.target.value)}
@@ -166,7 +184,7 @@ export default function PerformanceAnalyticsTab({ classes }) {
             >
               {classes.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name}
+                  {c.name} {assignedClass && c.id === assignedClass.id ? "★ (Your Assigned Class)" : ""}
                 </option>
               ))}
             </select>

@@ -19,8 +19,9 @@ import ReportCardTab from "./ReportCardTab"
 import PerformanceAnalyticsTab from "./PerformanceAnalyticsTab"
 
 export default function AcademicDashboard({ onBack }) {
-  const { getToken } = useAuthUser()
-  const [activeTab, setActiveTab] = useState("exams") // 'exams', 'marks', 'report_cards', 'analytics'
+  const { getToken, role, userProfile } = useAuthUser()
+  const isTeacherUser = role === "TEACHER"
+  const [activeTab, setActiveTab] = useState(isTeacherUser ? "marks" : "exams")
   const [classes, setClasses] = useState([])
   const [loadingClasses, setLoadingClasses] = useState(true)
   const [preselectedExam, setPreselectedExam] = useState(null)
@@ -45,7 +46,28 @@ export default function AcademicDashboard({ onBack }) {
     setActiveTab("marks")
   }
 
-  const tabs = [
+  const teacherTabs = [
+    {
+      id: "marks",
+      label: "Batch Mark Entry",
+      desc: "Record numeric marks with real-time grade calculation",
+      icon: Edit3,
+    },
+    {
+      id: "report_cards",
+      label: "Class Report Cards",
+      desc: "Generate term report cards, annual summaries & class leaderboards",
+      icon: Award,
+    },
+    {
+      id: "analytics",
+      label: "Performance Analytics",
+      desc: "Class pass rates, grade spreads & 3-term student trajectories",
+      icon: TrendingUp,
+    },
+  ]
+
+  const adminTabs = [
     {
       id: "exams",
       label: "Exam Schedules & Terms",
@@ -71,6 +93,8 @@ export default function AcademicDashboard({ onBack }) {
       icon: TrendingUp,
     },
   ]
+
+  const tabs = isTeacherUser ? teacherTabs : adminTabs
 
   return (
     <div className="space-y-6">
@@ -119,7 +143,7 @@ export default function AcademicDashboard({ onBack }) {
       </Card>
 
       {/* Sub-Tabs Grid Navigation */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${tabs.length === 3 ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id
           const Icon = tab.icon

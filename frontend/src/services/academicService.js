@@ -235,3 +235,44 @@ export const academicService = {
     return request(`/academic/lookup/grades/${gradeLevel}/classes`, { method: 'GET' }, getToken)
   }
 }
+
+/**
+ * Checks whether an exam is classified as an open / school-wide & other exam.
+ * An exam is school-wide if:
+ * 1. It has no specific target class (open to whole school / classId is null/empty)
+ * 2. Its term is 'OTHER' (Other / School-wide Exam)
+ * 3. Its class name contains 'school-wide', 'general', or 'open'
+ * 4. Its exam title contains 'school-wide', 'school wide', or 'open exam'
+ */
+export function isSchoolWideExam(exam) {
+  if (!exam) return false
+  if (!exam.classId) return true
+  if (exam.term === 'OTHER') return true
+  const className = (exam.className || '').toLowerCase()
+  if (
+    className.includes('school-wide') ||
+    className.includes('school wide') ||
+    className.includes('general') ||
+    className.includes('open')
+  ) {
+    return true
+  }
+  const examName = (exam.name || '').toLowerCase()
+  if (
+    examName.includes('school-wide') ||
+    examName.includes('school wide') ||
+    examName.includes('open exam') ||
+    examName.includes('all grades')
+  ) {
+    return true
+  }
+  return false
+}
+
+/**
+ * Checks whether an exam is classified as a Grade 1-13 class exam.
+ */
+export function isClassExam(exam) {
+  if (!exam) return false
+  return !isSchoolWideExam(exam)
+}

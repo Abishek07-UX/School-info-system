@@ -40,7 +40,7 @@ export default function ExamModal({
         name: examToEdit.name || "",
         academicYear: examToEdit.academicYear || new Date().getFullYear(),
         term: examToEdit.term || "TERM_1",
-        classId: examToEdit.classId || (classes.length > 0 ? classes[0].id : ""),
+        classId: examToEdit.classId ? String(examToEdit.classId) : "",
         startDate: examToEdit.startDate || "",
         endDate: examToEdit.endDate || "",
         status: examToEdit.status || "UPCOMING",
@@ -157,7 +157,14 @@ export default function ExamModal({
               <select
                 id="exam-term"
                 value={formData.term}
-                onChange={(e) => setFormData({ ...formData, term: e.target.value })}
+                onChange={(e) => {
+                  const newTerm = e.target.value
+                  setFormData((prev) => ({
+                    ...prev,
+                    term: newTerm,
+                    ...(newTerm === "OTHER" ? { classId: "" } : {}),
+                  }))
+                }}
                 className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               >
                 <option value="TERM_1">📘 Term 1 (First Term)</option>
@@ -178,7 +185,7 @@ export default function ExamModal({
                 onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
                 className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               >
-                <option value="">Open / School-wide (No specific class)</option>
+                <option value="">🌐 Open / School-wide (No specific class)</option>
                 {classes.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name} (Grade {c.gradeLevel})

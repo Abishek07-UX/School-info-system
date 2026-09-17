@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { academicService } from "@/services/academicService"
 import { useAuthUser } from "@/context/AuthUserContext"
 import { Card } from "@/components/ui/card"
@@ -23,13 +23,31 @@ import {
   AlertTriangle,
   RefreshCw,
   School,
+  Sparkles,
 } from "lucide-react"
 
-export default function BatchMarkEntryTab({ classes: _classes, preselectedExam }) {
-  const { getToken } = useAuthUser()
+export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
+  const { getToken, userProfile } = useAuthUser()
+
+  // Find if teacher has an assigned class
+  const assignedClass = useMemo(() => {
+    if (!classes || classes.length === 0 || !userProfile?.id) return null
+    return classes.find((c) => c.classTeacherId === userProfile.id) || null
+  }, [classes, userProfile?.id])
+
+  const [selectedClassId, setSelectedClassId] = useState(
+    preselectedExam?.classId
+      ? String(preselectedExam.classId)
+      : assignedClass?.id
+      ? String(assignedClass.id)
+      : classes.length > 0
+      ? String(classes[0].id)
+      : ""
+  )
+
   const [exams, setExams] = useState([])
   const [selectedExamId, setSelectedExamId] = useState(
-    preselectedExam ? preselectedExam.id : ""
+    preselectedExam ? String(preselectedExam.id) : ""
   )
   const [selectedExam, setSelectedExam] = useState(preselectedExam || null)
   const [subjects, setSubjects] = useState([])
@@ -40,6 +58,14 @@ export default function BatchMarkEntryTab({ classes: _classes, preselectedExam }
   const [saving, setSaving] = useState(false)
   const [feedback, setFeedback] = useState(null)
   const [filterYear, setFilterYear] = useState("2026")
+
+  // Auto-default class once classes or assignedClass becomes available
+  useEffect(() => {
+    if (!selectedClassId && classes.length > 0) {
+      const assigned = classes.find((c) => c.classTeacherId === userProfile?.id)
+      setSelectedClassId(assigned ? String(assigned.id) : String(classes[0].id))
+    }
+  }, [classes, userProfile?.id, selectedClassId])
 
   const calculateGrade = (scoreNum) => {
     if (scoreNum === "" || isNaN(scoreNum) || scoreNum === null) return null
@@ -60,53 +86,73 @@ export default function BatchMarkEntryTab({ classes: _classes, preselectedExam }
           getToken
         )
         setExams(data || [])
-        if (data && data.length > 0 && !selectedExamId) {
-          setSelectedExamId(data[0].id)
-          setSelectedExam(data[0])
-        }
       } catch (err) {
         console.error("Failed to load exams:", err)
       }
     }
     loadExams()
-  }, [filterYear, getToken, selectedExamId])
+  }, [filterYear, getToken])
 
-  // When selected exam changes, update selectedExam object
+  // Filter exams relevant for the selected class (or school-wide exams)
+  const relevantExams = useMemo(() => {
+    if (!selectedClassId) return exams
+    return exams.filter(
+      (e) => !e.classId || String(e.classId) === String(selectedClassId)
+    )
+  }, [exams, selectedClassId])
+
+  // Sync selected exam when relevant exams or selectedClassId change
+  useEffect(() => {
+    if (relevantExams.length > 0) {
+      const exists = relevantExams.some((e) => String(e.id) === String(selectedExamId))
+      if (!exists) {
+        setSelectedExamId(String(relevantExams[0].id))
+        setSelectedExam(relevantExams[0])
+      }
+    } else {
+      setSelectedExamId("")
+      setSelectedExam(null)
+    }
+  }, [relevantExams, selectedExamId])
+
+  // When selected exam ID changes, update selectedExam object
   useEffect(() => {
     if (!selectedExamId) return
-    const examObj = exams.find((e) => e.id === parseInt(selectedExamId, 10))
+    const examObj = exams.find((e) => String(e.id) === String(selectedExamId))
     if (examObj) {
       setSelectedExam(examObj)
     }
   }, [selectedExamId, exams])
 
-  // Load subjects and students when exam's class changes
+  // Load subjects and students when selected class changes
   useEffect(() => {
-    if (!selectedExam || !selectedExam.classId) return
+    if (!selectedClassId) return
 
     async function loadClassData() {
       try {
         setLoading(true)
         const [subs, studs] = await Promise.all([
-          academicService.getSubjectsForClass(selectedExam.classId, getToken),
-          academicService.getStudentsForClass(selectedExam.classId, getToken),
+          academicService.getSubjectsForClass(selectedClassId, getToken),
+          academicService.getStudentsForClass(selectedClassId, getToken),
         ])
         setSubjects(subs || [])
         setStudents(studs || [])
         if (subs && subs.length > 0) {
-          setSelectedSubjectId(subs[0].id)
+          setSelectedSubjectId(String(subs[0].id))
+        } else {
+          setSelectedSubjectId("")
         }
       } catch (err) {
         setFeedback({
           type: "error",
-          message: err.message || "Failed to load class curriculum.",
+          message: err.message || "Failed to load class curriculum and students.",
         })
       } finally {
         setLoading(false)
       }
     }
     loadClassData()
-  }, [selectedExam, getToken])
+  }, [selectedClassId, getToken])
 
   // Load existing marks for (selectedExamId, selectedSubjectId)
   const loadExistingMarks = useCallback(async () => {
@@ -318,8 +364,33 @@ export default function BatchMarkEntryTab({ classes: _classes, preselectedExam }
             </select>
           </div>
 
+          {/* Class Cohort Selector */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-400">
+                Class Cohort *
+              </label>
+              {assignedClass && String(assignedClass.id) === String(selectedClassId) && (
+                <Badge variant="default" className="text-[9px] py-0 px-1.5">
+                  Your Class
+                </Badge>
+              )}
+            </div>
+            <select
+              value={selectedClassId}
+              onChange={(e) => setSelectedClassId(e.target.value)}
+              className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            >
+              {classes.map((cls) => (
+                <option key={cls.id} value={cls.id}>
+                  {cls.name} {assignedClass && cls.id === assignedClass.id ? "★ (Your Assigned Class)" : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Exam Selector */}
-          <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
+          <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-400">
               Target Examination *
             </label>
@@ -328,7 +399,7 @@ export default function BatchMarkEntryTab({ classes: _classes, preselectedExam }
               onChange={(e) => setSelectedExamId(e.target.value)}
               className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             >
-              {exams.map((ex) => (
+              {relevantExams.map((ex) => (
                 <option key={ex.id} value={ex.id}>
                   {ex.name} ({ex.termDisplayName || ex.term})
                 </option>
@@ -352,17 +423,6 @@ export default function BatchMarkEntryTab({ classes: _classes, preselectedExam }
                 </option>
               ))}
             </select>
-          </div>
-
-          {/* Target Class Pill Card */}
-          <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/10 p-2.5 flex items-center justify-between">
-            <div>
-              <div className="text-[10px] text-slate-400 uppercase font-semibold">Target Class Cohort</div>
-              <div className="text-sm font-bold text-indigo-300 font-heading">
-                {selectedExam?.className || "Select exam"}
-              </div>
-            </div>
-            <School className="h-5 w-5 text-indigo-400 opacity-60" />
           </div>
         </div>
       </Card>

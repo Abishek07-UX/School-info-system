@@ -113,8 +113,13 @@ export function ExamScheduleModal({
 
   const handleSave = async (e) => {
     e.preventDefault()
-    if (!classId || !subjectId || !invigilatorId || !examDate) {
-      setErrorMsg('Please fill in all required fields.')
+    if (!subjectId || !invigilatorId || !examDate) {
+      setErrorMsg('Please fill in all required fields (Subject, Invigilator, Exam Date).')
+      return
+    }
+
+    if (startTime && endTime && startTime >= endTime) {
+      setErrorMsg('Start time must be before end time.')
       return
     }
 
