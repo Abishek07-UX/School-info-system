@@ -20,3 +20,10 @@ frontend/.env.local
 target/
 backend/target/
 backend/src/main/resources/application-secret.properties
+
+# Documentation & Specs
+DESIGN.md
+design.md
+PRODUCT.md
+product.md
+
