@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Card, CardContent } from '../ui/card'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -13,8 +13,6 @@ import {
   Wand2,
   Trash2,
   Plus,
-  ShieldAlert,
-  ShieldCheck,
   Loader2,
   RefreshCw,
   BookOpen,
@@ -68,14 +66,12 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
   const [teacherSchedule, setTeacherSchedule] = useState(null)
   const [examSchedules, setExamSchedules] = useState([])
   const [teacherDuties, setTeacherDuties] = useState([])
-  const [auditReport, setAuditReport] = useState(null)
 
   // Loading states
   const [loadingClass, setLoadingClass] = useState(false)
   const [loadingTeacher, setLoadingTeacher] = useState(false)
   const [loadingExams, setLoadingExams] = useState(false)
   const [loadingTeacherDuties, setLoadingTeacherDuties] = useState(false)
-  const [loadingAudit, setLoadingAudit] = useState(false)
   const [errorMsg, setErrorMsg] = useState(null)
 
   // Teacher personal duties view toggle
@@ -109,7 +105,102 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
     }) || null
   }, [userProfile])
 
-  // Initial Lookups
+  // In-memory caches for instant tab switching and smooth transitions
+  const classCache = useRef(new Map())
+  const teacherCache = useRef(new Map())
+  const examCache = useRef(new Map())
+
+  // Fetch Class Timetable with caching
+  const fetchClassTimetable = useCallback(async (targetId = selectedClassId, forceRefresh = false) => {
+    const classIdToFetch = targetId || selectedClassId
+    if (!classIdToFetch) return
+    const cacheKey = `${classIdToFetch}_${academicYear}`
+
+    if (!forceRefresh && classCache.current.has(cacheKey)) {
+      setClassTimetable(classCache.current.get(cacheKey))
+      setLoadingClass(false)
+      return
+    }
+
+    if (forceRefresh || !classCache.current.has(cacheKey)) {
+      setClassTimetable(null)
+    }
+
+    setLoadingClass(true)
+    setErrorMsg(null)
+    try {
+      const data = await timetableService.getClassTimetable(classIdToFetch, academicYear, getToken)
+      classCache.current.set(cacheKey, data)
+      setClassTimetable(data)
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to load class timetable.')
+    } finally {
+      setLoadingClass(false)
+    }
+  }, [selectedClassId, academicYear, getToken])
+
+  // Fetch Teacher Timetable with caching
+  const fetchTeacherSchedule = useCallback(async (targetId = selectedTeacherId, forceRefresh = false) => {
+    const teacherIdToFetch = targetId || selectedTeacherId
+    if (!teacherIdToFetch) {
+      setTeacherSchedule(null)
+      return
+    }
+    const cacheKey = `${teacherIdToFetch}_${academicYear}`
+
+    if (!forceRefresh && teacherCache.current.has(cacheKey)) {
+      setTeacherSchedule(teacherCache.current.get(cacheKey))
+      setLoadingTeacher(false)
+      return
+    }
+
+    if (forceRefresh || !teacherCache.current.has(cacheKey)) {
+      setTeacherSchedule(null)
+    }
+
+    setLoadingTeacher(true)
+    setErrorMsg(null)
+    try {
+      const data = await timetableService.getTeacherSchedule(teacherIdToFetch, academicYear, getToken)
+      teacherCache.current.set(cacheKey, data)
+      setTeacherSchedule(data)
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to load teacher schedule.')
+    } finally {
+      setLoadingTeacher(false)
+    }
+  }, [selectedTeacherId, academicYear, getToken])
+
+  // Fetch Exam Schedules with caching
+  const fetchExamSchedules = useCallback(async (targetId = selectedExamId, forceRefresh = false) => {
+    const examIdToFetch = targetId || selectedExamId
+    if (!examIdToFetch) return
+    const cacheKey = String(examIdToFetch)
+
+    if (!forceRefresh && examCache.current.has(cacheKey)) {
+      setExamSchedules(examCache.current.get(cacheKey))
+      setLoadingExams(false)
+      return
+    }
+
+    if (forceRefresh || !examCache.current.has(cacheKey)) {
+      setExamSchedules([])
+    }
+
+    setLoadingExams(true)
+    setErrorMsg(null)
+    try {
+      const data = await examScheduleService.getExamSchedules(examIdToFetch, getToken)
+      examCache.current.set(cacheKey, data || [])
+      setExamSchedules(data || [])
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to load exam schedules.')
+    } finally {
+      setLoadingExams(false)
+    }
+  }, [selectedExamId, getToken])
+
+  // Initial Lookups with parallel preloading
   useEffect(() => {
     async function loadLookups() {
       try {
@@ -125,20 +216,25 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
         setSubjects(subs || [])
         setCampusRooms(rlist || [])
 
+        let initClassId = ''
         if (cls && cls.length > 0) {
           const myClass = cls.find((c) => c.classTeacherId === userProfile?.id)
-          setSelectedClassId(myClass ? myClass.id : cls[0].id)
+          initClassId = myClass ? myClass.id : cls[0].id
+          setSelectedClassId(initClassId)
+          fetchClassTimetable(initClassId)
         }
 
+        let initTeacherId = ''
         if (tchs && tchs.length > 0) {
           if (isTeacher) {
             const me = findLoggedInTeacher(tchs)
-            const targetId = me ? me.id : userProfile?.id
-            if (targetId) {
-              setSelectedTeacherId(targetId)
-            }
+            initTeacherId = me ? me.id : userProfile?.id
           } else {
-            setSelectedTeacherId(tchs[0].id)
+            initTeacherId = tchs[0].id
+          }
+          if (initTeacherId) {
+            setSelectedTeacherId(initTeacherId)
+            fetchTeacherSchedule(initTeacherId)
           }
         }
       } catch (err) {
@@ -146,7 +242,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
       }
     }
     loadLookups()
-  }, [getToken, isTeacher, userProfile, findLoggedInTeacher])
+  }, [getToken, isTeacher, userProfile, findLoggedInTeacher, fetchClassTimetable, fetchTeacherSchedule])
 
   // Keep selected teacher locked to logged-in teacher when isTeacher
   useEffect(() => {
@@ -161,40 +257,27 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
     }
   }, [isTeacher, teachers, userProfile, selectedTeacherId, findLoggedInTeacher])
 
-  // Load Exams
+  // Load Exams with preloading
   useEffect(() => {
     async function loadExams() {
       try {
         const examList = await academicService.getExams({ academicYear }, getToken)
         setExams(examList || [])
         if (examList && examList.length > 0) {
-          setSelectedExamId(examList[0].id)
+          const firstExamId = examList[0].id
+          setSelectedExamId(firstExamId)
+          fetchExamSchedules(firstExamId)
         }
       } catch (err) {
         console.error('Failed to load exams:', err)
       }
     }
     loadExams()
-  }, [academicYear, getToken])
-
-  // Fetch Class Timetable
-  const fetchClassTimetable = useCallback(async () => {
-    if (!selectedClassId) return
-    setLoadingClass(true)
-    setErrorMsg(null)
-    try {
-      const data = await timetableService.getClassTimetable(selectedClassId, academicYear, getToken)
-      setClassTimetable(data)
-    } catch (err) {
-      setErrorMsg(err.message || 'Failed to load class timetable.')
-    } finally {
-      setLoadingClass(false)
-    }
-  }, [selectedClassId, academicYear, getToken])
+  }, [academicYear, getToken, fetchExamSchedules])
 
   useEffect(() => {
     if (activeTab === 'classes' && selectedClassId) {
-      fetchClassTimetable()
+      fetchClassTimetable(selectedClassId)
     }
   }, [activeTab, selectedClassId, fetchClassTimetable])
 
@@ -242,52 +325,19 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
     }
   }, [teacherSearchTerm, filteredTeachers, teachers, selectedTeacherId])
 
-  // Fetch Teacher Timetable
-  const fetchTeacherSchedule = useCallback(async () => {
-    if (!selectedTeacherId) {
-      setTeacherSchedule(null)
-      return
-    }
-    setLoadingTeacher(true)
-    setErrorMsg(null)
-    try {
-      const data = await timetableService.getTeacherSchedule(selectedTeacherId, academicYear, getToken)
-      setTeacherSchedule(data)
-    } catch (err) {
-      setErrorMsg(err.message || 'Failed to load teacher schedule.')
-    } finally {
-      setLoadingTeacher(false)
-    }
-  }, [selectedTeacherId, academicYear, getToken])
-
   useEffect(() => {
     if (activeTab === 'teachers') {
       if (selectedTeacherId) {
-        fetchTeacherSchedule()
+        fetchTeacherSchedule(selectedTeacherId)
       } else {
         setTeacherSchedule(null)
       }
     }
   }, [activeTab, selectedTeacherId, fetchTeacherSchedule])
 
-  // Fetch Exam Schedules
-  const fetchExamSchedules = useCallback(async () => {
-    if (!selectedExamId) return
-    setLoadingExams(true)
-    setErrorMsg(null)
-    try {
-      const data = await examScheduleService.getExamSchedules(selectedExamId, getToken)
-      setExamSchedules(data || [])
-    } catch (err) {
-      setErrorMsg(err.message || 'Failed to load exam schedules.')
-    } finally {
-      setLoadingExams(false)
-    }
-  }, [selectedExamId, getToken])
-
   useEffect(() => {
     if (activeTab === 'exams' && selectedExamId) {
-      fetchExamSchedules()
+      fetchExamSchedules(selectedExamId)
     }
   }, [activeTab, selectedExamId, fetchExamSchedules])
 
@@ -315,24 +365,13 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
     }
   }, [isTeacher, fetchTeacherDuties])
 
-  // Run Conflict Audit
-  const runAudit = async () => {
-    setLoadingAudit(true)
-    try {
-      const report = await timetableService.auditSchoolTimetable(academicYear, getToken)
-      setAuditReport(report)
-    } catch (err) {
-      setErrorMsg(err.message || 'Failed to audit timetable.')
-    } finally {
-      setLoadingAudit(false)
-    }
-  }
-
   const handleClearClass = async () => {
     if (!window.confirm('Are you sure you want to clear this entire weekly timetable?')) return
     try {
       await timetableService.clearClassTimetable(selectedClassId, academicYear, getToken)
-      fetchClassTimetable()
+      classCache.current.clear()
+      teacherCache.current.clear()
+      fetchClassTimetable(selectedClassId, true)
     } catch (err) {
       setErrorMsg(err.message || 'Failed to clear class timetable.')
     }
@@ -342,7 +381,9 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
     if (!window.confirm('Are you sure you want to remove this period slot?')) return
     try {
       await timetableService.deleteSlot(slotId, getToken)
-      fetchClassTimetable()
+      classCache.current.clear()
+      teacherCache.current.clear()
+      fetchClassTimetable(selectedClassId, true)
     } catch (err) {
       setErrorMsg(err.message || 'Failed to delete slot.')
     }
@@ -352,7 +393,8 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
     if (!window.confirm('Are you sure you want to delete this exam schedule?')) return
     try {
       await examScheduleService.deleteExamSchedule(scheduleId, getToken)
-      fetchExamSchedules()
+      examCache.current.delete(String(selectedExamId))
+      fetchExamSchedules(selectedExamId, true)
     } catch (err) {
       setErrorMsg(err.message || 'Failed to delete exam schedule.')
     }
@@ -435,7 +477,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
-        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4 max-w-2xl' : 'grid-cols-3 max-w-lg'}`}>
+        <TabsList className="grid w-full grid-cols-3 max-w-lg">
           <TabsTrigger value="teachers" className="flex items-center gap-1.5 text-xs">
             <Users className="h-3.5 w-3.5" />
             {isTeacher ? "My Schedule" : "Teacher Schedules"}
@@ -448,16 +490,10 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
             <BookOpen className="h-3.5 w-3.5" />
             Exam Date Sheets
           </TabsTrigger>
-          {isAdmin && (
-            <TabsTrigger value="audit" className="flex items-center gap-1.5 text-xs">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              Conflict Inspector
-            </TabsTrigger>
-          )}
         </TabsList>
 
         {/* TAB 1: CLASS TIMETABLES */}
-        <TabsContent value="classes" className="space-y-4">
+        <TabsContent value="classes" forceMount className="space-y-4 data-[state=inactive]:hidden">
           {/* Action Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/70 bg-card p-3 shadow-xs">
             <div className="flex items-center gap-3">
@@ -478,7 +514,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
               <Button
                 variant="outline"
                 size="sm"
-                onClick={fetchClassTimetable}
+                onClick={() => fetchClassTimetable(selectedClassId, true)}
                 disabled={loadingClass}
                 className="h-8 text-xs"
               >
@@ -541,7 +577,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
             </div>
           </div>
 
-          {loadingClass ? (
+          {loadingClass && !classTimetable ? (
             <div className="flex min-h-[300px] items-center justify-center rounded-xl border border-border bg-card">
               <div className="flex flex-col items-center gap-2 text-muted-foreground text-xs">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -568,7 +604,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
         </TabsContent>
 
         {/* TAB 2: TEACHER SCHEDULES & ROUTING */}
-        <TabsContent value="teachers" className="space-y-4">
+        <TabsContent value="teachers" forceMount className="space-y-4 data-[state=inactive]:hidden">
           {isTeacher ? (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/70 bg-card p-3 shadow-xs">
               <div className="flex items-center gap-2.5">
@@ -589,7 +625,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={fetchTeacherSchedule}
+                  onClick={() => fetchTeacherSchedule(selectedTeacherId, true)}
                   disabled={loadingTeacher || !selectedTeacherId}
                   className="h-8 text-xs"
                 >
@@ -672,7 +708,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={fetchTeacherSchedule}
+                    onClick={() => fetchTeacherSchedule(selectedTeacherId, true)}
                     disabled={loadingTeacher || !selectedTeacherId}
                     className="h-8 text-xs"
                   >
@@ -725,7 +761,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
           )}
 
           {isTeacher ? (
-            loadingTeacher ? (
+            loadingTeacher && !teacherSchedule ? (
               <div className="flex min-h-[300px] items-center justify-center rounded-xl border border-border bg-card">
                 <div className="flex flex-col items-center gap-2 text-muted-foreground text-xs">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -781,7 +817,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                   Clear Search Filter
                 </Button>
               </Card>
-            ) : loadingTeacher ? (
+            ) : loadingTeacher && !teacherSchedule ? (
               <div className="flex min-h-[300px] items-center justify-center rounded-xl border border-border bg-card">
                 <div className="flex flex-col items-center gap-2 text-muted-foreground text-xs">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -795,7 +831,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
         </TabsContent>
 
         {/* TAB 3: EXAM TIMETABLES & INVIGILATION */}
-        <TabsContent value="exams" className="space-y-4">
+        <TabsContent value="exams" forceMount className="space-y-4 data-[state=inactive]:hidden">
           <div className="flex flex-col gap-3.5 rounded-lg border border-border/70 bg-card p-3.5 shadow-xs">
             {/* Top row: Category Filter Pills & Action Buttons */}
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -975,7 +1011,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={fetchExamSchedules}
+                    onClick={() => fetchExamSchedules(selectedExamId, true)}
                     disabled={loadingExams || !selectedExamId}
                     className="h-8 text-xs"
                   >
@@ -1128,7 +1164,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
             )
           ) : (
             /* STANDARD EXAM SCHEDULES LIST */
-            loadingExams ? (
+            loadingExams && displayedExamSchedules.length === 0 ? (
               <div className="flex min-h-[250px] items-center justify-center rounded-xl border border-border bg-card">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
@@ -1235,89 +1271,6 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
             )
           )}
         </TabsContent>
-
-        {/* TAB 4: CONFLICT INSPECTOR */}
-        <TabsContent value="audit" className="space-y-4">
-          <Card className="border-border/70 shadow-sm">
-            <CardContent className="p-5 space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                    <ShieldCheck className="h-5 w-5 text-primary" />
-                    School-Wide Schedule Collision Scanner
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Analyzes all 39 classes and faculty assignments simultaneously to detect any teacher double-bookings or missing allocations.
-                  </p>
-                </div>
-                <Button onClick={runAudit} disabled={loadingAudit} size="sm" className="gap-2">
-                  {loadingAudit ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
-                  Run Timetable Audit
-                </Button>
-              </div>
-
-              {auditReport && (
-                <div className="space-y-4 pt-2">
-                  {/* Summary Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="rounded-lg bg-muted/40 p-3 border border-border/50 text-center">
-                      <div className="text-xs text-muted-foreground">Total Classes</div>
-                      <div className="text-lg font-bold text-foreground">{auditReport.totalClasses}</div>
-                    </div>
-                    <div className="rounded-lg bg-muted/40 p-3 border border-border/50 text-center">
-                      <div className="text-xs text-muted-foreground">Assigned Slots</div>
-                      <div className="text-lg font-bold text-foreground">{auditReport.totalAssignedSlots}</div>
-                    </div>
-                    <div className="rounded-lg bg-muted/40 p-3 border border-border/50 text-center">
-                      <div className="text-xs text-muted-foreground">Faculty Scheduled</div>
-                      <div className="text-lg font-bold text-foreground">{auditReport.totalTeachersScheduled}</div>
-                    </div>
-                    <div className={`rounded-lg p-3 border text-center ${auditReport.isConflictFree ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300' : 'bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300'}`}>
-                      <div className="text-xs">Clashes Found</div>
-                      <div className="text-lg font-bold">{auditReport.totalConflictsFound}</div>
-                    </div>
-                  </div>
-
-                  {auditReport.isConflictFree ? (
-                    <div className="flex items-center gap-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-4 text-xs text-emerald-700 dark:text-emerald-300 font-medium">
-                      <ShieldCheck className="h-6 w-6 shrink-0" />
-                      <div>
-                        <div className="font-bold text-sm">Perfect Status: 100% Conflict-Free!</div>
-                        <div>Every teacher and class slot across all 39 classes is completely collision-free.</div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <h4 className="text-xs font-semibold text-destructive flex items-center gap-1.5">
-                        <ShieldAlert className="h-4 w-4" /> Detected Clashes ({auditReport.conflicts.length})
-                      </h4>
-                      <div className="space-y-2">
-                        {auditReport.conflicts.map((c, i) => (
-                          <Alert key={i} variant="destructive" className="py-2 text-xs">
-                            <AlertDescription>{c.message}</AlertDescription>
-                          </Alert>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {auditReport.unassignedClassSummaries?.length > 0 && (
-                    <div className="space-y-2 pt-2 border-t border-border/40">
-                      <h4 className="text-xs font-semibold text-muted-foreground">Unassigned Slots Summary</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs">
-                        {auditReport.unassignedClassSummaries.map((msg, i) => (
-                          <div key={i} className="rounded bg-muted/30 p-2 text-muted-foreground border border-border/40">
-                            {msg}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
 
       {/* MODALS */}
@@ -1325,7 +1278,11 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
         <TimetableSlotModal
           isOpen={isSlotModalOpen}
           onClose={() => setIsSlotModalOpen(false)}
-          onSaved={fetchClassTimetable}
+          onSaved={() => {
+            classCache.current.clear()
+            teacherCache.current.clear()
+            fetchClassTimetable(selectedClassId, true)
+          }}
           slotToEdit={slotToEdit}
           initialDay={initialDay}
           initialPeriod={initialPeriod}
@@ -1341,7 +1298,11 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
         <AutoGeneratorModal
           isOpen={isAutoGeneratorOpen}
           onClose={() => setIsAutoGeneratorOpen(false)}
-          onGenerated={fetchClassTimetable}
+          onGenerated={() => {
+            classCache.current.clear()
+            teacherCache.current.clear()
+            fetchClassTimetable(selectedClassId, true)
+          }}
           selectedClass={selectedClass}
           academicYear={academicYear}
           getToken={getToken}
@@ -1352,7 +1313,10 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
         <ExamScheduleModal
           isOpen={isExamModalOpen}
           onClose={() => setIsExamModalOpen(false)}
-          onSaved={fetchExamSchedules}
+          onSaved={() => {
+            examCache.current.delete(String(selectedExamId))
+            fetchExamSchedules(selectedExamId, true)
+          }}
           scheduleToEdit={examScheduleToEdit}
           selectedExam={selectedExam}
           classes={classes}
@@ -1368,11 +1332,14 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
           isOpen={isUnifiedExamModalOpen}
           onClose={() => setIsUnifiedExamModalOpen(false)}
           onSuccess={async () => {
+            examCache.current.clear()
             try {
               const exList = await academicService.getExams({ academicYear }, getToken)
               setExams(exList || [])
               if (exList && exList.length > 0) {
-                setSelectedExamId(String(exList[0].id))
+                const nextId = String(exList[0].id)
+                setSelectedExamId(nextId)
+                fetchExamSchedules(nextId, true)
               }
             } catch (e) {
               console.warn("Failed to refresh exams after timetable creation", e)
