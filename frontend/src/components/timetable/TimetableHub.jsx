@@ -26,7 +26,7 @@ import {
 } from 'lucide-react'
 import { timetableService } from '../../services/timetableService'
 import { examScheduleService } from '../../services/examScheduleService'
-import { academicService, isSchoolWideExam } from '../../services/academicService'
+import { academicService, isSchoolWideExam, getExamGradeLevel } from '../../services/academicService'
 import { useAuthUser } from '../../context/AuthUserContext'
 import { ClassTimetableGrid } from './ClassTimetableGrid'
 import { TimetableSlotModal } from './TimetableSlotModal'
@@ -57,8 +57,10 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
   // Selection states
   const [selectedClassId, setSelectedClassId] = useState('')
   const [selectedTeacherId, setSelectedTeacherId] = useState('')
-  const [selectedExamId, setSelectedExamId] = useState('')
-  const [examCategoryFilter, setExamCategoryFilter] = useState(isTeacher ? 'CLASS' : 'ALL') // 'ALL', 'SCHOOL_WIDE', 'CLASS'
+  const [examGradeFilter, setExamGradeFilter] = useState('ALL') // 'ALL', '1'..'13', 'SCHOOL_WIDE'
+  const [examTermFilter, setExamTermFilter] = useState('ALL') // 'ALL', 'TERM_1', 'TERM_2', 'TERM_3', 'OTHER'
+  const [examSectionFilter, setExamSectionFilter] = useState('ALL') // 'ALL', or classId
+  const [examYearFilter, setExamYearFilter] = useState('ALL') // 'ALL', '2026', '2025', etc.
   const [teacherSearchTerm, setTeacherSearchTerm] = useState('')
 
   // Data states
@@ -171,34 +173,52 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
     }
   }, [selectedTeacherId, academicYear, getToken])
 
-  // Fetch Exam Schedules with caching
-  const fetchExamSchedules = useCallback(async (targetId = selectedExamId, forceRefresh = false) => {
-    const examIdToFetch = targetId || selectedExamId
-    if (!examIdToFetch) return
-    const cacheKey = String(examIdToFetch)
-
-    if (!forceRefresh && examCache.current.has(cacheKey)) {
-      setExamSchedules(examCache.current.get(cacheKey))
+  // Fetch Exam Schedules for exams with in-memory caching
+  const fetchExamSchedules = useCallback(async (examsToFetch, forceRefresh = false) => {
+    if (!examsToFetch || (Array.isArray(examsToFetch) && examsToFetch.length === 0)) {
+      setExamSchedules([])
       setLoadingExams(false)
       return
     }
 
-    if (forceRefresh || !examCache.current.has(cacheKey)) {
+    const examsList = Array.isArray(examsToFetch)
+      ? examsToFetch
+      : typeof examsToFetch === 'object' && examsToFetch.id
+      ? [examsToFetch]
+      : [{ id: examsToFetch }]
+
+    if (forceRefresh) {
       setExamSchedules([])
     }
 
     setLoadingExams(true)
     setErrorMsg(null)
     try {
-      const data = await examScheduleService.getExamSchedules(examIdToFetch, getToken)
-      examCache.current.set(cacheKey, data || [])
-      setExamSchedules(data || [])
+      const schedulePromises = examsList.map(async (exam) => {
+        const cacheKey = String(exam.id)
+        if (!forceRefresh && examCache.current.has(cacheKey)) {
+          return examCache.current.get(cacheKey)
+        }
+        const data = await examScheduleService.getExamSchedules(exam.id, getToken)
+        const schedules = data || []
+        examCache.current.set(cacheKey, schedules)
+        return schedules
+      })
+
+      const results = await Promise.all(schedulePromises)
+      const combined = results.flat()
+      combined.sort((a, b) => {
+        const dComp = (a.examDate || '').localeCompare(b.examDate || '')
+        if (dComp !== 0) return dComp
+        return (a.startTime || '').localeCompare(b.startTime || '')
+      })
+      setExamSchedules(combined)
     } catch (err) {
       setErrorMsg(err.message || 'Failed to load exam schedules.')
     } finally {
       setLoadingExams(false)
     }
-  }, [selectedExamId, getToken])
+  }, [getToken])
 
   // Initial Lookups with parallel preloading
   useEffect(() => {
@@ -257,23 +277,19 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
     }
   }, [isTeacher, teachers, userProfile, selectedTeacherId, findLoggedInTeacher])
 
-  // Load Exams with preloading
-  useEffect(() => {
-    async function loadExams() {
-      try {
-        const examList = await academicService.getExams({ academicYear }, getToken)
-        setExams(examList || [])
-        if (examList && examList.length > 0) {
-          const firstExamId = examList[0].id
-          setSelectedExamId(firstExamId)
-          fetchExamSchedules(firstExamId)
-        }
-      } catch (err) {
-        console.error('Failed to load exams:', err)
-      }
+  // Load Exams with preloading (fetches all exams across academic years)
+  const loadExams = useCallback(async () => {
+    try {
+      const examList = await academicService.getExams({}, getToken)
+      setExams(examList || [])
+    } catch (err) {
+      console.error('Failed to load exams:', err)
     }
+  }, [getToken])
+
+  useEffect(() => {
     loadExams()
-  }, [academicYear, getToken, fetchExamSchedules])
+  }, [loadExams])
 
   useEffect(() => {
     if (activeTab === 'classes' && selectedClassId) {
@@ -335,12 +351,6 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
     }
   }, [activeTab, selectedTeacherId, fetchTeacherSchedule])
 
-  useEffect(() => {
-    if (activeTab === 'exams' && selectedExamId) {
-      fetchExamSchedules(selectedExamId)
-    }
-  }, [activeTab, selectedExamId, fetchExamSchedules])
-
   // Fetch logged-in teacher's assigned examination duties
   const fetchTeacherDuties = useCallback(async () => {
     if (!isTeacher) return
@@ -393,44 +403,103 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
     if (!window.confirm('Are you sure you want to delete this exam schedule?')) return
     try {
       await examScheduleService.deleteExamSchedule(scheduleId, getToken)
-      examCache.current.delete(String(selectedExamId))
-      fetchExamSchedules(selectedExamId, true)
+      examCache.current.clear()
+      fetchExamSchedules(filteredExams, true)
     } catch (err) {
       setErrorMsg(err.message || 'Failed to delete exam schedule.')
     }
   }
 
   const selectedClass = classes.find((c) => String(c.id) === String(selectedClassId))
-  const selectedExam = exams.find((e) => String(e.id) === String(selectedExamId))
 
-  // Categorize exams for Date Sheets tab: Grade 1-13 class exams vs school-wide other exams
-  const schoolWideExams = useMemo(() => {
-    return exams.filter(isSchoolWideExam)
+  // Available academic years discovered in exams
+  const availableExamYears = useMemo(() => {
+    const currentYear = new Date().getFullYear()
+    const years = new Set([currentYear, currentYear + 1, 2024, 2025, 2026])
+    exams.forEach((e) => {
+      if (e.academicYear) years.add(Number(e.academicYear))
+    })
+    return Array.from(years).sort((a, b) => b - a)
   }, [exams])
 
-  const classExams = useMemo(() => {
-    return exams.filter((e) => !isSchoolWideExam(e))
-  }, [exams])
+  // Available sections (classes) for the selected grade
+  const availableSections = useMemo(() => {
+    if (examGradeFilter === 'ALL' || examGradeFilter === 'SCHOOL_WIDE') {
+      return []
+    }
+    const gradeNum = Number(examGradeFilter)
+    return classes.filter((c) => Number(c.gradeLevel) === gradeNum)
+  }, [classes, examGradeFilter])
+
+  // Reset section filter whenever grade selection changes
+  useEffect(() => {
+    setExamSectionFilter('ALL')
+  }, [examGradeFilter])
 
   const filteredExams = useMemo(() => {
-    if (examCategoryFilter === 'SCHOOL_WIDE') return schoolWideExams
-    if (examCategoryFilter === 'CLASS') return classExams
-    return isTeacher ? classExams : exams
-  }, [examCategoryFilter, exams, schoolWideExams, classExams, isTeacher])
+    return exams.filter((exam) => {
+      // 1. Grade filter
+      if (examGradeFilter === 'SCHOOL_WIDE') {
+        if (!isSchoolWideExam(exam)) return false
+      } else {
+        if (examGradeFilter !== 'ALL') {
+          const targetGrade = Number(examGradeFilter)
+          const examGrade = getExamGradeLevel(exam)
+          if (examGrade !== targetGrade) return false
+        }
+      }
 
-  // Sync selected exam when category filter or exams change
+      // 2. Year filter
+      if (examYearFilter !== 'ALL') {
+        if (Number(exam.academicYear) !== Number(examYearFilter)) return false
+      }
+
+      // 3. Term and Section filters (active when not in school-wide mode)
+      if (examGradeFilter !== 'SCHOOL_WIDE') {
+        // Term filter
+        if (examTermFilter !== 'ALL') {
+          const examTerm = exam.term ? String(exam.term).toUpperCase() : ''
+          if (examTerm !== examTermFilter) {
+            const termNum = examTermFilter.replace('TERM_', '')
+            const nameLower = (exam.name || '').toLowerCase()
+            const dispLower = (exam.termDisplayName || '').toLowerCase()
+            if (!nameLower.includes(`term ${termNum}`) && !dispLower.includes(`term ${termNum}`)) {
+              return false
+            }
+          }
+        }
+
+        // Section filter
+        if (examSectionFilter !== 'ALL') {
+          const targetClassId = String(examSectionFilter)
+          const matchClassId = exam.classId && String(exam.classId) === targetClassId
+          const targetClass = classes.find((c) => String(c.id) === targetClassId)
+          let matchName = false
+          if (targetClass) {
+            const tName = targetClass.name.toLowerCase()
+            const examClsName = (exam.className || '').toLowerCase()
+            const examName = (exam.name || '').toLowerCase()
+            matchName = examClsName === tName || examClsName.includes(tName) || examName.includes(`(${tName})`) || examName.includes(tName)
+          }
+          if (!matchClassId && !matchName) {
+            return false
+          }
+        }
+      }
+
+      return true
+    })
+  }, [exams, examGradeFilter, examYearFilter, examTermFilter, examSectionFilter, classes])
+
+  const selectedExam = filteredExams.length > 0 ? filteredExams[0] : null
+  const selectedExamId = selectedExam?.id ? String(selectedExam.id) : ''
+
+  // Automatically fetch exam schedules for filtered exams when on exams tab or when filters change
   useEffect(() => {
     if (activeTab === 'exams') {
-      if (filteredExams.length > 0) {
-        const exists = filteredExams.some((e) => String(e.id) === String(selectedExamId))
-        if (!exists) {
-          setSelectedExamId(filteredExams[0].id)
-        }
-      } else if (filteredExams.length === 0 && selectedExamId) {
-        setSelectedExamId('')
-      }
+      fetchExamSchedules(filteredExams)
     }
-  }, [activeTab, filteredExams, selectedExamId])
+  }, [activeTab, filteredExams, fetchExamSchedules])
 
   // Sessions in current exam assigned to this teacher
   const myDutiesInCurrentExam = useMemo(() => {
@@ -443,8 +512,18 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
     })
   }, [isTeacher, userProfile, examSchedules])
 
-  // Date sheet always displays complete exam schedules for the selected exam
-  const displayedExamSchedules = examSchedules
+  // Date sheet displays filtered exam schedules matching active section
+  const displayedExamSchedules = useMemo(() => {
+    if (examGradeFilter === 'SCHOOL_WIDE') return examSchedules
+    if (examSectionFilter === 'ALL') return examSchedules
+    const targetClassId = String(examSectionFilter)
+    return examSchedules.filter((item) => {
+      if (item.classId) {
+        return String(item.classId) === targetClassId
+      }
+      return true
+    })
+  }, [examSchedules, examGradeFilter, examSectionFilter])
 
   return (
     <div className="space-y-6">
@@ -833,58 +912,18 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
         {/* TAB 3: EXAM TIMETABLES & INVIGILATION */}
         <TabsContent value="exams" forceMount className="space-y-4 data-[state=inactive]:hidden">
           <div className="flex flex-col gap-3.5 rounded-lg border border-border/70 bg-card p-3.5 shadow-xs">
-            {/* Top row: Category Filter Pills & Action Buttons */}
+            {/* Top row: Title and Action Buttons */}
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-muted-foreground text-[11px] font-medium mr-1 flex items-center gap-1">
-                  <Filter className="h-3 w-3" /> Category:
-                </span>
-                {!isTeacher && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOnlyMyDuties(false)
-                      setExamCategoryFilter('ALL')
-                    }}
-                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
-                      !onlyMyDuties && examCategoryFilter === 'ALL'
-                        ? 'bg-primary text-primary-foreground shadow-xs'
-                        : 'bg-muted/60 text-muted-foreground hover:text-foreground border border-border/50'
-                    }`}
-                  >
-                    All Exams ({exams.length})
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOnlyMyDuties(false)
-                    setExamCategoryFilter('CLASS')
-                  }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
-                    !onlyMyDuties && examCategoryFilter === 'CLASS'
-                      ? 'bg-primary text-primary-foreground shadow-xs'
-                      : 'bg-muted/60 text-muted-foreground hover:text-foreground border border-border/50'
-                  }`}
-                >
-                  <GraduationCap className="h-3 w-3" />
-                  Grade 1–13 Class Exams ({classExams.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOnlyMyDuties(false)
-                    setExamCategoryFilter('SCHOOL_WIDE')
-                  }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
-                    !onlyMyDuties && examCategoryFilter === 'SCHOOL_WIDE'
-                      ? 'bg-amber-500 text-amber-950 font-semibold shadow-xs'
-                      : 'bg-muted/60 text-muted-foreground hover:text-foreground border border-border/50'
-                  }`}
-                >
-                  <Sparkles className="h-3 w-3" />
-                  School-Wide & Other Exams ({schoolWideExams.length})
-                </button>
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                  <BookOpen className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">Examination Date Sheets</h3>
+                  <p className="text-[11px] text-muted-foreground">
+                    Filter by grade, term, section, and academic year to view subject papers and invigilation rosters.
+                  </p>
+                </div>
               </div>
 
               {/* Action Buttons: Teacher button to list only duties, or Admin timetable tools */}
@@ -948,56 +987,117 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
             {!onlyMyDuties ? (
               /* When in standard date sheets mode */
               <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-border/40">
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="w-72 sm:w-80">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {/* Grade Filter Dropdown */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-muted-foreground text-[11px] font-medium flex items-center gap-1 whitespace-nowrap">
+                      <GraduationCap className="h-3.5 w-3.5 text-primary" /> Grade:
+                    </span>
                     <select
-                      value={selectedExamId}
+                      value={examGradeFilter}
                       onChange={(e) => {
-                        setSelectedExamId(e.target.value)
-                        setOnlyMyDuties(false)
+                        const val = e.target.value
+                        setExamGradeFilter(val)
                       }}
-                      className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                      className="rounded-md border border-input bg-background px-2.5 py-1.5 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-ring font-medium"
                     >
-                      {filteredExams.length === 0 ? (
-                        <option value="" disabled>No examinations in this category</option>
-                      ) : (
-                        <>
-                          {schoolWideExams.length > 0 && examCategoryFilter !== 'CLASS' && (
-                            <optgroup label="🌟 School-Wide / Open Examinations">
-                              {schoolWideExams.map((ex) => (
-                                <option key={ex.id} value={ex.id}>
-                                  🌟 {ex.name} (School-Wide / Open) • {ex.academicYear}
-                                </option>
-                              ))}
-                            </optgroup>
-                          )}
-                          {classExams.length > 0 && examCategoryFilter !== 'SCHOOL_WIDE' && (
-                            <optgroup label="🏫 Grade 1 to 13 Class Examinations">
-                              {classExams.map((ex) => (
-                                <option key={ex.id} value={ex.id}>
-                                  🏫 {ex.name} ({ex.className || 'Class Exam'}) • {ex.academicYear}
-                                </option>
-                              ))}
-                            </optgroup>
-                          )}
-                        </>
-                      )}
+                      <option value="ALL">All Grades (1–13)</option>
+                      {Array.from({ length: 13 }, (_, i) => i + 1).map((g) => (
+                        <option key={g} value={String(g)}>
+                          Grade {g}
+                        </option>
+                      ))}
+                      <option value="SCHOOL_WIDE">🌟 School-Wide Only</option>
                     </select>
                   </div>
 
-                  {selectedExam && isSchoolWideExam(selectedExam) ? (
-                    <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[11px] gap-1 py-0.5 font-medium">
-                      <Sparkles className="h-3 w-3" />
-                      School-Wide / Open Examination
-                    </Badge>
-                  ) : selectedExam ? (
-                    <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[11px] gap-1 py-0.5 font-medium">
-                      <GraduationCap className="h-3 w-3" />
-                      {selectedExam.className || 'Class Exam'}
-                    </Badge>
-                  ) : null}
+                  {/* Term and Section Filters: HIDDEN when Grade is School-Wide Only */}
+                  {examGradeFilter !== 'SCHOOL_WIDE' && (
+                    <>
+                      {/* Term Filter Dropdown */}
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-muted-foreground text-[11px] font-medium flex items-center gap-1 whitespace-nowrap">
+                          <Clock className="h-3.5 w-3.5 text-primary" /> Term:
+                        </span>
+                        <select
+                          value={examTermFilter}
+                          onChange={(e) => setExamTermFilter(e.target.value)}
+                          className="rounded-md border border-input bg-background px-2.5 py-1.5 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-ring font-medium"
+                        >
+                          <option value="ALL">All Terms</option>
+                          <option value="TERM_1">Term 1</option>
+                          <option value="TERM_2">Term 2</option>
+                          <option value="TERM_3">Term 3</option>
+                          <option value="OTHER">Other / Special</option>
+                        </select>
+                      </div>
 
-                  {/* Informative indicator for teacher duties in this date sheet (does not hide other sessions) */}
+                      {/* Section Filter Dropdown */}
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-muted-foreground text-[11px] font-medium flex items-center gap-1 whitespace-nowrap">
+                          <Users className="h-3.5 w-3.5 text-primary" /> Section:
+                        </span>
+                        <select
+                          value={examSectionFilter}
+                          onChange={(e) => setExamSectionFilter(e.target.value)}
+                          disabled={examGradeFilter === 'ALL' || availableSections.length === 0}
+                          className="rounded-md border border-input bg-background px-2.5 py-1.5 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-ring font-medium disabled:opacity-60"
+                        >
+                          <option value="ALL">
+                            {examGradeFilter === 'ALL'
+                              ? 'Select Grade first'
+                              : availableSections.length === 0
+                              ? 'No sections'
+                              : 'All Sections'}
+                          </option>
+                          {availableSections.map((sec) => (
+                            <option key={sec.id} value={String(sec.id)}>
+                              {sec.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Year Filter Dropdown */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-muted-foreground text-[11px] font-medium flex items-center gap-1 whitespace-nowrap">
+                      <Calendar className="h-3.5 w-3.5 text-primary" /> Year:
+                    </span>
+                    <select
+                      value={examYearFilter}
+                      onChange={(e) => setExamYearFilter(e.target.value)}
+                      className="rounded-md border border-input bg-background px-2 py-1.5 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-ring font-medium"
+                    >
+                      <option value="ALL">All Years</option>
+                      {availableExamYears.map((yr) => (
+                        <option key={yr} value={yr}>
+                          {yr}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Scope Summary Badge */}
+                  {examGradeFilter === 'SCHOOL_WIDE' ? (
+                    <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[11px] gap-1 py-1 font-medium">
+                      <Sparkles className="h-3 w-3" />
+                      School-Wide Date Sheets ({displayedExamSchedules.length} papers)
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[11px] gap-1 py-1 font-medium">
+                      <GraduationCap className="h-3 w-3" />
+                      {examGradeFilter === 'ALL' ? 'All Grades' : `Grade ${examGradeFilter}`}
+                      {examTermFilter !== 'ALL' ? ` • ${examTermFilter.replace('TERM_', 'Term ')}` : ''}
+                      {examSectionFilter !== 'ALL'
+                        ? ` • Section ${classes.find((c) => String(c.id) === String(examSectionFilter))?.name || ''}`
+                        : ''}
+                      {` (${displayedExamSchedules.length} papers)`}
+                    </Badge>
+                  )}
+
+                  {/* Informative indicator for teacher duties in this date sheet */}
                   {isTeacher && myDutiesInCurrentExam.length > 0 && (
                     <Badge
                       variant="outline"
@@ -1007,12 +1107,18 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                       You have {myDutiesInCurrentExam.length} assigned dut{myDutiesInCurrentExam.length === 1 ? 'y' : 'ies'} in this date sheet
                     </Badge>
                   )}
+                </div>
 
+                <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => fetchExamSchedules(selectedExamId, true)}
-                    disabled={loadingExams || !selectedExamId}
+                    onClick={() => {
+                      examCache.current.clear()
+                      fetchExamSchedules(filteredExams, true)
+                      loadExams()
+                    }}
+                    disabled={loadingExams}
                     className="h-8 text-xs"
                   >
                     <RefreshCw className={`h-3 w-3 mr-1.5 ${loadingExams ? 'animate-spin' : ''}`} />
@@ -1168,9 +1274,80 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
               <div className="flex min-h-[250px] items-center justify-center rounded-xl border border-border bg-card">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
+            ) : filteredExams.length === 0 ? (
+              <Card className="border-dashed p-10 text-center space-y-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/60 mx-auto text-muted-foreground">
+                  <GraduationCap className="h-6 w-6" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground">No Examinations Found</h4>
+                  <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
+                    {examGradeFilter !== 'ALL' && examGradeFilter !== 'SCHOOL_WIDE'
+                      ? `No examinations match Grade ${examGradeFilter}${examYearFilter !== 'ALL' ? ` in Year ${examYearFilter}` : ''}. You can schedule a multi-subject exam timetable or reset the filters.`
+                      : 'No examinations match your current filter selections.'}
+                  </p>
+                </div>
+                <div className="flex justify-center items-center gap-2 pt-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setExamGradeFilter('ALL')
+                      setExamTermFilter('ALL')
+                      setExamSectionFilter('ALL')
+                      setExamYearFilter('ALL')
+                    }}
+                    className="text-xs h-8"
+                  >
+                    Reset Filters
+                  </Button>
+                  {isAdmin && (
+                    <Button
+                      size="sm"
+                      onClick={() => setIsUnifiedExamModalOpen(true)}
+                      className="text-xs h-8 gap-1.5"
+                    >
+                      <Calendar className="h-3.5 w-3.5" />
+                      Create Exam Timetable
+                    </Button>
+                  )}
+                </div>
+              </Card>
             ) : displayedExamSchedules.length === 0 ? (
-              <Card className="border-dashed p-8 text-center text-muted-foreground text-xs space-y-2">
-                <p>No examination sessions scheduled for this exam yet.</p>
+              <Card className="border-dashed p-10 text-center space-y-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10 mx-auto text-amber-600">
+                  <Calendar className="h-6 w-6" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground">Exam Scheduled, But No Date Sheet Sessions Added Yet</h4>
+                  <p className="text-xs text-muted-foreground mt-1 max-w-lg mx-auto">
+                    &ldquo;{selectedExam?.name}&rdquo; was created in the Examination Schedule, but individual subject papers (dates, times, venues, and invigilators) haven&apos;t been assigned to this date sheet yet.
+                  </p>
+                </div>
+                {isAdmin && (
+                  <div className="flex flex-wrap justify-center items-center gap-2 pt-1">
+                    <Button
+                      size="sm"
+                      onClick={() => setIsUnifiedExamModalOpen(true)}
+                      className="text-xs h-8 gap-1.5"
+                    >
+                      <Calendar className="h-3.5 w-3.5" />
+                      Generate Multi-Subject Timetable
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setExamScheduleToEdit(null)
+                        setIsExamModalOpen(true)
+                      }}
+                      className="text-xs h-8 gap-1.5"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      + Add Individual Paper / Session
+                    </Button>
+                  </div>
+                )}
               </Card>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -1314,8 +1491,8 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
           isOpen={isExamModalOpen}
           onClose={() => setIsExamModalOpen(false)}
           onSaved={() => {
-            examCache.current.delete(String(selectedExamId))
-            fetchExamSchedules(selectedExamId, true)
+            examCache.current.clear()
+            fetchExamSchedules(filteredExams, true)
           }}
           scheduleToEdit={examScheduleToEdit}
           selectedExam={selectedExam}
@@ -1334,19 +1511,20 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
           onSuccess={async () => {
             examCache.current.clear()
             try {
-              const exList = await academicService.getExams({ academicYear }, getToken)
+              const exList = await academicService.getExams({}, getToken)
               setExams(exList || [])
-              if (exList && exList.length > 0) {
-                const nextId = String(exList[0].id)
-                setSelectedExamId(nextId)
-                fetchExamSchedules(nextId, true)
-              }
             } catch (e) {
               console.warn("Failed to refresh exams after timetable creation", e)
             }
           }}
           getToken={getToken}
-          initialGrade={selectedClass ? selectedClass.gradeLevel : 10}
+          initialGrade={
+            examGradeFilter !== 'ALL' && examGradeFilter !== 'SCHOOL_WIDE'
+              ? Number(examGradeFilter)
+              : selectedClass
+              ? selectedClass.gradeLevel
+              : 10
+          }
         />
       )}
 

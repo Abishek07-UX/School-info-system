@@ -237,19 +237,34 @@ export const academicService = {
 }
 
 /**
+ * Resolves the numeric grade level of an exam (e.g. 1 to 13), or null if general/school-wide.
+ */
+export function getExamGradeLevel(exam) {
+  if (!exam) return null
+  if (exam.gradeLevel != null) return Number(exam.gradeLevel)
+  const classMatch = (exam.className || '').match(/(\d+)/)
+  if (classMatch) return parseInt(classMatch[1], 10)
+  const nameMatch = (exam.name || '').match(/grade\s*(\d+)/i)
+  if (nameMatch) return parseInt(nameMatch[1], 10)
+  return null
+}
+
+/**
  * Checks whether an exam is classified as an open / school-wide & other exam.
  * An exam is school-wide if:
- * 1. It has no specific target class (open to whole school / classId is null/empty)
- * 2. Its term is 'OTHER' (Other / School-wide Exam)
- * 3. Its class name contains 'school-wide', 'general', or 'open'
- * 4. Its exam title contains 'school-wide', 'school wide', or 'open exam'
+ * 1. Explicitly titled or classed as school-wide, general, open, or all-grades
+ * 2. It has no grade level and no specific class, and term is OTHER
  */
 export function isSchoolWideExam(exam) {
   if (!exam) return false
-  if (!exam.classId) return true
-  if (exam.term === 'OTHER') return true
+  const examName = (exam.name || '').toLowerCase()
   const className = (exam.className || '').toLowerCase()
+
   if (
+    examName.includes('school-wide') ||
+    examName.includes('school wide') ||
+    examName.includes('open exam') ||
+    examName.includes('all grades') ||
     className.includes('school-wide') ||
     className.includes('school wide') ||
     className.includes('general') ||
@@ -257,16 +272,18 @@ export function isSchoolWideExam(exam) {
   ) {
     return true
   }
-  const examName = (exam.name || '').toLowerCase()
-  if (
-    examName.includes('school-wide') ||
-    examName.includes('school wide') ||
-    examName.includes('open exam') ||
-    examName.includes('all grades')
-  ) {
-    return true
+
+  // If it has a grade level or says "Grade X", it's a Grade exam, not school-wide
+  if (getExamGradeLevel(exam) != null) {
+    return false
   }
-  return false
+
+  // If it has a classId, it's a class exam
+  if (exam.classId) {
+    return false
+  }
+
+  return true
 }
 
 /**
