@@ -36,9 +36,7 @@ export default function ReportCardTab({ classes = [] }) {
   useEffect(() => {
     if (classes && classes.length > 0) {
       const assigned = classes.find((c) => c.classTeacherId === userProfile?.id)
-      if (assigned && (!selectedClassId || selectedClassId === classes[0]?.id)) {
-        setSelectedClassId(assigned.id)
-      }
+      setSelectedClassId((current) => current || (assigned || classes[0]).id)
     }
   }, [classes, userProfile?.id])
 
@@ -78,17 +76,11 @@ export default function ReportCardTab({ classes = [] }) {
         setExams(examsList || [])
         setStudents(studentsList || [])
 
-        if (studentsList && studentsList.length > 0 && !selectedStudentId) {
-          setSelectedStudentId(studentsList[0].id)
-        }
-
-        const matchingExam = examsList?.find((e) => e.term === selectedTerm)
-        if (matchingExam) {
-          setSelectedExamId(matchingExam.id)
-        } else if (examsList && examsList.length > 0) {
-          setSelectedExamId(examsList[0].id)
-          setSelectedTerm(examsList[0].term)
-        }
+        setSelectedStudentId((current) =>
+          studentsList?.some((student) => String(student.id) === String(current))
+            ? current
+            : studentsList?.[0]?.id || ""
+        )
       } catch (err) {
         console.error("Failed to load class context:", err)
       } finally {
@@ -97,13 +89,18 @@ export default function ReportCardTab({ classes = [] }) {
     }
 
     loadClassContext()
-  }, [selectedClassId, academicYear, selectedTerm, getToken, selectedStudentId])
+  }, [selectedClassId, academicYear, getToken])
 
   // When selected term changes, update selectedExamId
   useEffect(() => {
     const matchingExam = exams.find((e) => e.term === selectedTerm)
     if (matchingExam) {
       setSelectedExamId(matchingExam.id)
+    } else if (exams.length > 0) {
+      setSelectedExamId(exams[0].id)
+      setSelectedTerm(exams[0].term)
+    } else {
+      setSelectedExamId("")
     }
   }, [selectedTerm, exams])
 

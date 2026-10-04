@@ -24,7 +24,7 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
 
     List<Exam> findByStatus(ExamStatus status);
 
-    @Query("SELECT e FROM Exam e LEFT JOIN e.schoolClass sc WHERE " +
+    @Query("SELECT e FROM Exam e LEFT JOIN FETCH e.schoolClass sc WHERE " +
             "(:academicYear IS NULL OR e.academicYear = :academicYear) AND " +
             "(:term IS NULL OR e.term = :term) AND " +
             "(:classId IS NULL OR (sc IS NOT NULL AND sc.id = :classId)) AND " +

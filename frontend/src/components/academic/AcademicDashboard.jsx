@@ -23,19 +23,15 @@ export default function AcademicDashboard({ onBack }) {
   const isTeacherUser = role === "TEACHER"
   const [activeTab, setActiveTab] = useState(isTeacherUser ? "marks" : "exams")
   const [classes, setClasses] = useState([])
-  const [loadingClasses, setLoadingClasses] = useState(true)
   const [preselectedExam, setPreselectedExam] = useState(null)
 
   useEffect(() => {
     async function loadClasses() {
       try {
-        setLoadingClasses(true)
         const data = await academicService.getClasses(getToken)
         setClasses(data || [])
       } catch (err) {
         console.error("Failed to load classes:", err)
-      } finally {
-        setLoadingClasses(false)
       }
     }
     loadClasses()
@@ -181,15 +177,6 @@ export default function AcademicDashboard({ onBack }) {
 
       {/* Main Tab Content */}
       <div className="pt-2">
-        {loadingClasses ? (
-          <Card className="p-12 text-center text-[#858687]">
-            <div className="flex justify-center mb-3">
-              <div className="h-6 w-6 animate-spin rounded-full border-[0.5px] border-[#3b82f6] border-t-transparent" />
-            </div>
-            <div className="text-xs">Initializing academic configuration and class records...</div>
-          </Card>
-        ) : (
-          <>
             {activeTab === "exams" && (
               <ExamManagementTab
                 classes={classes}
@@ -211,8 +198,6 @@ export default function AcademicDashboard({ onBack }) {
             {activeTab === "analytics" && (
               <PerformanceAnalyticsTab classes={classes} />
             )}
-          </>
-        )}
       </div>
     </div>
   )

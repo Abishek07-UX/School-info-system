@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { academicService } from "@/services/academicService"
 import { useAuthUser } from "@/context/AuthUserContext"
 import { Card } from "@/components/ui/card"
@@ -27,13 +27,12 @@ import {
 } from "lucide-react"
 
 export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
-  const { getToken, userProfile } = useAuthUser()
+  const { getToken, userProfile, role, isAdmin, isPrincipal } = useAuthUser()
 
   // Find if teacher has an assigned class
-  const assignedClass = useMemo(() => {
-    if (!classes || classes.length === 0 || !userProfile?.id) return null
-    return classes.find((c) => c.classTeacherId === userProfile.id) || null
-  }, [classes, userProfile?.id])
+  const assignedClass = userProfile?.id
+    ? classes.find((c) => String(c.classTeacherId) === String(userProfile.id)) || null
+    : null
 
   const [selectedClassId, setSelectedClassId] = useState(
     preselectedExam?.classId
@@ -58,14 +57,21 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
   const [saving, setSaving] = useState(false)
   const [feedback, setFeedback] = useState(null)
   const [filterYear, setFilterYear] = useState("2026")
+  const manuallySelectedClass = useRef(false)
+  const selectedClass = classes.find((c) => String(c.id) === String(selectedClassId))
+  const isAssignedClass = Boolean(role === "TEACHER" && userProfile?.id &&
+    String(selectedClass?.classTeacherId) === String(userProfile.id))
+  const canEditMarks = isAdmin || isPrincipal || (
+    role === "TEACHER" && isAssignedClass
+  )
 
-  // Auto-default class once classes or assignedClass becomes available
+  // Prefer the teacher's class even when the profile arrives after the class list.
   useEffect(() => {
-    if (!selectedClassId && classes.length > 0) {
-      const assigned = classes.find((c) => c.classTeacherId === userProfile?.id)
-      setSelectedClassId(assigned ? String(assigned.id) : String(classes[0].id))
-    }
-  }, [classes, userProfile?.id, selectedClassId])
+    if (preselectedExam?.classId || manuallySelectedClass.current || classes.length === 0) return
+    const preferredClass = role === "TEACHER" ? assignedClass : null
+    const defaultClassId = String((preferredClass || classes[0]).id)
+    setSelectedClassId((current) => current === defaultClassId ? current : defaultClassId)
+  }, [classes, assignedClass, role, preselectedExam?.classId])
 
   const calculateGrade = (scoreNum) => {
     if (scoreNum === "" || isNaN(scoreNum) || scoreNum === null) return null
@@ -204,6 +210,7 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
   }
 
   const handleScoreChange = (studentId, rawValue) => {
+    if (!canEditMarks) return
     const grade = calculateGrade(rawValue)
     setStudentMarks((prev) => ({
       ...prev,
@@ -216,6 +223,7 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
   }
 
   const handleRemarksChange = (studentId, rawValue) => {
+    if (!canEditMarks) return
     setStudentMarks((prev) => ({
       ...prev,
       [studentId]: {
@@ -226,6 +234,10 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
   }
 
   const handleSaveAll = async () => {
+    if (!canEditMarks) {
+      setFeedback({ type: "error", message: "Only the assigned class teacher can edit these marks." })
+      return
+    }
     if (!selectedExamId || !selectedSubjectId) {
       setFeedback({
         type: "error",
@@ -301,23 +313,34 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
         <div>
           <h2 className="text-xl font-bold font-heading text-white flex items-center gap-2">
             <Edit3 className="h-5 w-5 text-purple-400" />
-            Batch Subject Mark Entry
+            {canEditMarks ? "Batch Subject Mark Entry" : "Student Marks"}
           </h2>
           <p className="text-xs text-slate-400">
-            Enter numerical scores (0–100) per subject. Scores auto-convert into standard letter grades (A / B / C / S / F).
+            {canEditMarks
+              ? "Enter numerical scores (0–100) per subject. Scores convert to letter grades automatically."
+              : "View the scores, grades, and remarks for this class."}
           </p>
         </div>
 
-        <Button
-          onClick={handleSaveAll}
-          disabled={saving || loading || students.length === 0}
-          size="sm"
-          className="gap-2 shadow-lg shadow-indigo-500/25"
-        >
-          <Save className={`h-4 w-4 ${saving ? "animate-spin" : ""}`} />
-          {saving ? "Saving Marks..." : "Save All Marks"}
-        </Button>
+        {canEditMarks && (
+          <Button
+            onClick={handleSaveAll}
+            disabled={saving || loading || students.length === 0}
+            size="sm"
+            className="gap-2 shadow-lg shadow-indigo-500/25"
+          >
+            <Save className={`h-4 w-4 ${saving ? "animate-spin" : ""}`} />
+            {saving ? "Saving Marks..." : "Save All Marks"}
+          </Button>
+        )}
       </div>
+
+      {role === "TEACHER" && selectedClassId && !canEditMarks && (
+        <Alert>
+          <AlertTitle>View only</AlertTitle>
+          <AlertDescription>Only this class’s assigned teacher can enter or change marks.</AlertDescription>
+        </Alert>
+      )}
 
       {/* Feedback Toast */}
       {feedback && (
@@ -370,7 +393,7 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
               <label className="text-xs font-semibold text-slate-400">
                 Class Cohort *
               </label>
-              {assignedClass && String(assignedClass.id) === String(selectedClassId) && (
+              {isAssignedClass && (
                 <Badge variant="default" className="text-[9px] py-0 px-1.5">
                   Your Class
                 </Badge>
@@ -378,12 +401,15 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
             </div>
             <select
               value={selectedClassId}
-              onChange={(e) => setSelectedClassId(e.target.value)}
+              onChange={(e) => {
+                manuallySelectedClass.current = true
+                setSelectedClassId(e.target.value)
+              }}
               className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             >
               {classes.map((cls) => (
                 <option key={cls.id} value={cls.id}>
-                  {cls.name} {assignedClass && cls.id === assignedClass.id ? "★ (Your Assigned Class)" : ""}
+                  {cls.name} {role === "TEACHER" && String(cls.classTeacherId) === String(userProfile?.id) ? "★ (Your Assigned Class)" : ""}
                 </option>
               ))}
             </select>
@@ -512,20 +538,24 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
 
                     {/* Numeric Score Input */}
                     <TableCell>
-                      <Input
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.1"
-                        placeholder="0–100"
-                        value={markEntry.score}
-                        onChange={(e) => handleScoreChange(student.id, e.target.value)}
-                        className={`h-9 w-28 text-center font-bold text-sm ${
-                          isInvalid
-                            ? "border-rose-500 focus-visible:ring-rose-500 bg-rose-950/20 text-rose-300"
-                            : "bg-slate-950/80 text-white"
-                        }`}
-                      />
+                      {canEditMarks ? (
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          placeholder="0–100"
+                          value={markEntry.score}
+                          onChange={(e) => handleScoreChange(student.id, e.target.value)}
+                          className={`h-9 w-28 text-center font-bold text-sm ${
+                            isInvalid
+                              ? "border-rose-500 focus-visible:ring-rose-500 bg-rose-950/20 text-rose-300"
+                              : "bg-slate-950/80 text-white"
+                          }`}
+                        />
+                      ) : (
+                        <span className="text-sm text-white">{markEntry.score === "" ? "—" : markEntry.score}</span>
+                      )}
                     </TableCell>
 
                     {/* Live Grade Preview */}
@@ -535,13 +565,17 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
 
                     {/* Remarks Input */}
                     <TableCell>
-                      <Input
-                        type="text"
-                        placeholder="e.g. Good comprehension, consistent effort"
-                        value={markEntry.remarks}
-                        onChange={(e) => handleRemarksChange(student.id, e.target.value)}
-                        className="h-9 text-xs bg-slate-950/60"
-                      />
+                      {canEditMarks ? (
+                        <Input
+                          type="text"
+                          placeholder="e.g. Good comprehension, consistent effort"
+                          value={markEntry.remarks}
+                          onChange={(e) => handleRemarksChange(student.id, e.target.value)}
+                          className="h-9 text-xs bg-slate-950/60"
+                        />
+                      ) : (
+                        <span className="text-xs text-slate-300">{markEntry.remarks || "—"}</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 )

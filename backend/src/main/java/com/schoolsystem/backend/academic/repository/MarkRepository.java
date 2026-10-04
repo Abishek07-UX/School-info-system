@@ -2,6 +2,7 @@ package com.schoolsystem.backend.academic.repository;
 
 import com.schoolsystem.backend.academic.model.Mark;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -12,8 +13,10 @@ import java.util.Optional;
 @Repository
 public interface MarkRepository extends JpaRepository<Mark, Long> {
 
+    @EntityGraph(attributePaths = {"student", "subject", "recordedBy"})
     List<Mark> findByExamId(Long examId);
 
+    @EntityGraph(attributePaths = {"exam", "student", "subject", "recordedBy"})
     List<Mark> findByExamIdAndSubjectId(Long examId, Long subjectId);
 
     List<Mark> findByExamIdAndStudentId(Long examId, Long studentId);

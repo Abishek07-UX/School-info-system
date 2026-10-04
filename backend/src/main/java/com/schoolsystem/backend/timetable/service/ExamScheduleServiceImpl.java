@@ -54,6 +54,15 @@ public class ExamScheduleServiceImpl implements ExamScheduleService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<ExamScheduleResponse> getSchedulesForExams(List<Long> examIds) {
+        if (examIds == null || examIds.isEmpty()) return List.of();
+        return examScheduleRepository.findByExamIdsWithDetails(examIds).stream()
+                .map(conflictService::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<ExamScheduleResponse> getSchedulesForClass(Long classId, Long examId) {
         return examScheduleRepository.findByClassAndExamWithDetails(classId, examId).stream()
                 .map(conflictService::toResponseDTO)

@@ -9,6 +9,8 @@ public interface ExamScheduleService {
 
     List<ExamScheduleResponse> getSchedulesForExam(Long examId);
 
+    List<ExamScheduleResponse> getSchedulesForExams(List<Long> examIds);
+
     List<ExamScheduleResponse> getSchedulesForClass(Long classId, Long examId);
 
     List<ExamScheduleResponse> getInvigilatorDuties(Long teacherId);

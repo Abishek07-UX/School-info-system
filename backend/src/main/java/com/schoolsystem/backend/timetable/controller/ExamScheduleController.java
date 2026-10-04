@@ -33,6 +33,13 @@ public class ExamScheduleController {
         return ApiResponse.success(schedules, "Exam schedules retrieved successfully");
     }
 
+    @GetMapping("/batch")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PRINCIPAL', 'TEACHER')")
+    public ApiResponse<List<ExamScheduleResponse>> getExamSchedulesBatch(@RequestParam List<Long> examIds) {
+        List<ExamScheduleResponse> schedules = examScheduleService.getSchedulesForExams(examIds);
+        return ApiResponse.success(schedules, "Exam schedules retrieved successfully");
+    }
+
     @GetMapping("/classes/{classId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'PRINCIPAL', 'TEACHER')")
     public ApiResponse<List<ExamScheduleResponse>> getClassExamDateSheet(

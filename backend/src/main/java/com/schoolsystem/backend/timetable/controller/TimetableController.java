@@ -1,10 +1,13 @@
 package com.schoolsystem.backend.timetable.controller;
 
 import com.schoolsystem.backend.common.dto.response.ApiResponse;
+import com.schoolsystem.backend.academic.dto.response.ClassSummaryDTO;
+import com.schoolsystem.backend.academic.service.AcademicLookupService;
 import com.schoolsystem.backend.timetable.dto.request.AutoGenerateRequest;
 import com.schoolsystem.backend.timetable.dto.request.ConflictCheckRequest;
 import com.schoolsystem.backend.timetable.dto.request.TimetableSlotRequest;
 import com.schoolsystem.backend.timetable.dto.response.ClassTimetableResponse;
+import com.schoolsystem.backend.timetable.dto.response.ClassTimetableBootstrapResponse;
 import com.schoolsystem.backend.timetable.dto.response.ConflictCheckResponse;
 import com.schoolsystem.backend.timetable.dto.response.TeacherScheduleResponse;
 import com.schoolsystem.backend.timetable.dto.response.TimetableAuditResponse;
@@ -23,11 +26,30 @@ public class TimetableController {
 
     private final TimetableService timetableService;
     private final TimetableConflictService conflictService;
+    private final AcademicLookupService academicLookupService;
 
     public TimetableController(TimetableService timetableService,
-                               TimetableConflictService conflictService) {
+                               TimetableConflictService conflictService,
+                               AcademicLookupService academicLookupService) {
         this.timetableService = timetableService;
         this.conflictService = conflictService;
+        this.academicLookupService = academicLookupService;
+    }
+
+    @GetMapping("/bootstrap")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PRINCIPAL', 'TEACHER')")
+    public ApiResponse<ClassTimetableBootstrapResponse> getClassTimetableBootstrap(
+            @RequestParam(defaultValue = "2026") Integer academicYear,
+            @RequestParam(required = false) Long preferredTeacherId) {
+        List<ClassSummaryDTO> classes = academicLookupService.getAllClasses();
+        ClassSummaryDTO selected = classes.stream()
+                .filter(c -> preferredTeacherId != null && preferredTeacherId.equals(c.getClassTeacherId()))
+                .findFirst()
+                .orElse(classes.isEmpty() ? null : classes.get(0));
+        ClassTimetableResponse timetable = selected == null ? null
+                : timetableService.getClassTimetable(selected.getId(), academicYear);
+        return ApiResponse.success(new ClassTimetableBootstrapResponse(classes, timetable),
+                "Class timetable loaded successfully");
     }
 
     @GetMapping("/classes/{classId}")

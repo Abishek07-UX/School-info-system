@@ -1,38 +1,12 @@
-const BASE_URL = 'http://localhost:8080/api'
-
-async function request(endpoint, options = {}, getToken) {
-  let headers = {
-    'Content-Type': 'application/json',
-    ...options.headers,
-  }
-
-  if (getToken) {
-    try {
-      const token = await getToken()
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-    } catch (e) {
-      console.warn('Could not retrieve auth token:', e)
-    }
-  }
-
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  })
-
-  const json = await response.json().catch(() => ({}))
-
-  if (!response.ok) {
-    const errorMsg = json?.error?.message || json?.message || `Request failed (${response.status})`
-    throw new Error(errorMsg)
-  }
-
-  return json.data !== undefined ? json.data : json
-}
+import { request } from './apiRequest'
 
 export const timetableService = {
+  async getClassTimetableBootstrap(academicYear = 2026, preferredTeacherId, getToken) {
+    const params = new URLSearchParams({ academicYear: String(academicYear) })
+    if (preferredTeacherId) params.set('preferredTeacherId', String(preferredTeacherId))
+    return request(`/timetables/bootstrap?${params}`, { method: 'GET' }, getToken)
+  },
+
   // Class Timetable
   async getClassTimetable(classId, academicYear = 2026, getToken) {
     return request(`/timetables/classes/${classId}?academicYear=${academicYear}`, { method: 'GET' }, getToken)

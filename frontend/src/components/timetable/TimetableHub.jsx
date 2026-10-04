@@ -56,11 +56,12 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
 
   // Selection states
   const [selectedClassId, setSelectedClassId] = useState('')
-  const [selectedTeacherId, setSelectedTeacherId] = useState('')
+  const [selectedTeacherId, setSelectedTeacherId] = useState(isTeacher ? userProfile?.id || '' : '')
   const [examGradeFilter, setExamGradeFilter] = useState('ALL') // 'ALL', '1'..'13', 'SCHOOL_WIDE'
   const [examTermFilter, setExamTermFilter] = useState('ALL') // 'ALL', 'TERM_1', 'TERM_2', 'TERM_3', 'OTHER'
   const [examSectionFilter, setExamSectionFilter] = useState('ALL') // 'ALL', or classId
-  const [examYearFilter, setExamYearFilter] = useState('ALL') // 'ALL', '2026', '2025', etc.
+  const [examYearFilter, setExamYearFilter] = useState(String(new Date().getFullYear())) // 'ALL' or a year
+  const [visibleExamCount, setVisibleExamCount] = useState(48)
   const [teacherSearchTerm, setTeacherSearchTerm] = useState('')
 
   // Data states
@@ -93,28 +94,16 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
   const [isPrintOpen, setIsPrintOpen] = useState(false)
   const [isPrintTeacher, setIsPrintTeacher] = useState(false)
 
-  // Helper to find logged-in teacher entity
-  const findLoggedInTeacher = useCallback((tchsList) => {
-    if (!tchsList || tchsList.length === 0 || !userProfile) return null
-    return tchsList.find((t) => {
-      const matchId = userProfile.id != null && String(t.id) === String(userProfile.id)
-      const matchEmail = userProfile.email && t.email && t.email.trim().toLowerCase() === userProfile.email.trim().toLowerCase()
-      const matchClerk = userProfile.clerkId && t.clerkId && t.clerkId === userProfile.clerkId
-      const matchName = userProfile.firstName && t.firstName &&
-        t.firstName.trim().toLowerCase() === userProfile.firstName.trim().toLowerCase() &&
-        (t.lastName || '').trim().toLowerCase() === (userProfile.lastName || '').trim().toLowerCase()
-      return matchId || matchEmail || matchClerk || matchName
-    }) || null
-  }, [userProfile])
-
   // In-memory caches for instant tab switching and smooth transitions
   const classCache = useRef(new Map())
   const teacherCache = useRef(new Map())
   const examCache = useRef(new Map())
+  const examFetchVersion = useRef(0)
+  const examListVersion = useRef(0)
 
   // Fetch Class Timetable with caching
-  const fetchClassTimetable = useCallback(async (targetId = selectedClassId, forceRefresh = false) => {
-    const classIdToFetch = targetId || selectedClassId
+  const fetchClassTimetable = useCallback(async (targetId, forceRefresh = false) => {
+    const classIdToFetch = targetId
     if (!classIdToFetch) return
     const cacheKey = `${classIdToFetch}_${academicYear}`
 
@@ -139,11 +128,11 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
     } finally {
       setLoadingClass(false)
     }
-  }, [selectedClassId, academicYear, getToken])
+  }, [academicYear, getToken])
 
   // Fetch Teacher Timetable with caching
-  const fetchTeacherSchedule = useCallback(async (targetId = selectedTeacherId, forceRefresh = false) => {
-    const teacherIdToFetch = targetId || selectedTeacherId
+  const fetchTeacherSchedule = useCallback(async (targetId, forceRefresh = false) => {
+    const teacherIdToFetch = targetId
     if (!teacherIdToFetch) {
       setTeacherSchedule(null)
       return
@@ -171,10 +160,11 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
     } finally {
       setLoadingTeacher(false)
     }
-  }, [selectedTeacherId, academicYear, getToken])
+  }, [academicYear, getToken])
 
   // Fetch Exam Schedules for exams with in-memory caching
   const fetchExamSchedules = useCallback(async (examsToFetch, forceRefresh = false) => {
+    const fetchVersion = ++examFetchVersion.current
     if (!examsToFetch || (Array.isArray(examsToFetch) && examsToFetch.length === 0)) {
       setExamSchedules([])
       setLoadingExams(false)
@@ -194,102 +184,135 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
     setLoadingExams(true)
     setErrorMsg(null)
     try {
-      const schedulePromises = examsList.map(async (exam) => {
-        const cacheKey = String(exam.id)
-        if (!forceRefresh && examCache.current.has(cacheKey)) {
-          return examCache.current.get(cacheKey)
+      const missingIds = [...new Set(examsList.map((exam) => String(exam.id)))]
+        .filter((id) => forceRefresh || !examCache.current.has(id))
+      if (missingIds.length) {
+        const schedules = await examScheduleService.getExamSchedulesBatch(missingIds, getToken)
+        const byExam = new Map(missingIds.map((id) => [id, []]))
+        for (const schedule of schedules || []) {
+          byExam.get(String(schedule.examId))?.push(schedule)
         }
-        const data = await examScheduleService.getExamSchedules(exam.id, getToken)
-        const schedules = data || []
-        examCache.current.set(cacheKey, schedules)
-        return schedules
-      })
+        for (const [id, examSchedules] of byExam) {
+          examCache.current.set(id, examSchedules)
+        }
+      }
 
-      const results = await Promise.all(schedulePromises)
-      const combined = results.flat()
+      const combined = examsList.flatMap((exam) => examCache.current.get(String(exam.id)) || [])
       combined.sort((a, b) => {
         const dComp = (a.examDate || '').localeCompare(b.examDate || '')
         if (dComp !== 0) return dComp
         return (a.startTime || '').localeCompare(b.startTime || '')
       })
-      setExamSchedules(combined)
+      if (fetchVersion === examFetchVersion.current) setExamSchedules(combined)
     } catch (err) {
-      setErrorMsg(err.message || 'Failed to load exam schedules.')
+      if (fetchVersion === examFetchVersion.current) setErrorMsg(err.message || 'Failed to load exam schedules.')
     } finally {
-      setLoadingExams(false)
+      if (fetchVersion === examFetchVersion.current) setLoadingExams(false)
     }
   }, [getToken])
 
-  // Initial Lookups with parallel preloading
+  const classesLoaded = useRef(false)
+  // Load the first class and its timetable together to remove a browser request waterfall.
   useEffect(() => {
-    async function loadLookups() {
+    if (classesLoaded.current || (activeTab !== 'classes' && activeTab !== 'exams')) return
+    let cancelled = false
+    async function loadClasses() {
       try {
-        const [cls, tchs, subs, rlist] = await Promise.all([
-          academicService.getClasses(getToken),
-          timetableService.getTeachers(getToken),
-          academicService.getAllSubjects(getToken),
-          timetableService.getCampusRooms(getToken),
-        ])
-
-        setClasses(cls || [])
-        setTeachers(tchs || [])
-        setSubjects(subs || [])
-        setCampusRooms(rlist || [])
-
-        let initClassId = ''
-        if (cls && cls.length > 0) {
-          const myClass = cls.find((c) => c.classTeacherId === userProfile?.id)
-          initClassId = myClass ? myClass.id : cls[0].id
-          setSelectedClassId(initClassId)
-          fetchClassTimetable(initClassId)
-        }
-
-        let initTeacherId = ''
-        if (tchs && tchs.length > 0) {
-          if (isTeacher) {
-            const me = findLoggedInTeacher(tchs)
-            initTeacherId = me ? me.id : userProfile?.id
-          } else {
-            initTeacherId = tchs[0].id
+        if (activeTab === 'classes') {
+          try {
+            setLoadingClass(true)
+            const data = await timetableService.getClassTimetableBootstrap(academicYear, userProfile?.id, getToken)
+            if (cancelled) return
+            setClasses(data.classes || [])
+            if (data.timetable) {
+              const id = data.timetable.classId
+              classCache.current.set(`${id}_${academicYear}`, data.timetable)
+              setSelectedClassId(id)
+              setClassTimetable(data.timetable)
+            }
+          } catch (err) {
+            // Support a backend process that has not yet been restarted.
+            if (err.status !== 404) throw err
+            const cls = await academicService.getClasses(getToken)
+            if (cancelled) return
+            setClasses(cls || [])
+            if (cls?.length) {
+              const myClass = cls.find((c) => c.classTeacherId === userProfile?.id)
+              setSelectedClassId((current) => current || (myClass || cls[0]).id)
+            }
+          } finally {
+            if (!cancelled) setLoadingClass(false)
           }
-          if (initTeacherId) {
-            setSelectedTeacherId(initTeacherId)
-            fetchTeacherSchedule(initTeacherId)
+        } else {
+          const cls = await academicService.getClasses(getToken)
+          if (cancelled) return
+          setClasses(cls || [])
+          if (cls?.length) {
+            const myClass = cls.find((c) => c.classTeacherId === userProfile?.id)
+            setSelectedClassId((current) => current || (myClass || cls[0]).id)
           }
         }
+        if (!cancelled) classesLoaded.current = true
       } catch (err) {
-        console.error('Failed to load initial timetable lookups:', err)
+        if (!cancelled) setErrorMsg(err.message || 'Failed to load classes.')
       }
     }
-    loadLookups()
-  }, [getToken, isTeacher, userProfile, findLoggedInTeacher, fetchClassTimetable, fetchTeacherSchedule])
+    loadClasses()
 
-  // Keep selected teacher locked to logged-in teacher when isTeacher
+    return () => { cancelled = true }
+  }, [activeTab, academicYear, getToken, userProfile?.id])
+
+  // The signed-in user's database ID is also their timetable teacher ID.
   useEffect(() => {
-    if (isTeacher) {
-      const me = findLoggedInTeacher(teachers)
-      const targetId = me ? me.id : userProfile?.id
-      if (targetId && String(selectedTeacherId) !== String(targetId)) {
-        setSelectedTeacherId(targetId)
-      } else if (!targetId && selectedTeacherId) {
-        setSelectedTeacherId('')
-      }
-    }
-  }, [isTeacher, teachers, userProfile, selectedTeacherId, findLoggedInTeacher])
+    if (isTeacher && userProfile?.id) setSelectedTeacherId(userProfile.id)
+  }, [isTeacher, userProfile?.id])
 
-  // Load Exams with preloading (fetches all exams across academic years)
+  // Other lists are needed only for their tab or the editing dialogs.
+  const lookupRequested = useRef({ teachers: false, subjects: false, rooms: false })
+  useEffect(() => {
+    const needTeachers = (activeTab === 'teachers' && !isTeacher) || isSlotModalOpen || isExamModalOpen
+    const needDetails = isSlotModalOpen || isExamModalOpen
+    if (needTeachers && !lookupRequested.current.teachers) {
+      lookupRequested.current.teachers = true
+      timetableService.getTeachers(getToken).then((data) => {
+        setTeachers(data || [])
+        if (!isTeacher && data?.length) setSelectedTeacherId((current) => current || data[0].id)
+      }).catch((err) => {
+        lookupRequested.current.teachers = false
+        console.error('Failed to load teachers:', err)
+      })
+    }
+    if (needDetails && !lookupRequested.current.subjects) {
+      lookupRequested.current.subjects = true
+      academicService.getAllSubjects(getToken).then((data) => setSubjects(data || [])).catch((err) => {
+        lookupRequested.current.subjects = false
+        console.error('Failed to load subjects:', err)
+      })
+    }
+    if (isExamModalOpen && !lookupRequested.current.rooms) {
+      lookupRequested.current.rooms = true
+      timetableService.getCampusRooms(getToken).then((data) => setCampusRooms(data || [])).catch((err) => {
+        lookupRequested.current.rooms = false
+        console.error('Failed to load rooms:', err)
+      })
+    }
+  }, [activeTab, isTeacher, isSlotModalOpen, isExamModalOpen, getToken])
+
+  // Exam records are only needed when opening the exam date sheets tab.
   const loadExams = useCallback(async () => {
+    const version = ++examListVersion.current
     try {
-      const examList = await academicService.getExams({}, getToken)
-      setExams(examList || [])
+      const academicYear = examYearFilter === 'ALL' ? undefined : Number(examYearFilter)
+      const examList = await academicService.getExams({ academicYear }, getToken)
+      if (version === examListVersion.current) setExams(examList || [])
     } catch (err) {
       console.error('Failed to load exams:', err)
     }
-  }, [getToken])
+  }, [getToken, examYearFilter])
 
   useEffect(() => {
-    loadExams()
-  }, [loadExams])
+    if (activeTab === 'exams') loadExams()
+  }, [activeTab, loadExams])
 
   useEffect(() => {
     if (activeTab === 'classes' && selectedClassId) {
@@ -354,8 +377,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
   // Fetch logged-in teacher's assigned examination duties
   const fetchTeacherDuties = useCallback(async () => {
     if (!isTeacher) return
-    const me = findLoggedInTeacher(teachers)
-    const targetId = me ? me.id : userProfile?.id
+    const targetId = userProfile?.id
     if (!targetId) return
 
     setLoadingTeacherDuties(true)
@@ -367,13 +389,13 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
     } finally {
       setLoadingTeacherDuties(false)
     }
-  }, [isTeacher, teachers, userProfile, findLoggedInTeacher, getToken])
+  }, [isTeacher, userProfile?.id, getToken])
 
   useEffect(() => {
-    if (isTeacher) {
+    if (isTeacher && activeTab === 'exams') {
       fetchTeacherDuties()
     }
-  }, [isTeacher, fetchTeacherDuties])
+  }, [isTeacher, activeTab, fetchTeacherDuties])
 
   const handleClearClass = async () => {
     if (!window.confirm('Are you sure you want to clear this entire weekly timetable?')) return
@@ -524,6 +546,10 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
       return true
     })
   }, [examSchedules, examGradeFilter, examSectionFilter])
+
+  useEffect(() => {
+    setVisibleExamCount(48)
+  }, [examGradeFilter, examTermFilter, examSectionFilter, examYearFilter])
 
   return (
     <div className="space-y-6">
@@ -1350,8 +1376,9 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                 )}
               </Card>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {displayedExamSchedules.map((item) => {
+              <div className="space-y-4">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {displayedExamSchedules.slice(0, visibleExamCount).map((item) => {
                   const isMyDuty = isTeacher && userProfile && (
                     (item.invigilatorId && String(item.invigilatorId) === String(userProfile.id)) ||
                     (item.coInvigilatorId && String(item.coInvigilatorId) === String(userProfile.id)) ||
@@ -1444,6 +1471,12 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                     </Card>
                   )
                 })}
+                </div>
+                {displayedExamSchedules.length > visibleExamCount && (
+                  <Button variant="outline" className="w-full" onClick={() => setVisibleExamCount((count) => count + 48)}>
+                    Show more papers ({displayedExamSchedules.length - visibleExamCount} remaining)
+                  </Button>
+                )}
               </div>
             )
           )}

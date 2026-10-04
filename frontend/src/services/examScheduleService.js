@@ -1,40 +1,19 @@
-const BASE_URL = 'http://localhost:8080/api'
-
-async function request(endpoint, options = {}, getToken) {
-  let headers = {
-    'Content-Type': 'application/json',
-    ...options.headers,
-  }
-
-  if (getToken) {
-    try {
-      const token = await getToken()
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-    } catch (e) {
-      console.warn('Could not retrieve auth token:', e)
-    }
-  }
-
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  })
-
-  const json = await response.json().catch(() => ({}))
-
-  if (!response.ok) {
-    const errorMsg = json?.error?.message || json?.message || `Request failed (${response.status})`
-    throw new Error(errorMsg)
-  }
-
-  return json.data !== undefined ? json.data : json
-}
+import { request } from './apiRequest'
 
 export const examScheduleService = {
   async getExamSchedules(examId, getToken) {
     return request(`/exam-schedules?examId=${examId}`, { method: 'GET' }, getToken)
+  },
+
+  async getExamSchedulesBatch(examIds, getToken) {
+    const ids = examIds.map((id) => encodeURIComponent(id)).join(',')
+    try {
+      return await request(`/exam-schedules/batch?examIds=${ids}`, { method: 'GET' }, getToken)
+    } catch (error) {
+      if (error.status !== 404) throw error
+      const schedules = await Promise.all(examIds.map((id) => this.getExamSchedules(id, getToken)))
+      return schedules.flat()
+    }
   },
 
   async getClassExamDateSheet(classId, examId, getToken) {

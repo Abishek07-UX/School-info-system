@@ -10,18 +10,23 @@ import com.schoolsystem.backend.academic.model.Grade;
 import com.schoolsystem.backend.academic.model.Mark;
 import com.schoolsystem.backend.academic.repository.ExamRepository;
 import com.schoolsystem.backend.academic.repository.MarkRepository;
+import com.schoolsystem.backend.administration.model.SchoolClass;
 import com.schoolsystem.backend.administration.model.Subject;
 import com.schoolsystem.backend.administration.repository.SubjectRepository;
 import com.schoolsystem.backend.common.exception.ResourceNotFoundException;
 import com.schoolsystem.backend.student.model.Student;
 import com.schoolsystem.backend.student.repository.StudentRepository;
 import com.schoolsystem.backend.user.model.User;
+import com.schoolsystem.backend.user.model.UserRole;
 import com.schoolsystem.backend.user.repository.UserRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -49,19 +54,17 @@ public class MarkServiceImpl implements MarkService {
 
     @Override
     public MarkResponseDTO enterSingleMark(EnterMarkRequest request, Long recordedByUserId) {
+        User recordedBy = requireEditor(recordedByUserId);
         Exam exam = examRepository.findById(request.getExamId())
                 .orElseThrow(() -> new ResourceNotFoundException("Exam not found with id: " + request.getExamId(), "EXAM_NOT_FOUND"));
 
         Student student = studentRepository.findById(request.getStudentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found with id: " + request.getStudentId(), "STUDENT_NOT_FOUND"));
 
+        requirePermissionForStudent(recordedBy, exam, student);
+
         Subject subject = subjectRepository.findById(request.getSubjectId())
                 .orElseThrow(() -> new ResourceNotFoundException("Subject not found with id: " + request.getSubjectId(), "SUBJECT_NOT_FOUND"));
-
-        User recordedBy = null;
-        if (recordedByUserId != null) {
-            recordedBy = userRepository.findById(recordedByUserId).orElse(null);
-        }
 
         // Check if a mark already exists for this (exam, student, subject)
         Optional<Mark> existingMark = markRepository.findByExamIdAndStudentIdAndSubjectId(
@@ -73,9 +76,7 @@ public class MarkServiceImpl implements MarkService {
             mark.setScore(request.getScore());
             mark.setGrade(gradingService.calculateGrade(request.getScore()));
             mark.setRemarks(request.getRemarks());
-            if (recordedBy != null) {
-                mark.setRecordedBy(recordedBy);
-            }
+            mark.setRecordedBy(recordedBy);
         } else {
             mark = new Mark(exam, student, subject, request.getScore(), request.getRemarks(), recordedBy);
         }
@@ -86,22 +87,30 @@ public class MarkServiceImpl implements MarkService {
 
     @Override
     public BatchMarkResponseDTO enterBatchMarks(BatchMarkEntryRequest request, Long recordedByUserId) {
+        User recordedBy = requireEditor(recordedByUserId);
         Exam exam = examRepository.findById(request.getExamId())
                 .orElseThrow(() -> new ResourceNotFoundException("Exam not found with id: " + request.getExamId(), "EXAM_NOT_FOUND"));
 
         Subject subject = subjectRepository.findById(request.getSubjectId())
                 .orElseThrow(() -> new ResourceNotFoundException("Subject not found with id: " + request.getSubjectId(), "SUBJECT_NOT_FOUND"));
 
-        User recordedBy = null;
-        if (recordedByUserId != null) {
-            recordedBy = userRepository.findById(recordedByUserId).orElse(null);
+        List<Long> studentIds = request.getMarks().stream().map(MarkItemDTO::getStudentId).distinct().toList();
+        Map<Long, Student> studentsById = studentRepository.findAllById(studentIds).stream()
+                .collect(Collectors.toMap(Student::getId, student -> student));
+
+        // Validate the entire batch before changing any mark.
+        for (MarkItemDTO item : request.getMarks()) {
+            Student student = studentsById.get(item.getStudentId());
+            if (student == null) {
+                throw new ResourceNotFoundException("Student not found with id: " + item.getStudentId(), "STUDENT_NOT_FOUND");
+            }
+            requirePermissionForStudent(recordedBy, exam, student);
         }
 
         List<MarkResponseDTO> savedDTOs = new ArrayList<>();
 
         for (MarkItemDTO item : request.getMarks()) {
-            Student student = studentRepository.findById(item.getStudentId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Student not found with id: " + item.getStudentId(), "STUDENT_NOT_FOUND"));
+            Student student = studentsById.get(item.getStudentId());
 
             Optional<Mark> existingMark = markRepository.findByExamIdAndStudentIdAndSubjectId(
                     request.getExamId(), item.getStudentId(), request.getSubjectId());
@@ -112,9 +121,7 @@ public class MarkServiceImpl implements MarkService {
                 mark.setScore(item.getScore());
                 mark.setGrade(gradingService.calculateGrade(item.getScore()));
                 mark.setRemarks(item.getRemarks());
-                if (recordedBy != null) {
-                    mark.setRecordedBy(recordedBy);
-                }
+                mark.setRecordedBy(recordedBy);
             } else {
                 mark = new Mark(exam, student, subject, item.getScore(), item.getRemarks(), recordedBy);
             }
@@ -131,6 +138,27 @@ public class MarkServiceImpl implements MarkService {
                 savedDTOs.size(),
                 savedDTOs
         );
+    }
+
+    private User requireEditor(Long userId) {
+        if (userId == null) throw new AccessDeniedException("Sign in to edit marks");
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new AccessDeniedException("Sign in to edit marks"));
+    }
+
+    private void requirePermissionForStudent(User editor, Exam exam, Student student) {
+        SchoolClass studentClass = student.getSchoolClass();
+        SchoolClass examClass = exam.getSchoolClass();
+        if (examClass != null && (studentClass == null || !Objects.equals(examClass.getId(), studentClass.getId()))) {
+            throw new IllegalArgumentException("Student is not enrolled in the exam's class");
+        }
+
+        if (editor.getRole() == UserRole.ADMIN || editor.getRole() == UserRole.PRINCIPAL) return;
+        if (editor.getRole() != UserRole.TEACHER || studentClass == null ||
+                studentClass.getClassTeacher() == null ||
+                !Objects.equals(studentClass.getClassTeacher().getId(), editor.getId())) {
+            throw new AccessDeniedException("Only the assigned class teacher can edit these marks");
+        }
     }
 
     @Override

@@ -32,9 +32,7 @@ export default function PerformanceAnalyticsTab({ classes = [] }) {
   useEffect(() => {
     if (classes && classes.length > 0) {
       const assigned = classes.find((c) => c.classTeacherId === userProfile?.id)
-      if (assigned && (!selectedClassId || selectedClassId === classes[0]?.id)) {
-        setSelectedClassId(assigned.id)
-      }
+      setSelectedClassId((current) => current || (assigned || classes[0]).id)
     }
   }, [classes, userProfile?.id])
 
