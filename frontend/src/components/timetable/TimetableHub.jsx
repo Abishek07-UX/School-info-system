@@ -36,6 +36,15 @@ import { AutoGeneratorModal } from './AutoGeneratorModal'
 import { PrintableTimetable } from './PrintableTimetable'
 import ExamTimetableModal from '../academic/ExamTimetableModal'
 
+const EXAM_TERM_LABELS = {
+  TERM_1: 'Term 1',
+  TERM_2: 'Term 2',
+  TERM_3: 'Term 3',
+  OTHER: 'Other / Special',
+}
+
+const getExamTermLabel = (term) => EXAM_TERM_LABELS[term] || term
+
 export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile, getToken }) {
   const authCtx = useAuthUser()
   const userProfile = propUserProfile || authCtx?.userProfile
@@ -1238,6 +1247,11 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                             <Badge variant="outline" className="text-[10px]">
                               {duty.className || "School-wide Cohort"}
                             </Badge>
+                            {duty.term && (
+                              <Badge variant="outline" className="text-[10px]">
+                                {getExamTermLabel(duty.term)}{duty.academicYear ? ` (${duty.academicYear})` : ''}
+                              </Badge>
+                            )}
                           </div>
                           <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
@@ -1347,7 +1361,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                 <div>
                   <h4 className="text-sm font-semibold text-foreground">Exam Scheduled, But No Date Sheet Sessions Added Yet</h4>
                   <p className="text-xs text-muted-foreground mt-1 max-w-lg mx-auto">
-                    &ldquo;{selectedExam?.name}&rdquo; was created in the Examination Schedule, but individual subject papers (dates, times, venues, and invigilators) haven&apos;t been assigned to this date sheet yet.
+                    &ldquo;{selectedExam?.name}&rdquo;{selectedExam?.term ? ` (${getExamTermLabel(selectedExam.term)})` : ''} was created in the Examination Schedule, but individual subject papers (dates, times, venues, and invigilators) haven&apos;t been assigned to this date sheet yet.
                   </p>
                 </div>
                 {isAdmin && (
@@ -1396,6 +1410,11 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                             >
                               {item.className || 'School-wide'}
                             </Badge>
+                            {item.term && (
+                              <Badge variant="outline" className="text-[10px] font-medium">
+                                {getExamTermLabel(item.term)}{item.academicYear ? ` (${item.academicYear})` : ''}
+                              </Badge>
+                            )}
                             {isMyDuty && (
                               <Badge className="bg-emerald-600 text-white text-[10px] py-0 px-1.5 font-medium">
                                 Your Duty
@@ -1558,6 +1577,9 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
               ? selectedClass.gradeLevel
               : 10
           }
+          initialClassId={examSectionFilter === 'ALL' ? null : examSectionFilter}
+          initialTerm={['TERM_1', 'TERM_2', 'TERM_3'].includes(examTermFilter) ? examTermFilter : 'TERM_1'}
+          initialAcademicYear={examYearFilter === 'ALL' ? new Date().getFullYear() : Number(examYearFilter)}
         />
       )}
 

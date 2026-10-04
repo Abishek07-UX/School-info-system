@@ -1,7 +1,9 @@
 package com.schoolsystem.backend.academic.service;
 
 import com.schoolsystem.backend.academic.dto.request.CreateExamWithTimetableRequest;
+import com.schoolsystem.backend.academic.dto.request.CreateExamRequest;
 import com.schoolsystem.backend.academic.dto.request.ExamSlotItemRequest;
+import com.schoolsystem.backend.academic.dto.request.UpdateExamRequest;
 import com.schoolsystem.backend.academic.dto.response.ExamWithTimetableResponseDTO;
 import com.schoolsystem.backend.academic.model.Exam;
 import com.schoolsystem.backend.academic.model.ExamStatus;
@@ -199,6 +201,110 @@ class ExamServiceTest {
         });
 
         assertTrue(ex.getMessage().contains("must be within the exam date range"));
+    }
+
+    @Test
+    @DisplayName("Rejects another term exam for the same grade and year, even in a different class and date range")
+    void testCreateExamWithTimetable_DuplicateGradeTerm_ThrowsException() {
+        CreateExamWithTimetableRequest request = new CreateExamWithTimetableRequest();
+        request.setName("Another First Term Examination");
+        request.setAcademicYear(2026);
+        request.setTerm(ExamTerm.TERM_1);
+        request.setGradeLevel(10);
+        request.setClassIds(List.of(2L));
+        request.setStartDate(LocalDate.of(2026, 9, 1));
+        request.setEndDate(LocalDate.of(2026, 9, 5));
+        request.setSlots(List.of(new ExamSlotItemRequest(201L, LocalDate.of(2026, 9, 2),
+                LocalTime.of(8, 30), LocalTime.of(11, 30), null, null, 100, null)));
+
+        when(schoolClassRepository.findById(2L)).thenReturn(Optional.of(class10B));
+        when(examRepository.existsTermExamForGrade(10, 2026, ExamTerm.TERM_1)).thenReturn(true);
+
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> examService.createExamWithTimetable(request));
+
+        assertTrue(error.getMessage().contains("Grade 10 already has"));
+        assertTrue(error.getMessage().contains("2026"));
+        verify(examRepository, never()).save(any(Exam.class));
+        verify(examScheduleRepository, never()).save(any(ExamSchedule.class));
+    }
+
+    @Test
+    @DisplayName("Single-exam scheduling also rejects an existing grade term exam")
+    void testCreateExam_DuplicateGradeTerm_ThrowsException() {
+        CreateExamRequest request = new CreateExamRequest();
+        request.setName("Duplicate Term 1");
+        request.setAcademicYear(2026);
+        request.setTerm(ExamTerm.TERM_1);
+        request.setClassId(2L);
+        request.setStartDate(LocalDate.of(2026, 10, 1));
+        request.setEndDate(LocalDate.of(2026, 10, 5));
+
+        when(schoolClassRepository.findById(2L)).thenReturn(Optional.of(class10B));
+        when(examRepository.existsTermExamForGrade(10, 2026, ExamTerm.TERM_1)).thenReturn(true);
+
+        assertThrows(IllegalArgumentException.class, () -> examService.createExam(request));
+        verify(examRepository, never()).save(any(Exam.class));
+    }
+
+    @Test
+    @DisplayName("Editing an existing exam within its grade, year, and term remains allowed")
+    void testUpdateExam_SameGradeTerm_DoesNotCheckForDuplicate() {
+        Exam existingExam = new Exam("Term 1", 2026, ExamTerm.TERM_1, class10A,
+                LocalDate.of(2026, 3, 20), LocalDate.of(2026, 3, 25), ExamStatus.UPCOMING, null);
+        setId(existingExam, 55L);
+        UpdateExamRequest request = new UpdateExamRequest();
+        request.setStartDate(LocalDate.of(2026, 4, 20));
+        request.setEndDate(LocalDate.of(2026, 4, 25));
+
+        when(examRepository.findById(55L)).thenReturn(Optional.of(existingExam));
+        when(examRepository.save(existingExam)).thenReturn(existingExam);
+
+        examService.updateExam(55L, request);
+
+        verify(examRepository, never()).existsTermExamForGrade(anyInt(), anyInt(), any());
+    }
+
+    @Test
+    @DisplayName("Moving an exam into an occupied grade, year, and term is rejected")
+    void testUpdateExam_DuplicateTargetGradeTerm_ThrowsException() {
+        Exam existingExam = new Exam("Term 1", 2026, ExamTerm.TERM_1, class10A,
+                LocalDate.of(2026, 3, 20), LocalDate.of(2026, 3, 25), ExamStatus.UPCOMING, null);
+        setId(existingExam, 55L);
+        UpdateExamRequest request = new UpdateExamRequest();
+        request.setAcademicYear(2027);
+
+        when(examRepository.findById(55L)).thenReturn(Optional.of(existingExam));
+        when(examRepository.existsTermExamForGrade(10, 2027, ExamTerm.TERM_1)).thenReturn(true);
+
+        assertThrows(IllegalArgumentException.class, () -> examService.updateExam(55L, request));
+        verify(examRepository, never()).save(any(Exam.class));
+    }
+
+    @Test
+    @DisplayName("Moving a timetable into an occupied term is rejected before replacing any slots")
+    void testUpdateExamWithTimetable_DuplicateTargetGradeTerm_ThrowsException() {
+        Exam existingExam = new Exam("Term 1", 2026, ExamTerm.TERM_1, class10A,
+                LocalDate.of(2026, 3, 20), LocalDate.of(2026, 3, 25), ExamStatus.UPCOMING, null);
+        setId(existingExam, 55L);
+        CreateExamWithTimetableRequest request = new CreateExamWithTimetableRequest();
+        request.setName("Updated Term 1");
+        request.setAcademicYear(2027);
+        request.setTerm(ExamTerm.TERM_1);
+        request.setGradeLevel(10);
+        request.setClassIds(List.of(1L));
+        request.setStartDate(LocalDate.of(2027, 3, 20));
+        request.setEndDate(LocalDate.of(2027, 3, 25));
+        request.setSlots(List.of(new ExamSlotItemRequest(201L, LocalDate.of(2027, 3, 22),
+                LocalTime.of(8, 30), LocalTime.of(11, 30), null, null, 100, null)));
+
+        when(examRepository.findById(55L)).thenReturn(Optional.of(existingExam));
+        when(schoolClassRepository.findById(1L)).thenReturn(Optional.of(class10A));
+        when(examRepository.existsTermExamForGrade(10, 2027, ExamTerm.TERM_1)).thenReturn(true);
+
+        assertThrows(IllegalArgumentException.class, () -> examService.updateExamWithTimetable(55L, request));
+        verify(examScheduleRepository, never()).deleteAll(anyList());
+        verify(examRepository, never()).save(any(Exam.class));
     }
 
     @Test

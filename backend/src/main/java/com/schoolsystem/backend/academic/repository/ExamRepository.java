@@ -22,6 +22,13 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
 
     Optional<Exam> findBySchoolClassIdAndAcademicYearAndTerm(Long classId, Integer academicYear, ExamTerm term);
 
+    @Query("SELECT CASE WHEN COUNT(e) > 0 THEN true ELSE false END FROM Exam e " +
+            "WHERE e.schoolClass.gradeLevel = :gradeLevel AND e.academicYear = :academicYear " +
+            "AND e.term = :term")
+    boolean existsTermExamForGrade(@Param("gradeLevel") Integer gradeLevel,
+                                   @Param("academicYear") Integer academicYear,
+                                   @Param("term") ExamTerm term);
+
     List<Exam> findByStatus(ExamStatus status);
 
     @Query("SELECT e FROM Exam e LEFT JOIN FETCH e.schoolClass sc WHERE " +

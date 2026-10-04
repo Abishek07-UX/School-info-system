@@ -1,11 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,7 +13,6 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import {
   Calendar,
-  Clock,
   Sparkles,
   BookOpen,
   Users,
@@ -22,27 +20,19 @@ import {
   AlertCircle,
   Loader2,
   Building2,
-  ShieldCheck,
   CheckSquare,
   Square,
-  HelpCircle
 } from "lucide-react"
 import { academicService } from "@/services/academicService"
 import { timetableService } from "@/services/timetableService"
 import { examScheduleService } from "@/services/examScheduleService"
+import { parseExamDate as parseDate, validateExamDateRange, validateExamSlotDates } from "./examTimetableDateValidation"
 
 const TERMS = [
   { value: "TERM_1", label: "Term 1 (First Term Examination)" },
   { value: "TERM_2", label: "Term 2 (Mid-Year Examination)" },
   { value: "TERM_3", label: "Term 3 (Final Examination)" },
 ]
-
-const parseDate = (dStr) => {
-  if (!dStr) return null
-  const parts = dStr.split("-").map(Number)
-  if (parts.length !== 3) return null
-  return new Date(parts[0], parts[1] - 1, parts[2])
-}
 
 const formatDate = (d) => {
   const y = d.getFullYear()
@@ -57,11 +47,13 @@ export default function ExamTimetableModal({
   onSuccess,
   getToken,
   initialGrade = 10,
+  initialClassId = null,
+  initialTerm = "TERM_1",
+  initialAcademicYear = new Date().getFullYear(),
   examToEdit = null,
-  classes = [],
 }) {
-  const [academicYear, setAcademicYear] = useState(new Date().getFullYear())
-  const [term, setTerm] = useState("TERM_1")
+  const [academicYear, setAcademicYear] = useState(initialAcademicYear)
+  const [term, setTerm] = useState(initialTerm)
   const [gradeLevel, setGradeLevel] = useState(initialGrade)
   const [examName, setExamName] = useState("")
   const [startDate, setStartDate] = useState("")
@@ -72,7 +64,6 @@ export default function ExamTimetableModal({
   // Loaded data
   const [availableClasses, setAvailableClasses] = useState([])
   const [selectedClassIds, setSelectedClassIds] = useState([])
-  const [subjects, setSubjects] = useState([])
   const [teachers, setTeachers] = useState([])
   const [slots, setSlots] = useState([])
 
@@ -81,10 +72,12 @@ export default function ExamTimetableModal({
   const [submitting, setSubmitting] = useState(false)
   const [errorMsg, setErrorMsg] = useState(null)
   const [isNameCustomized, setIsNameCustomized] = useState(false)
+  const [submitAttempt, setSubmitAttempt] = useState(0)
+  const errorRef = useRef(null)
 
   // Default suggested exam name
   const termLabel = useMemo(() => {
-    return TERMS.find((t) => t.value === term)?.label?.split(" ")[0] || "Term 1"
+    return TERMS.find((t) => t.value === term)?.label?.match(/^Term \d+/)?.[0] || "Term 1"
   }, [term])
 
   // Sync default exam name if user hasn't manually typed a custom one (only in create mode)
@@ -114,20 +107,15 @@ export default function ExamTimetableModal({
     if (examToEdit) {
       setAcademicYear(examToEdit.academicYear || new Date().getFullYear())
       setTerm(examToEdit.term || "TERM_1")
-      let grade = examToEdit.gradeLevel
-      if (!grade && examToEdit.classId && classes?.length) {
-        const matchingClass = classes.find((c) => c.id === examToEdit.classId)
-        if (matchingClass?.gradeLevel) grade = matchingClass.gradeLevel
-      }
-      setGradeLevel(grade || initialGrade || 10)
+      setGradeLevel(examToEdit.gradeLevel || initialGrade || 10)
       setExamName(examToEdit.name || "")
       setStartDate(examToEdit.startDate || "")
       setEndDate(examToEdit.endDate || "")
       setDescription(examToEdit.description || "")
       setIsNameCustomized(true)
     } else {
-      setAcademicYear(new Date().getFullYear())
-      setTerm("TERM_1")
+      setAcademicYear(initialAcademicYear)
+      setTerm(initialTerm)
       setGradeLevel(initialGrade || 10)
       setIsNameCustomized(false)
       setDescription("")
@@ -141,10 +129,10 @@ export default function ExamTimetableModal({
       setStartDate(formatDate(nextMon))
       setEndDate(formatDate(endDefault))
     }
-  }, [isOpen, examToEdit, initialGrade, classes])
+  }, [isOpen, examToEdit, initialGrade, initialTerm, initialAcademicYear])
 
   // Load classes, subjects, and existing timetable slots whenever gradeLevel or examToEdit changes
-  const loadGradeData = useCallback(async () => {
+  const loadGradeData = useCallback(async (isCurrent) => {
     if (!isOpen) return
     try {
       setLoadingData(true)
@@ -155,18 +143,16 @@ export default function ExamTimetableModal({
         academicService.getSubjectsForGrade(gradeLevel, getToken),
         examToEdit?.id ? examScheduleService.getExamSchedules(examToEdit.id, getToken) : Promise.resolve([]),
       ])
+      if (!isCurrent()) return
 
       const validClasses = classesData || []
       const validSubjects = subjectsData || []
       const existingSchedules = existingSchedulesData || []
 
       setAvailableClasses(validClasses)
-      if (examToEdit?.classId) {
-        setSelectedClassIds([examToEdit.classId])
-      } else {
-        setSelectedClassIds(validClasses.map((c) => c.id))
-      }
-      setSubjects(validSubjects)
+      const preferredClassId = examToEdit ? examToEdit.classId : initialClassId
+      const preferredClass = validClasses.find((c) => String(c.id) === String(preferredClassId))
+      setSelectedClassIds(preferredClass ? [preferredClass.id] : [])
 
       const isEditing = Boolean(examToEdit)
       const schedMap = new Map()
@@ -228,30 +214,27 @@ export default function ExamTimetableModal({
 
       setSlots(initialSlots)
     } catch (err) {
-      setErrorMsg(err.message || "Failed to load grade curriculum subjects or classes.")
+      if (isCurrent()) setErrorMsg(err.message || "Failed to load grade curriculum subjects or classes.")
     } finally {
-      setLoadingData(false)
+      if (isCurrent()) setLoadingData(false)
     }
-  }, [gradeLevel, isOpen, getToken, examToEdit])
+  }, [gradeLevel, isOpen, getToken, examToEdit, initialClassId])
 
   useEffect(() => {
-    loadGradeData()
+    let current = true
+    loadGradeData(() => current)
+    return () => { current = false }
   }, [loadGradeData])
 
   // Auto-distribute subject dates across the date range (supporting Saturdays and Sundays)
   const handleAutoDistributeDates = useCallback(() => {
-    if (!startDate || !endDate) {
-      setErrorMsg("Please select both Start Date and End Date first.")
+    const rangeError = validateExamDateRange(startDate, endDate)
+    if (rangeError) {
+      setErrorMsg(rangeError)
       return
     }
-
     const start = parseDate(startDate)
     const end = parseDate(endDate)
-
-    if (start > end) {
-      setErrorMsg("Start date cannot be after end date.")
-      return
-    }
 
     // Collect all valid dates in range
     const availableDates = []
@@ -265,12 +248,8 @@ export default function ExamTimetableModal({
     }
 
     if (availableDates.length === 0) {
-      // Fallback: collect all days if filtered out
-      const cur = new Date(start)
-      while (cur <= end) {
-        availableDates.push(formatDate(cur))
-        cur.setDate(cur.getDate() + 1)
-      }
+      setErrorMsg("No weekdays fall within this date range. Extend the range or include weekends.")
+      return
     }
 
     let dateIndex = 0
@@ -319,30 +298,25 @@ export default function ExamTimetableModal({
       return updated
     })
 
-    // If changing examDate, dynamically expand examination date range if needed
-    if (field === "examDate" && value) {
-      if (!startDate || value < startDate) {
-        setStartDate(value)
-      }
-      if (!endDate || value > endDate) {
-        setEndDate(value)
-      }
-      setErrorMsg(null)
-    }
+    setErrorMsg(null)
   }
 
   // Form submission
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setSubmitAttempt((attempt) => attempt + 1)
     setErrorMsg(null)
+
+    if (loadingData) return
 
     if (selectedClassIds.length === 0) {
       setErrorMsg("Please select at least one class to schedule.")
       return
     }
 
-    if (!startDate || !endDate) {
-      setErrorMsg("Please specify both the start and end dates of the examination.")
+    const rangeError = validateExamDateRange(startDate, endDate)
+    if (rangeError) {
+      setErrorMsg(rangeError)
       return
     }
 
@@ -352,30 +326,18 @@ export default function ExamTimetableModal({
       return
     }
 
-    // Validate that each included slot has a valid date and times
+    const slotDateError = validateExamSlotDates(includedSlots, startDate, endDate, includeWeekends)
+    if (slotDateError) {
+      setErrorMsg(slotDateError)
+      return
+    }
+
+    // Validate times for each included slot
     for (const slot of includedSlots) {
-      if (!slot.examDate) {
-        setErrorMsg(`Please specify an exam date for ${slot.subjectName}.`)
-        return
-      }
       if (!slot.startTime || !slot.endTime || slot.startTime >= slot.endTime) {
         setErrorMsg(`Please check start and end times for ${slot.subjectName}. Start time must be before end time.`)
         return
       }
-    }
-
-    // Determine the overall bounding dates covering all included slots
-    const slotDates = includedSlots.map((s) => s.examDate).filter(Boolean)
-    let effectiveStartDate = startDate
-    let effectiveEndDate = endDate
-
-    slotDates.forEach((d) => {
-      if (!effectiveStartDate || d < effectiveStartDate) effectiveStartDate = d
-      if (!effectiveEndDate || d > effectiveEndDate) effectiveEndDate = d
-    })
-
-    if (effectiveStartDate > effectiveEndDate) {
-      effectiveEndDate = effectiveStartDate
     }
 
     const payload = {
@@ -384,8 +346,8 @@ export default function ExamTimetableModal({
       term,
       gradeLevel: parseInt(gradeLevel, 10),
       classIds: selectedClassIds,
-      startDate: effectiveStartDate,
-      endDate: effectiveEndDate,
+      startDate,
+      endDate,
       status: examToEdit?.status || "UPCOMING",
       description: description.trim() || undefined,
       slots: includedSlots.map((s) => ({
@@ -401,6 +363,19 @@ export default function ExamTimetableModal({
 
     try {
       setSubmitting(true)
+      if (!examToEdit) {
+        const existingExams = await academicService.getExams({
+          academicYear: Number(academicYear),
+          term,
+        }, getToken)
+        if ((existingExams || []).some((exam) =>
+          exam.classId != null && Number(exam.gradeLevel) === Number(gradeLevel)
+          && Number(exam.academicYear) === Number(academicYear) && exam.term === term
+        )) {
+          setErrorMsg(`Grade ${gradeLevel} already has a ${termLabel} exam scheduled for ${academicYear}. Choose another term or academic year.`)
+          return
+        }
+      }
       let res
       if (examToEdit?.id) {
         res = await academicService.updateExamWithTimetable(examToEdit.id, payload, getToken)
@@ -422,6 +397,20 @@ export default function ExamTimetableModal({
     .map((c) => c.name)
 
   const includedCount = slots.filter((s) => s.included).length
+  const includedSlots = slots.filter((s) => s.included)
+  const dateError = !loadingData && (startDate || endDate)
+    ? validateExamDateRange(startDate, endDate) ||
+      (includedSlots.some((s) => s.examDate)
+        ? validateExamSlotDates(includedSlots, startDate, endDate, includeWeekends)
+        : null)
+    : null
+  const visibleError = dateError || errorMsg
+
+  useEffect(() => {
+    if (isOpen && visibleError) {
+      errorRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+    }
+  }, [isOpen, visibleError, submitAttempt])
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -438,28 +427,22 @@ export default function ExamTimetableModal({
                   {examToEdit ? "Edit Examination Timetable" : "Unified Examination Timetable Creator"}
                 </DialogTitle>
               </div>
-              <Badge variant="outline" className="text-xs px-2.5 py-0.5 border-primary/40 text-primary">
-                {examToEdit ? "Editing Timetable" : "Multi-Class Scheduling"}
-              </Badge>
+              {examToEdit && (
+                <Badge variant="outline" className="text-xs px-2.5 py-0.5 border-primary/40 text-primary">
+                  Editing Timetable
+                </Badge>
+              )}
             </div>
             <DialogDescription className="text-xs text-muted-foreground">
               {examToEdit
                 ? "Modify examination dates, subjects, timings, and invigilator assignments for this scheduled examination."
-                : "Configure term, grade, date range, and subject exam dates in one place. Exams take place in each class's respective home classroom."}
+                : "Configure term, grade, date range, and subject exam dates in one place. Each grade can have one exam per term and academic year."}
             </DialogDescription>
           </DialogHeader>
         </div>
 
         {/* Scrollable Form Body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
-          {errorMsg && (
-            <Alert variant="destructive" className="py-2.5">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle className="text-xs font-semibold">Scheduling Error</AlertTitle>
-              <AlertDescription className="text-xs">{errorMsg}</AlertDescription>
-            </Alert>
-          )}
-
           {/* Section 1: Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-xl border border-border/60 bg-muted/10">
             {/* Term */}
@@ -499,6 +482,10 @@ export default function ExamTimetableModal({
                 value={gradeLevel}
                 onChange={(e) => {
                   setGradeLevel(parseInt(e.target.value, 10))
+                  setAvailableClasses([])
+                  setSelectedClassIds([])
+                  setSlots([])
+                  setLoadingData(true)
                   setIsNameCustomized(false)
                 }}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-bold text-primary shadow-xs focus:outline-none focus:ring-1 focus:ring-ring"
@@ -542,6 +529,7 @@ export default function ExamTimetableModal({
                 variant="ghost"
                 size="sm"
                 onClick={handleToggleAllClasses}
+                disabled={loadingData || availableClasses.length === 0}
                 className="h-7 text-xs text-primary hover:text-primary"
               >
                 {selectedClassIds.length === availableClasses.length ? "Deselect All" : "Select All Classes"}
@@ -614,7 +602,10 @@ export default function ExamTimetableModal({
                   <input
                     type="checkbox"
                     checked={includeWeekends}
-                    onChange={(e) => setIncludeWeekends(e.target.checked)}
+                    onChange={(e) => {
+                      setIncludeWeekends(e.target.checked)
+                      setErrorMsg(null)
+                    }}
                     className="rounded border-input text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer"
                   />
                   <span className="text-[11px] text-foreground font-medium">Include Weekends (Sat &amp; Sun)</span>
@@ -640,7 +631,10 @@ export default function ExamTimetableModal({
                 <Input
                   type="date"
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={(e) => {
+                    setStartDate(e.target.value)
+                    setErrorMsg(null)
+                  }}
                   className="h-8 text-xs bg-background"
                   required
                 />
@@ -650,7 +644,10 @@ export default function ExamTimetableModal({
                 <Input
                   type="date"
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  onChange={(e) => {
+                    setEndDate(e.target.value)
+                    setErrorMsg(null)
+                  }}
                   min={startDate}
                   className="h-8 text-xs bg-background"
                   required
@@ -659,9 +656,17 @@ export default function ExamTimetableModal({
             </div>
 
             <p className="text-[11px] text-muted-foreground">
-              Tip: You can schedule subjects on any day (including Saturdays and Sundays). The exam date range automatically expands to cover all selected subject dates.
+              Schedule each subject within the selected date range. Weekend dates are available only when Include Weekends is checked.
             </p>
           </div>
+
+          {visibleError && (
+            <Alert ref={errorRef} variant="destructive" className="py-2.5">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle className="text-xs font-semibold">Scheduling Error</AlertTitle>
+              <AlertDescription className="text-xs">{visibleError}</AlertDescription>
+            </Alert>
+          )}
 
           {/* Section 4: Subject Timetable Slots */}
           <div className="space-y-3">
@@ -736,6 +741,8 @@ export default function ExamTimetableModal({
                                 value={slot.examDate}
                                 onChange={(e) => handleSlotChange(idx, "examDate", e.target.value)}
                                 disabled={!slot.included}
+                                min={startDate}
+                                max={endDate}
                                 className="h-7 text-xs bg-background py-0.5 px-2 min-w-[125px]"
                                 required={slot.included}
                               />
@@ -858,7 +865,7 @@ export default function ExamTimetableModal({
             <Button
               size="sm"
               onClick={handleSubmit}
-              disabled={submitting || selectedClassIds.length === 0 || includedCount === 0}
+              disabled={submitting || loadingData || selectedClassIds.length === 0 || includedCount === 0}
               className="gap-1.5 shadow-md shadow-primary/20"
             >
               {submitting ? (

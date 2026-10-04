@@ -28,7 +28,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -86,6 +88,7 @@ public class ExamServiceImpl implements ExamService {
         }
 
         ExamTerm term = request.getTerm() != null ? request.getTerm() : ExamTerm.OTHER;
+        ensureTermExamAvailable(schoolClass, request.getAcademicYear(), term, null);
 
         Exam exam = new Exam(
                 request.getName(),
@@ -107,13 +110,20 @@ public class ExamServiceImpl implements ExamService {
         Exam exam = examRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam not found with id: " + id, "EXAM_NOT_FOUND"));
 
+        SchoolClass targetClass = exam.getSchoolClass();
+        if (request.getClassId() != null) {
+            targetClass = schoolClassRepository.findById(request.getClassId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Class not found with id: " + request.getClassId(), "CLASS_NOT_FOUND"));
+        }
+        Integer targetYear = request.getAcademicYear() != null ? request.getAcademicYear() : exam.getAcademicYear();
+        ExamTerm targetTerm = request.getTerm() != null ? request.getTerm() : exam.getTerm();
+        ensureTermExamAvailable(targetClass, targetYear, targetTerm, exam);
+
         if (request.getName() != null) exam.setName(request.getName().trim());
         if (request.getAcademicYear() != null) exam.setAcademicYear(request.getAcademicYear());
         if (request.getTerm() != null) exam.setTerm(request.getTerm());
         if (request.getClassId() != null) {
-            SchoolClass sc = schoolClassRepository.findById(request.getClassId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Class not found with id: " + request.getClassId(), "CLASS_NOT_FOUND"));
-            exam.setSchoolClass(sc);
+            exam.setSchoolClass(targetClass);
         }
         if (request.getStartDate() != null) exam.setStartDate(request.getStartDate());
         if (request.getEndDate() != null) exam.setEndDate(request.getEndDate());
@@ -173,13 +183,25 @@ public class ExamServiceImpl implements ExamService {
             }
         }
 
+        if (new HashSet<>(request.getClassIds()).size() != request.getClassIds().size()) {
+            throw new IllegalArgumentException("Each class can only be selected once");
+        }
+        List<SchoolClass> targetClasses = new ArrayList<>();
+        for (Long classId : request.getClassIds()) {
+            SchoolClass schoolClass = schoolClassRepository.findById(classId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Class not found with id: " + classId, "CLASS_NOT_FOUND"));
+            if (!Objects.equals(schoolClass.getGradeLevel(), request.getGradeLevel())) {
+                throw new IllegalArgumentException("All selected classes must belong to Grade " + request.getGradeLevel());
+            }
+            targetClasses.add(schoolClass);
+        }
+        ensureTermExamAvailable(targetClasses.get(0), request.getAcademicYear(), request.getTerm(), null);
+
         List<User> allStaff = userRepository.findAll();
         List<ExamResponseDTO> createdExams = new ArrayList<>();
         List<ExamScheduleResponse> createdSchedules = new ArrayList<>();
 
-        for (Long classId : request.getClassIds()) {
-            SchoolClass schoolClass = schoolClassRepository.findById(classId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Class not found with id: " + classId, "CLASS_NOT_FOUND"));
+        for (SchoolClass schoolClass : targetClasses) {
 
             // Format Exam Name
             String examName = request.getName();
@@ -296,6 +318,19 @@ public class ExamServiceImpl implements ExamService {
         Exam exam = examRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam not found with id: " + id, "EXAM_NOT_FOUND"));
 
+        SchoolClass targetClass = exam.getSchoolClass();
+        if (request.getClassIds() != null && !request.getClassIds().isEmpty()) {
+            Long primaryClassId = request.getClassIds().get(0);
+            targetClass = schoolClassRepository.findById(primaryClassId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Class not found with id: " + primaryClassId, "CLASS_NOT_FOUND"));
+        }
+        if (targetClass != null && !Objects.equals(targetClass.getGradeLevel(), request.getGradeLevel())) {
+            throw new IllegalArgumentException("Selected class must belong to Grade " + request.getGradeLevel());
+        }
+        Integer targetYear = request.getAcademicYear() != null ? request.getAcademicYear() : exam.getAcademicYear();
+        ExamTerm targetTerm = request.getTerm() != null ? request.getTerm() : exam.getTerm();
+        ensureTermExamAvailable(targetClass, targetYear, targetTerm, exam);
+
         if (request.getName() != null && !request.getName().isBlank()) {
             exam.setName(request.getName().trim());
         }
@@ -319,10 +354,7 @@ public class ExamServiceImpl implements ExamService {
         }
 
         if (request.getClassIds() != null && !request.getClassIds().isEmpty()) {
-            Long primaryClassId = request.getClassIds().get(0);
-            SchoolClass schoolClass = schoolClassRepository.findById(primaryClassId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Class not found with id: " + primaryClassId, "CLASS_NOT_FOUND"));
-            exam.setSchoolClass(schoolClass);
+            exam.setSchoolClass(targetClass);
         }
 
         Exam savedExam = examRepository.save(exam);
@@ -334,7 +366,7 @@ public class ExamServiceImpl implements ExamService {
             examScheduleRepository.flush();
         }
 
-        SchoolClass targetClass = savedExam.getSchoolClass();
+        targetClass = savedExam.getSchoolClass();
         String roomCode = targetClass != null
                 ? CampusFacility.getDefaultRoomForClass(targetClass.getGradeLevel(), targetClass.getName())
                 : "MAIN-HALL";
@@ -404,5 +436,25 @@ public class ExamServiceImpl implements ExamService {
                 updatedSchedules.size());
 
         return new ExamWithTimetableResponseDTO(List.of(ExamResponseDTO.fromEntity(savedExam)), updatedSchedules, summary);
+    }
+
+    private void ensureTermExamAvailable(SchoolClass schoolClass, Integer academicYear, ExamTerm term, Exam existingExam) {
+        if (schoolClass == null || term == null || term == ExamTerm.OTHER) {
+            return;
+        }
+        Integer gradeLevel = schoolClass.getGradeLevel();
+        if (existingExam != null && existingExam.getSchoolClass() != null
+                && Objects.equals(existingExam.getSchoolClass().getGradeLevel(), gradeLevel)
+                && Objects.equals(existingExam.getAcademicYear(), academicYear)
+                && existingExam.getTerm() == term) {
+            return;
+        }
+
+        // Serialize attempts for the same grade so a second request sees the first committed exam.
+        schoolClassRepository.lockByGradeLevel(gradeLevel);
+        if (examRepository.existsTermExamForGrade(gradeLevel, academicYear, term)) {
+            throw new IllegalArgumentException("Grade " + gradeLevel + " already has " + term.getDisplayName()
+                    + " scheduled for academic year " + academicYear + ". Choose another term or year.");
+        }
     }
 }

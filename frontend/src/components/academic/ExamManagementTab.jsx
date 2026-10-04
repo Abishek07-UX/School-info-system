@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { academicService } from "@/services/academicService"
 import { useAuthUser } from "@/context/AuthUserContext"
 import { Card } from "@/components/ui/card"
@@ -42,6 +42,7 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
   const [isTimetableModalOpen, setIsTimetableModalOpen] = useState(false)
   const [editingExam, setEditingExam] = useState(null)
   const [feedback, setFeedback] = useState(null)
+  const latestFetch = useRef(0)
 
   const availableYears = useMemo(() => {
     const currentYear = new Date().getFullYear()
@@ -68,6 +69,7 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
   }, [exams])
 
   const fetchExams = useCallback(async () => {
+    const fetchId = ++latestFetch.current
     try {
       setLoading(true)
       const data = await academicService.getExams(
@@ -79,14 +81,16 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
         },
         getToken
       )
-      setExams(data || [])
+      if (fetchId === latestFetch.current) setExams(data || [])
     } catch (err) {
-      setFeedback({
-        type: "error",
-        message: err.message || "Failed to load examinations.",
-      })
+      if (fetchId === latestFetch.current) {
+        setFeedback({
+          type: "error",
+          message: err.message || "Failed to load examinations.",
+        })
+      }
     } finally {
-      setLoading(false)
+      if (fetchId === latestFetch.current) setLoading(false)
     }
   }, [filterYear, filterTerm, filterClass, filterStatus, getToken])
 
@@ -95,6 +99,19 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
   }, [fetchExams])
 
   const handleSaveExam = async (formData) => {
+    if (!editingExam && formData.classId && formData.term !== "OTHER") {
+      const selectedClass = classes.find((schoolClass) => Number(schoolClass.id) === Number(formData.classId))
+      const existingExams = await academicService.getExams({
+        academicYear: formData.academicYear,
+        term: formData.term,
+      }, getToken)
+      if (selectedClass && (existingExams || []).some((exam) =>
+        exam.classId != null && Number(exam.gradeLevel) === Number(selectedClass.gradeLevel)
+        && Number(exam.academicYear) === Number(formData.academicYear) && exam.term === formData.term
+      )) {
+        throw new Error(`Grade ${selectedClass.gradeLevel} already has a ${formData.term.replace("TERM_", "Term ")} exam scheduled for ${formData.academicYear}. Choose another term or academic year.`)
+      }
+    }
     if (editingExam) {
       await academicService.updateExam(editingExam.id, formData, getToken)
       setFeedback({
@@ -322,7 +339,7 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
               onChange={(e) => setFilterClass(e.target.value)}
               className="h-10 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 max-w-[170px]"
             >
-              <option value="ALL">All Classes (39)</option>
+              <option value="ALL">All Classes ({classes.length})</option>
               {classes.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -340,6 +357,7 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
               <option value="COMPLETED">Completed</option>
               <option value="UPCOMING">Upcoming</option>
               <option value="ONGOING">Ongoing</option>
+              <option value="CANCELLED">Cancelled</option>
             </select>
           </div>
         </div>
@@ -483,8 +501,11 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
           fetchExams()
         }}
         getToken={getToken}
+        initialGrade={classes.find((c) => String(c.id) === filterClass)?.gradeLevel || 10}
+        initialClassId={filterClass === "ALL" ? null : filterClass}
+        initialTerm={["TERM_1", "TERM_2", "TERM_3"].includes(filterTerm) ? filterTerm : "TERM_1"}
+        initialAcademicYear={filterYear === "ALL" ? new Date().getFullYear() : Number(filterYear)}
         examToEdit={editingExam}
-        classes={classes}
       />
     </div>
   )
