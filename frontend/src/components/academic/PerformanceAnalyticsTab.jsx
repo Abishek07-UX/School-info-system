@@ -141,36 +141,13 @@ export default function PerformanceAnalyticsTab({ classes = [] }) {
 
       {/* Control Panel */}
       <Card className="p-4 border-white/10">
-        <div className="flex flex-wrap items-center gap-4">
-          {/* Mode */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-400">Analytics Mode</label>
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant={analyticsMode === "CLASS_METRICS" ? "default" : "outline"}
-                size="xs"
-                onClick={() => setAnalyticsMode("CLASS_METRICS")}
-                className="gap-1.5 text-xs"
-              >
-                <BarChart3 className="h-3.5 w-3.5" /> Class Subject Metrics
-              </Button>
-              <Button
-                variant={analyticsMode === "STUDENT_TRAJECTORY" ? "default" : "outline"}
-                size="xs"
-                onClick={() => setAnalyticsMode("STUDENT_TRAJECTORY")}
-                className="gap-1.5 text-xs"
-              >
-                <TrendingUp className="h-3.5 w-3.5" /> Student 3-Term Trajectory
-              </Button>
-            </div>
-          </div>
-
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Class */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
+          <div className="min-w-0 space-y-1.5">
+            <div className="flex h-5 items-center justify-between gap-2">
               <label className="text-xs font-semibold text-slate-400">Class / Grade</label>
               {assignedClass && String(assignedClass.id) === String(selectedClassId) && (
-                <Badge variant="default" className="text-[9px] py-0 px-1.5 ml-2">
+                <Badge variant="default" className="shrink-0 text-[9px] py-0 px-1.5">
                   Your Class
                 </Badge>
               )}
@@ -178,7 +155,7 @@ export default function PerformanceAnalyticsTab({ classes = [] }) {
             <select
               value={selectedClassId}
               onChange={(e) => setSelectedClassId(e.target.value)}
-              className="h-10 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="h-10 w-full min-w-0 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             >
               {classes.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -189,12 +166,12 @@ export default function PerformanceAnalyticsTab({ classes = [] }) {
           </div>
 
           {/* Academic Year */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-400">Academic Year</label>
+          <div className="min-w-0 space-y-1.5">
+            <label className="flex h-5 items-center text-xs font-semibold text-slate-400">Academic Year</label>
             <select
               value={academicYear}
               onChange={(e) => setAcademicYear(e.target.value)}
-              className="h-10 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="h-10 w-full min-w-0 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             >
               <option value="2026">2026</option>
               <option value="2025">2025</option>
@@ -204,14 +181,14 @@ export default function PerformanceAnalyticsTab({ classes = [] }) {
 
           {/* Exam Selector */}
           {analyticsMode === "CLASS_METRICS" && (
-            <div className="space-y-1.5 flex-1 min-w-[200px]">
-              <label className="text-xs font-semibold text-slate-400">
+            <div className="min-w-0 space-y-1.5 sm:col-span-2 lg:col-span-2">
+              <label className="flex h-5 items-center text-xs font-semibold text-slate-400">
                 Target Examination
               </label>
               <select
                 value={selectedExamId}
                 onChange={(e) => setSelectedExamId(e.target.value)}
-                className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="h-10 w-full min-w-0 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               >
                 {exams.map((ex) => (
                   <option key={ex.id} value={ex.id}>
@@ -224,12 +201,12 @@ export default function PerformanceAnalyticsTab({ classes = [] }) {
 
           {/* Student Selector */}
           {analyticsMode === "STUDENT_TRAJECTORY" && (
-            <div className="space-y-1.5 flex-1 min-w-[200px]">
-              <label className="text-xs font-semibold text-slate-400">Select Student</label>
+            <div className="min-w-0 space-y-1.5 sm:col-span-2 lg:col-span-2">
+              <label className="flex h-5 items-center text-xs font-semibold text-slate-400">Select Student</label>
               <select
                 value={selectedStudentId}
                 onChange={(e) => setSelectedStudentId(e.target.value)}
-                className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="h-10 w-full min-w-0 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               >
                 {students.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -239,6 +216,31 @@ export default function PerformanceAnalyticsTab({ classes = [] }) {
               </select>
             </div>
           )}
+        </div>
+
+        {/* Mode Switcher */}
+        <div className="mt-4 space-y-1.5 border-t border-white/10 pt-4">
+          <label className="flex h-5 items-center text-xs font-semibold text-slate-400">Analytics Mode</label>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="group" aria-label="Analytics Mode">
+            <Button
+              variant={analyticsMode === "CLASS_METRICS" ? "default" : "outline"}
+              size="xs"
+              onClick={() => setAnalyticsMode("CLASS_METRICS")}
+              aria-pressed={analyticsMode === "CLASS_METRICS"}
+              className="h-10 w-full gap-1.5 text-xs"
+            >
+              <BarChart3 className="h-3.5 w-3.5" /> Class Subject Metrics
+            </Button>
+            <Button
+              variant={analyticsMode === "STUDENT_TRAJECTORY" ? "default" : "outline"}
+              size="xs"
+              onClick={() => setAnalyticsMode("STUDENT_TRAJECTORY")}
+              aria-pressed={analyticsMode === "STUDENT_TRAJECTORY"}
+              className="h-10 w-full gap-1.5 text-xs"
+            >
+              <TrendingUp className="h-3.5 w-3.5" /> Student 3-Term Trajectory
+            </Button>
+          </div>
         </div>
       </Card>
 

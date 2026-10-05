@@ -22,9 +22,13 @@ import {
   CheckCircle2,
   AlertTriangle,
   RefreshCw,
-  School,
-  Sparkles,
 } from "lucide-react"
+
+const TERM_LABELS = {
+  TERM_1: "Term 1 Examination",
+  TERM_2: "Term 2 Examination",
+  TERM_3: "Term 3 Examination",
+}
 
 export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
   const { getToken, userProfile, role, isAdmin, isPrincipal } = useAuthUser()
@@ -48,7 +52,6 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
   const [selectedExamId, setSelectedExamId] = useState(
     preselectedExam ? String(preselectedExam.id) : ""
   )
-  const [selectedExam, setSelectedExam] = useState(preselectedExam || null)
   const [subjects, setSubjects] = useState([])
   const [selectedSubjectId, setSelectedSubjectId] = useState("")
   const [students, setStudents] = useState([])
@@ -56,7 +59,9 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [feedback, setFeedback] = useState(null)
-  const [filterYear, setFilterYear] = useState("2026")
+  const [filterYear, setFilterYear] = useState(
+    String(preselectedExam?.academicYear || new Date().getFullYear())
+  )
   const manuallySelectedClass = useRef(false)
   const selectedClass = classes.find((c) => String(c.id) === String(selectedClassId))
   const isAssignedClass = Boolean(role === "TEACHER" && userProfile?.id &&
@@ -99,36 +104,33 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
     loadExams()
   }, [filterYear, getToken])
 
-  // Filter exams relevant for the selected class (or school-wide exams)
+  // Show one mark-entry choice per term. Keep the class-specific record as its
+  // value so marks are saved against the selected class's exam.
   const relevantExams = useMemo(() => {
-    if (!selectedClassId) return exams
-    return exams.filter(
-      (e) => !e.classId || String(e.classId) === String(selectedClassId)
-    )
-  }, [exams, selectedClassId])
+    if (!selectedClassId) return []
 
-  // Sync selected exam when relevant exams or selectedClassId change
-  useEffect(() => {
-    if (relevantExams.length > 0) {
-      const exists = relevantExams.some((e) => String(e.id) === String(selectedExamId))
-      if (!exists) {
-        setSelectedExamId(String(relevantExams[0].id))
-        setSelectedExam(relevantExams[0])
+    const byTerm = new Map()
+    for (const exam of exams) {
+      if (!Object.hasOwn(TERM_LABELS, exam.term)) continue
+      if (String(exam.academicYear) !== filterYear) continue
+      if (exam.classId && String(exam.classId) !== String(selectedClassId)) continue
+
+      const previous = byTerm.get(exam.term)
+      if (!previous || (!previous.classId && exam.classId)) {
+        byTerm.set(exam.term, exam)
       }
-    } else {
-      setSelectedExamId("")
-      setSelectedExam(null)
     }
-  }, [relevantExams, selectedExamId])
+    return Object.keys(TERM_LABELS).map((term) => byTerm.get(term)).filter(Boolean)
+  }, [exams, selectedClassId, filterYear])
 
-  // When selected exam ID changes, update selectedExam object
+  const activeExamId = relevantExams.some((exam) => String(exam.id) === selectedExamId)
+    ? selectedExamId
+    : relevantExams.length > 0 ? String(relevantExams[0].id) : ""
+
+  // Sync the stored selection when the class, year, or available exams change.
   useEffect(() => {
-    if (!selectedExamId) return
-    const examObj = exams.find((e) => String(e.id) === String(selectedExamId))
-    if (examObj) {
-      setSelectedExam(examObj)
-    }
-  }, [selectedExamId, exams])
+    if (selectedExamId !== activeExamId) setSelectedExamId(activeExamId)
+  }, [activeExamId, selectedExamId])
 
   // Load subjects and students when selected class changes
   useEffect(() => {
@@ -160,13 +162,16 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
     loadClassData()
   }, [selectedClassId, getToken])
 
-  // Load existing marks for (selectedExamId, selectedSubjectId)
+  // Load existing marks for the selected term exam and subject.
   const loadExistingMarks = useCallback(async () => {
-    if (!selectedExamId || !selectedSubjectId) return
+    if (!activeExamId || !selectedSubjectId) {
+      setStudentMarks({})
+      return
+    }
     try {
       setLoading(true)
       const marksData = await academicService.getMarksForExamAndSubject(
-        selectedExamId,
+        activeExamId,
         selectedSubjectId,
         getToken
       )
@@ -186,7 +191,7 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
     } finally {
       setLoading(false)
     }
-  }, [selectedExamId, selectedSubjectId, getToken])
+  }, [activeExamId, selectedSubjectId, getToken])
 
   useEffect(() => {
     loadExistingMarks()
@@ -238,7 +243,7 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
       setFeedback({ type: "error", message: "Only the assigned class teacher can edit these marks." })
       return
     }
-    if (!selectedExamId || !selectedSubjectId) {
+    if (!activeExamId || !selectedSubjectId) {
       setFeedback({
         type: "error",
         message: "Please choose an examination and curriculum subject.",
@@ -276,7 +281,7 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
       setFeedback(null)
       const res = await academicService.enterBatchMarks(
         {
-          examId: parseInt(selectedExamId, 10),
+          examId: parseInt(activeExamId, 10),
           subjectId: parseInt(selectedSubjectId, 10),
           marks: items,
         },
@@ -325,7 +330,7 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
         {canEditMarks && (
           <Button
             onClick={handleSaveAll}
-            disabled={saving || loading || students.length === 0}
+            disabled={saving || loading || students.length === 0 || !activeExamId}
             size="sm"
             className="gap-2 shadow-lg shadow-indigo-500/25"
           >
@@ -381,9 +386,9 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
               onChange={(e) => setFilterYear(e.target.value)}
               className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             >
-              <option value="2026">2026</option>
-              <option value="2025">2025</option>
-              <option value="2024">2024</option>
+              {Array.from(new Set([filterYear, "2026", "2025", "2024"]))
+                .sort((a, b) => Number(b) - Number(a))
+                .map((year) => <option key={year} value={year}>{year}</option>)}
             </select>
           </div>
 
@@ -421,13 +426,14 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
               Target Examination *
             </label>
             <select
-              value={selectedExamId}
+              value={activeExamId}
               onChange={(e) => setSelectedExamId(e.target.value)}
               className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             >
+              {relevantExams.length === 0 && <option value="">No term examinations scheduled</option>}
               {relevantExams.map((ex) => (
                 <option key={ex.id} value={ex.id}>
-                  {ex.name} ({ex.termDisplayName || ex.term})
+                  Grade {selectedClass?.gradeLevel} {TERM_LABELS[ex.term]}
                 </option>
               ))}
             </select>

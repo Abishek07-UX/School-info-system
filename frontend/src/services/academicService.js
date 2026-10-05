@@ -219,11 +219,13 @@ export function getExamGradeLevel(exam) {
 /**
  * Checks whether an exam is classified as an open / school-wide & other exam.
  * An exam is school-wide if:
- * 1. Explicitly titled or classed as school-wide, general, open, or all-grades
- * 2. It has no grade level and no specific class, and term is OTHER
+ * 1. Categorized as OTHER / school-wide, even if a session targets a class
+ * 2. Explicitly titled or classed as school-wide, general, open, or all-grades
+ * 3. It has no grade level and no specific class
  */
 export function isSchoolWideExam(exam) {
   if (!exam) return false
+  if (exam.term === 'OTHER') return true
   const examName = (exam.name || '').toLowerCase()
   const className = (exam.className || '').toLowerCase()
 

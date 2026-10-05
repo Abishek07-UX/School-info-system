@@ -215,13 +215,13 @@ export default function ReportCardTab({ classes = [] }) {
 
       {/* Control Panel */}
       <Card className="p-4 border-white/10">
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Class */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
+          <div className="min-w-0 space-y-1.5">
+            <div className="flex h-5 items-center justify-between gap-2">
               <label className="text-xs font-semibold text-slate-400">Class / Grade</label>
               {assignedClass && String(assignedClass.id) === String(selectedClassId) && (
-                <Badge variant="default" className="text-[9px] py-0 px-1.5 ml-2">
+                <Badge variant="default" className="shrink-0 text-[9px] py-0 px-1.5">
                   Your Class
                 </Badge>
               )}
@@ -229,7 +229,7 @@ export default function ReportCardTab({ classes = [] }) {
             <select
               value={selectedClassId}
               onChange={(e) => setSelectedClassId(e.target.value)}
-              className="h-10 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="h-10 w-full min-w-0 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             >
               {classes.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -240,12 +240,12 @@ export default function ReportCardTab({ classes = [] }) {
           </div>
 
           {/* Academic Year */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-400">Academic Year</label>
+          <div className="min-w-0 space-y-1.5">
+            <label className="flex h-5 items-center text-xs font-semibold text-slate-400">Academic Year</label>
             <select
               value={academicYear}
               onChange={(e) => setAcademicYear(e.target.value)}
-              className="h-10 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="h-10 w-full min-w-0 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             >
               <option value="2026">2026</option>
               <option value="2025">2025</option>
@@ -253,45 +253,14 @@ export default function ReportCardTab({ classes = [] }) {
             </select>
           </div>
 
-          {/* Format Switcher */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-400">Report View Format</label>
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant={viewMode === "TERM_REPORT" ? "default" : "outline"}
-                size="xs"
-                onClick={() => setViewMode("TERM_REPORT")}
-                className="gap-1 text-xs"
-              >
-                <FileText className="h-3.5 w-3.5" /> Term Report
-              </Button>
-              <Button
-                variant={viewMode === "ANNUAL_SUMMARY" ? "default" : "outline"}
-                size="xs"
-                onClick={() => setViewMode("ANNUAL_SUMMARY")}
-                className="gap-1 text-xs"
-              >
-                <TrendingUp className="h-3.5 w-3.5" /> 3-Term Annual
-              </Button>
-              <Button
-                variant={viewMode === "CLASS_LEADERBOARD" ? "default" : "outline"}
-                size="xs"
-                onClick={() => setViewMode("CLASS_LEADERBOARD")}
-                className="gap-1 text-xs"
-              >
-                <Trophy className="h-3.5 w-3.5" /> Leaderboard
-              </Button>
-            </div>
-          </div>
-
           {/* Term Selector */}
           {viewMode !== "ANNUAL_SUMMARY" && (
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-400">Term</label>
+            <div className={`min-w-0 space-y-1.5 ${viewMode === "CLASS_LEADERBOARD" ? "sm:col-span-2 lg:col-span-2" : ""}`}>
+              <label className="flex h-5 items-center text-xs font-semibold text-slate-400">Term</label>
               <select
                 value={selectedTerm}
                 onChange={(e) => setSelectedTerm(e.target.value)}
-                className="h-10 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="h-10 w-full min-w-0 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               >
                 <option value="TERM_1">📘 Term 1</option>
                 <option value="TERM_2">📗 Term 2</option>
@@ -302,8 +271,8 @@ export default function ReportCardTab({ classes = [] }) {
 
           {/* Student Selector */}
           {viewMode !== "CLASS_LEADERBOARD" && (
-            <div className="space-y-1.5 flex-1 min-w-[220px]">
-              <label className="text-xs font-semibold text-slate-400">Select Student</label>
+            <div className={`min-w-0 space-y-1.5 ${viewMode === "ANNUAL_SUMMARY" ? "sm:col-span-2 lg:col-span-2" : ""}`}>
+              <label className="flex h-5 items-center text-xs font-semibold text-slate-400">Select Student</label>
               <select
                 value={selectedStudentId}
                 onChange={(e) => setSelectedStudentId(e.target.value)}
@@ -317,6 +286,40 @@ export default function ReportCardTab({ classes = [] }) {
               </select>
             </div>
           )}
+        </div>
+
+        {/* Format Switcher */}
+        <div className="mt-4 space-y-1.5 border-t border-white/10 pt-4">
+          <label className="flex h-5 items-center text-xs font-semibold text-slate-400">Report View Format</label>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" role="group" aria-label="Report View Format">
+            <Button
+              variant={viewMode === "TERM_REPORT" ? "default" : "outline"}
+              size="xs"
+              onClick={() => setViewMode("TERM_REPORT")}
+              aria-pressed={viewMode === "TERM_REPORT"}
+              className="h-10 w-full gap-1 text-xs"
+            >
+              <FileText className="h-3.5 w-3.5" /> Term Report
+            </Button>
+            <Button
+              variant={viewMode === "ANNUAL_SUMMARY" ? "default" : "outline"}
+              size="xs"
+              onClick={() => setViewMode("ANNUAL_SUMMARY")}
+              aria-pressed={viewMode === "ANNUAL_SUMMARY"}
+              className="h-10 w-full gap-1 text-xs"
+            >
+              <TrendingUp className="h-3.5 w-3.5" /> 3-Term Annual
+            </Button>
+            <Button
+              variant={viewMode === "CLASS_LEADERBOARD" ? "default" : "outline"}
+              size="xs"
+              onClick={() => setViewMode("CLASS_LEADERBOARD")}
+              aria-pressed={viewMode === "CLASS_LEADERBOARD"}
+              className="h-10 w-full gap-1 text-xs"
+            >
+              <Trophy className="h-3.5 w-3.5" /> Leaderboard
+            </Button>
+          </div>
         </div>
       </Card>
 

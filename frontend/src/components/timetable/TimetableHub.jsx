@@ -470,14 +470,10 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
   const filteredExams = useMemo(() => {
     return exams.filter((exam) => {
       // 1. Grade filter
-      if (examGradeFilter === 'SCHOOL_WIDE') {
-        if (!isSchoolWideExam(exam)) return false
-      } else {
-        if (examGradeFilter !== 'ALL') {
-          const targetGrade = Number(examGradeFilter)
-          const examGrade = getExamGradeLevel(exam)
-          if (examGrade !== targetGrade) return false
-        }
+      if (examGradeFilter !== 'ALL' && examGradeFilter !== 'SCHOOL_WIDE') {
+        const targetGrade = Number(examGradeFilter)
+        const examGrade = getExamGradeLevel(exam)
+        if (examGrade !== targetGrade) return false
       }
 
       // 2. Year filter
@@ -545,16 +541,17 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
 
   // Date sheet displays filtered exam schedules matching active section
   const displayedExamSchedules = useMemo(() => {
-    if (examGradeFilter === 'SCHOOL_WIDE') return examSchedules
-    if (examSectionFilter === 'ALL') return examSchedules
+    if (examGradeFilter === 'SCHOOL_WIDE') {
+      const schoolWideExamIds = new Set(exams.filter(isSchoolWideExam).map((exam) => String(exam.id)))
+      return examSchedules.filter((item) =>
+        item.classId == null || schoolWideExamIds.has(String(item.examId))
+      )
+    }
+    if (examGradeFilter === 'ALL') return examSchedules
+    if (examSectionFilter === 'ALL') return examSchedules.filter((item) => item.classId != null)
     const targetClassId = String(examSectionFilter)
-    return examSchedules.filter((item) => {
-      if (item.classId) {
-        return String(item.classId) === targetClassId
-      }
-      return true
-    })
-  }, [examSchedules, examGradeFilter, examSectionFilter])
+    return examSchedules.filter((item) => String(item.classId) === targetClassId)
+  }, [examSchedules, examGradeFilter, examSectionFilter, exams])
 
   useEffect(() => {
     setVisibleExamCount(48)
@@ -1359,9 +1356,13 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                   <Calendar className="h-6 w-6" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-foreground">Exam Scheduled, But No Date Sheet Sessions Added Yet</h4>
+                  <h4 className="text-sm font-semibold text-foreground">
+                    {examGradeFilter === 'SCHOOL_WIDE' ? 'No School-Wide Date Sheet Sessions Found' : 'Exam Scheduled, But No Date Sheet Sessions Added Yet'}
+                  </h4>
                   <p className="text-xs text-muted-foreground mt-1 max-w-lg mx-auto">
-                    &ldquo;{selectedExam?.name}&rdquo;{selectedExam?.term ? ` (${getExamTermLabel(selectedExam.term)})` : ''} was created in the Examination Schedule, but individual subject papers (dates, times, venues, and invigilators) haven&apos;t been assigned to this date sheet yet.
+                    {examGradeFilter === 'SCHOOL_WIDE'
+                      ? 'No sessions marked Open / School-wide match the selected academic year.'
+                      : <>&ldquo;{selectedExam?.name}&rdquo;{selectedExam?.term ? ` (${getExamTermLabel(selectedExam.term)})` : ''} was created in the Examination Schedule, but individual subject papers (dates, times, venues, and invigilators) haven&apos;t been assigned to this date sheet yet.</>}
                   </p>
                 </div>
                 {isAdmin && (
