@@ -34,6 +34,8 @@ const TERMS = [
   { value: "TERM_3", label: "Term 3 (Final Examination)" },
 ]
 
+const GRADE_IN_NAME = /\bgrade\s*(\d{1,2})\b/gi
+
 const formatDate = (d) => {
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, "0")
@@ -80,10 +82,14 @@ export default function ExamTimetableModal({
     return TERMS.find((t) => t.value === term)?.label?.match(/^Term \d+/)?.[0] || "Term 1"
   }, [term])
 
-  // Sync default exam name if user hasn't manually typed a custom one (only in create mode)
+  // Sync default exam name if user hasn't manually typed a custom one (only in create mode).
+  // A customised name keeps the user's wording but follows the selected grade.
   useEffect(() => {
-    if (!isNameCustomized && !examToEdit) {
+    if (examToEdit) return
+    if (!isNameCustomized) {
       setExamName(`Grade ${gradeLevel} ${termLabel} Examination ${academicYear}`)
+    } else {
+      setExamName((name) => name.replace(GRADE_IN_NAME, `Grade ${gradeLevel}`))
     }
   }, [gradeLevel, termLabel, academicYear, isNameCustomized, examToEdit])
 
@@ -338,6 +344,14 @@ export default function ExamTimetableModal({
         setErrorMsg(`Please check start and end times for ${slot.subjectName}. Start time must be before end time.`)
         return
       }
+    }
+
+    const mismatchedGrade = [...examName.matchAll(GRADE_IN_NAME)]
+      .map((match) => Number(match[1]))
+      .find((namedGrade) => namedGrade !== Number(gradeLevel))
+    if (mismatchedGrade !== undefined) {
+      setErrorMsg(`The exam name mentions Grade ${mismatchedGrade}, but Grade ${gradeLevel} is selected. Fix the name or the grade.`)
+      return
     }
 
     const payload = {

@@ -2,6 +2,7 @@ import { Show, SignInButton, useUser, useClerk } from "@clerk/react"
 import { useAuthUser } from "@/context/AuthUserContext"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { SCHOOL_NAME } from "@/lib/branding"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,7 +31,7 @@ export default function Navbar({
 }) {
   const { user } = useUser()
   const { signOut } = useClerk()
-  const { userProfile, role, isAdmin, isPrincipal } = useAuthUser()
+  const { userProfile, role } = useAuthUser()
 
   const getRoleBadge = (r) => {
     switch (r) {
@@ -94,7 +95,7 @@ export default function Navbar({
           <div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-normal tracking-tight text-[#ffffff]">
-                Vidyalaya SIS
+                {SCHOOL_NAME}
               </span>
               <span className="hidden sm:inline-block rounded-[5.26px] bg-[#1f1f21] px-1.5 py-0.5 text-[10px] font-normal text-[#858687] border-[0.5px] border-white/[0.07]">
                 Staff Portal

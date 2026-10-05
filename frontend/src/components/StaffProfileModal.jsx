@@ -184,7 +184,7 @@ export default function StaffProfileModal({ isOpen, onClose, required = false })
               required
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="john.silva@school.lk"
+              placeholder="john.silva@ascentric.lk"
             />
           </div>
 

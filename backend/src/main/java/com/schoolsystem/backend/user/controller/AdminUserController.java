@@ -13,7 +13,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/users")
-@PreAuthorize("hasRole('ADMIN')")
 public class AdminUserController {
 
     private final UserService userService;
@@ -23,18 +22,21 @@ public class AdminUserController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'PRINCIPAL')")
     public ApiResponse<List<UserDTO>> listAllUsers() {
         List<UserDTO> users = userService.getAllUsers();
         return ApiResponse.success(users, "Users retrieved successfully");
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PRINCIPAL')")
     public ApiResponse<UserDTO> getUserById(@PathVariable Long id) {
         UserDTO user = userService.getUserById(id);
         return ApiResponse.success(user, "User retrieved successfully");
     }
 
     @PatchMapping("/{id}/role")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<UserDTO> updateUserRole(
             @PathVariable Long id,
             @Valid @RequestBody UpdateRoleRequest request
@@ -44,6 +46,7 @@ public class AdminUserController {
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<UserDTO> updateUserStatus(
             @PathVariable Long id,
             @Valid @RequestBody UpdateStatusRequest request
@@ -53,6 +56,7 @@ public class AdminUserController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ApiResponse.message("User account deleted successfully");

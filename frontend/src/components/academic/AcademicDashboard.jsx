@@ -19,7 +19,7 @@ import ReportCardTab from "./ReportCardTab"
 import PerformanceAnalyticsTab from "./PerformanceAnalyticsTab"
 
 export default function AcademicDashboard({ onBack }) {
-  const { getToken, role, userProfile } = useAuthUser()
+  const { getToken, role, isPrincipal } = useAuthUser()
   const isTeacherUser = role === "TEACHER"
   const [activeTab, setActiveTab] = useState(isTeacherUser ? "marks" : "exams")
   const [classes, setClasses] = useState([])
@@ -67,13 +67,17 @@ export default function AcademicDashboard({ onBack }) {
     {
       id: "exams",
       label: "Exam Schedules & Terms",
-      desc: "Schedule & filter examinations across all 39 classes",
+      desc: isPrincipal
+        ? "Browse & filter examinations across all 39 classes"
+        : "Schedule & filter examinations across all 39 classes",
       icon: Calendar,
     },
     {
       id: "marks",
-      label: "Batch Mark Entry",
-      desc: "Record numeric marks with real-time grade calculation",
+      label: isPrincipal ? "Student Marks" : "Batch Mark Entry",
+      desc: isPrincipal
+        ? "View scores and grades for any class"
+        : "Record numeric marks with real-time grade calculation",
       icon: Edit3,
     },
     {

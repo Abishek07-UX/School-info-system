@@ -57,7 +57,7 @@ public class ExamController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'PRINCIPAL', 'TEACHER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<ExamResponseDTO>> createExam(@Valid @RequestBody CreateExamRequest request) {
         ExamResponseDTO created = examService.createExam(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -65,7 +65,7 @@ public class ExamController {
     }
 
     @PostMapping("/with-timetable")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PRINCIPAL', 'TEACHER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<ExamWithTimetableResponseDTO>> createExamWithTimetable(
             @Valid @RequestBody CreateExamWithTimetableRequest request
     ) {
@@ -75,7 +75,7 @@ public class ExamController {
     }
 
     @PutMapping("/{id}/with-timetable")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PRINCIPAL', 'TEACHER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<ExamWithTimetableResponseDTO>> updateExamWithTimetable(
             @PathVariable Long id,
             @Valid @RequestBody CreateExamWithTimetableRequest request
@@ -85,7 +85,7 @@ public class ExamController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PRINCIPAL', 'TEACHER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ApiResponse<ExamResponseDTO> updateExam(
             @PathVariable Long id,
             @Valid @RequestBody UpdateExamRequest request
@@ -95,7 +95,7 @@ public class ExamController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PRINCIPAL')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> deleteExam(@PathVariable Long id) {
         examService.deleteExam(id);
         return ApiResponse.message("Examination deleted successfully");

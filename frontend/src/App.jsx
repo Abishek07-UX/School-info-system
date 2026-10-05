@@ -9,6 +9,7 @@ import StaffProfileModal from "./components/StaffProfileModal"
 import AcademicDashboard from "./components/academic/AcademicDashboard"
 import { TimetableHub } from "./components/timetable/TimetableHub"
 import ModuleModal from "./components/common/ModuleModal"
+import { PORTAL_NAME } from "@/lib/branding"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -23,16 +24,14 @@ import {
   Ticket,
   School,
   ArrowRight,
-  User,
   AlertTriangle,
   Layers,
   Lock,
   Calendar,
   CheckCircle2,
-  Clock,
 } from "lucide-react"
 
-function DashboardView({ onOpenProfile }) {
+function DashboardView() {
   const { user } = useUser()
   const { userProfile, role, isAdmin, isPrincipal, getToken, loading } = useAuthUser()
   const [activeTab, setActiveTab] = useState("overview")
@@ -89,10 +88,12 @@ function DashboardView({ onOpenProfile }) {
     },
     {
       id: "admin",
-      name: "User & Role Administration",
+      name: isPrincipal ? "Staff Directory" : "User & Role Administration",
       icon: Shield,
-      count: "Access Control",
-      desc: "User management, NIC verification, status toggling, and role permissions assignment.",
+      count: isPrincipal ? "View Only" : "Access Control",
+      desc: isPrincipal
+        ? "Browse registered staff, their contact details, roles, and account status."
+        : "User management, NIC verification, status toggling, and role permissions assignment.",
       roles: ["ADMIN", "PRINCIPAL"],
     },
     {
@@ -131,7 +132,7 @@ function DashboardView({ onOpenProfile }) {
             </h1>
           </div>
           <p className="text-xs text-[#858687]">
-            Vidyalaya School Information System &bull; Academic Operations Portal
+            {PORTAL_NAME} &bull; Academic Operations Portal
           </p>
         </div>
 
@@ -366,7 +367,7 @@ function AuthenticatedPortal({ onOpenProfile }) {
   }
 
   // Step 3: Approved user enters full dashboard
-  return <DashboardView onOpenProfile={onOpenProfile} />
+  return <DashboardView />
 }
 
 function LandingView({ isClerkConfigured }) {
@@ -580,7 +581,7 @@ function MainApp({ isClerkConfigured = true }) {
 
       <footer className="border-t-[0.5px] border-white/[0.07] bg-[#0b0c0e] py-12 text-center text-xs text-[#858687]">
         <div className="max-w-[1080px] mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>Vidyalaya School Information System &bull; Internal Staff Operations Portal</div>
+          <div>{PORTAL_NAME} &bull; Internal Staff Operations Portal</div>
           <div className="text-[11px] text-[#71717a]">&copy; {new Date().getFullYear()} All rights reserved.</div>
         </div>
       </footer>

@@ -153,7 +153,7 @@ public class MarkServiceImpl implements MarkService {
             throw new IllegalArgumentException("Student is not enrolled in the exam's class");
         }
 
-        if (editor.getRole() == UserRole.ADMIN || editor.getRole() == UserRole.PRINCIPAL) return;
+        if (editor.getRole() == UserRole.ADMIN) return;
         if (editor.getRole() != UserRole.TEACHER || studentClass == null ||
                 studentClass.getClassTeacher() == null ||
                 !Objects.equals(studentClass.getClassTeacher().getId(), editor.getId())) {

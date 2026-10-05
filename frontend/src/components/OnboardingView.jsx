@@ -167,7 +167,7 @@ export default function OnboardingView() {
                 id="email"
                 type="email"
                 required
-                placeholder="ruwan.perera@school.lk"
+                placeholder="ruwan.perera@ascentric.lk"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />

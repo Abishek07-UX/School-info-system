@@ -78,7 +78,7 @@ public class AcademicLookupServiceImpl implements AcademicLookupService {
     public List<UserDTO> getAllTeachers() {
         List<User> users = userRepository.findAll();
         return users.stream()
-                .filter(u -> u.getRole() == UserRole.TEACHER || u.getRole() == UserRole.PRINCIPAL || u.getRole() == UserRole.ADMIN)
+                .filter(u -> u.getRole() == UserRole.TEACHER)
                 .map(UserDTO::new)
                 .collect(Collectors.toList());
     }

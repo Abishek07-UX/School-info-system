@@ -66,9 +66,7 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
   const selectedClass = classes.find((c) => String(c.id) === String(selectedClassId))
   const isAssignedClass = Boolean(role === "TEACHER" && userProfile?.id &&
     String(selectedClass?.classTeacherId) === String(userProfile.id))
-  const canEditMarks = isAdmin || isPrincipal || (
-    role === "TEACHER" && isAssignedClass
-  )
+  const canEditMarks = isAdmin || (role === "TEACHER" && isAssignedClass)
 
   // Prefer the teacher's class even when the profile arrives after the class list.
   useEffect(() => {
@@ -340,10 +338,14 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
         )}
       </div>
 
-      {role === "TEACHER" && selectedClassId && !canEditMarks && (
+      {(role === "TEACHER" || isPrincipal) && selectedClassId && !canEditMarks && (
         <Alert>
           <AlertTitle>View only</AlertTitle>
-          <AlertDescription>Only this class’s assigned teacher can enter or change marks.</AlertDescription>
+          <AlertDescription>
+            {isPrincipal
+              ? "Principals have view-only access to marks."
+              : "Only this class’s assigned teacher can enter or change marks."}
+          </AlertDescription>
         </Alert>
       )}
 

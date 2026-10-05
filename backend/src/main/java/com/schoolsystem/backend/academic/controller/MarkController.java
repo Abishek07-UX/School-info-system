@@ -25,7 +25,7 @@ public class MarkController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'PRINCIPAL', 'TEACHER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ApiResponse<MarkResponseDTO> enterSingleMark(
             @Valid @RequestBody EnterMarkRequest request,
             @CurrentUser UserPrincipal currentUser
@@ -36,7 +36,7 @@ public class MarkController {
     }
 
     @PostMapping("/batch")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PRINCIPAL', 'TEACHER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ApiResponse<BatchMarkResponseDTO> enterBatchMarks(
             @Valid @RequestBody BatchMarkEntryRequest request,
             @CurrentUser UserPrincipal currentUser
@@ -65,7 +65,7 @@ public class MarkController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PRINCIPAL')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> deleteMark(@PathVariable Long id) {
         markService.deleteMark(id);
         return ApiResponse.message("Mark entry removed successfully");

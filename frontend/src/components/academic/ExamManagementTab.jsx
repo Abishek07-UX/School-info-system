@@ -24,6 +24,7 @@ import {
   Edit3,
   RefreshCw,
   AlertTriangle,
+  Eye,
 } from "lucide-react"
 import ExamModal from "./ExamModal"
 import ExamTimetableModal from "./ExamTimetableModal"
@@ -206,7 +207,7 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
             {loading ? "Loading..." : "Refresh"}
           </Button>
 
-          {(isAdmin || isPrincipal) && (
+          {isAdmin && (
             <div className="flex items-center gap-2">
               <Button
                 size="sm"
@@ -438,10 +439,14 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
                         }
                         className="gap-1 text-indigo-300 hover:text-white border-indigo-500/30 hover:bg-indigo-600/30"
                       >
-                        <Edit3 className="h-3 w-3" /> Enter Marks
+                        {isPrincipal ? (
+                          <><Eye className="h-3 w-3" /> View Marks</>
+                        ) : (
+                          <><Edit3 className="h-3 w-3" /> Enter Marks</>
+                        )}
                       </Button>
 
-                      {(isAdmin || isPrincipal) && (
+                      {isAdmin && (
                         <>
                           <Button
                             size="icon"

@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Printer, X, School } from "lucide-react"
+import { SCHOOL_NAME } from "@/lib/branding"
 
 export default function PrintableReportCard({ reportCard, onClose }) {
   if (!reportCard) return null
@@ -50,12 +51,9 @@ export default function PrintableReportCard({ reportCard, onClose }) {
             <div className="flex items-center justify-center gap-2 mb-1">
               <School className="h-6 w-6 text-indigo-900" />
               <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 uppercase">
-                VIDYALAYA NATIONAL SCHOOL
+                {SCHOOL_NAME}
               </h1>
             </div>
-            <p className="text-xs text-slate-600">
-              Colombo, Sri Lanka &bull; Tel: +94 11 234 5678 &bull; Email: info@vidyalaya.lk
-            </p>
             <div className="inline-block mt-3 rounded-full bg-slate-900 px-5 py-1 text-xs font-bold uppercase tracking-wider text-white">
               STUDENT ACADEMIC REPORT CARD &bull; {reportCard.academicYear}
             </div>

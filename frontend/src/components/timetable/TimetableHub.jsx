@@ -16,7 +16,6 @@ import {
   Loader2,
   RefreshCw,
   BookOpen,
-  Award,
   Sparkles,
   Search,
   X,
@@ -45,16 +44,66 @@ const EXAM_TERM_LABELS = {
 
 const getExamTermLabel = (term) => EXAM_TERM_LABELS[term] || term
 
+function filterExams(exams, classes, { examGradeFilter, examYearFilter, examTermFilter, examSectionFilter }) {
+  return exams.filter((exam) => {
+    // 1. Grade filter
+    if (examGradeFilter !== 'ALL' && examGradeFilter !== 'SCHOOL_WIDE') {
+      const targetGrade = Number(examGradeFilter)
+      const examGrade = getExamGradeLevel(exam)
+      if (examGrade !== targetGrade) return false
+    }
+
+    // 2. Year filter
+    if (examYearFilter !== 'ALL') {
+      if (Number(exam.academicYear) !== Number(examYearFilter)) return false
+    }
+
+    // 3. Term and Section filters (active when not in school-wide mode)
+    if (examGradeFilter !== 'SCHOOL_WIDE') {
+      // Term filter
+      if (examTermFilter !== 'ALL') {
+        const examTerm = exam.term ? String(exam.term).toUpperCase() : ''
+        if (examTerm !== examTermFilter) {
+          const termNum = examTermFilter.replace('TERM_', '')
+          const nameLower = (exam.name || '').toLowerCase()
+          const dispLower = (exam.termDisplayName || '').toLowerCase()
+          if (!nameLower.includes(`term ${termNum}`) && !dispLower.includes(`term ${termNum}`)) {
+            return false
+          }
+        }
+      }
+
+      // Section filter
+      if (examSectionFilter !== 'ALL') {
+        const targetClassId = String(examSectionFilter)
+        const matchClassId = exam.classId && String(exam.classId) === targetClassId
+        const targetClass = classes.find((c) => String(c.id) === targetClassId)
+        let matchName = false
+        if (targetClass) {
+          const tName = targetClass.name.toLowerCase()
+          const examClsName = (exam.className || '').toLowerCase()
+          const examName = (exam.name || '').toLowerCase()
+          matchName = examClsName === tName || examClsName.includes(tName) || examName.includes(`(${tName})`) || examName.includes(tName)
+        }
+        if (!matchClassId && !matchName) {
+          return false
+        }
+      }
+    }
+
+    return true
+  })
+}
+
 export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile, getToken }) {
   const authCtx = useAuthUser()
   const userProfile = propUserProfile || authCtx?.userProfile
   const role = userRole || authCtx?.role || 'TEACHER'
   const isAdmin = role === 'ADMIN'
-  const isPrincipal = role === 'PRINCIPAL'
   const isTeacher = role === 'TEACHER' || authCtx?.isTeacher
 
   const [activeTab, setActiveTab] = useState(isTeacher ? 'teachers' : 'classes')
-  const [academicYear, setAcademicYear] = useState(2026)
+  const [academicYear] = useState(2026)
 
   // Lookups
   const [classes, setClasses] = useState([])
@@ -371,7 +420,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
         setSelectedTeacherId('')
       }
     }
-  }, [teacherSearchTerm, filteredTeachers, teachers, selectedTeacherId])
+  }, [isTeacher, teacherSearchTerm, filteredTeachers, teachers, selectedTeacherId])
 
   useEffect(() => {
     if (activeTab === 'teachers') {
@@ -430,17 +479,6 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
     }
   }
 
-  const handleDeleteExamSlot = async (scheduleId) => {
-    if (!window.confirm('Are you sure you want to delete this exam schedule?')) return
-    try {
-      await examScheduleService.deleteExamSchedule(scheduleId, getToken)
-      examCache.current.clear()
-      fetchExamSchedules(filteredExams, true)
-    } catch (err) {
-      setErrorMsg(err.message || 'Failed to delete exam schedule.')
-    }
-  }
-
   const selectedClass = classes.find((c) => String(c.id) === String(selectedClassId))
 
   // Available academic years discovered in exams
@@ -467,56 +505,21 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
     setExamSectionFilter('ALL')
   }, [examGradeFilter])
 
-  const filteredExams = useMemo(() => {
-    return exams.filter((exam) => {
-      // 1. Grade filter
-      if (examGradeFilter !== 'ALL' && examGradeFilter !== 'SCHOOL_WIDE') {
-        const targetGrade = Number(examGradeFilter)
-        const examGrade = getExamGradeLevel(exam)
-        if (examGrade !== targetGrade) return false
-      }
+  const filteredExams = useMemo(
+    () => filterExams(exams, classes, { examGradeFilter, examYearFilter, examTermFilter, examSectionFilter }),
+    [exams, classes, examGradeFilter, examYearFilter, examTermFilter, examSectionFilter]
+  )
 
-      // 2. Year filter
-      if (examYearFilter !== 'ALL') {
-        if (Number(exam.academicYear) !== Number(examYearFilter)) return false
-      }
-
-      // 3. Term and Section filters (active when not in school-wide mode)
-      if (examGradeFilter !== 'SCHOOL_WIDE') {
-        // Term filter
-        if (examTermFilter !== 'ALL') {
-          const examTerm = exam.term ? String(exam.term).toUpperCase() : ''
-          if (examTerm !== examTermFilter) {
-            const termNum = examTermFilter.replace('TERM_', '')
-            const nameLower = (exam.name || '').toLowerCase()
-            const dispLower = (exam.termDisplayName || '').toLowerCase()
-            if (!nameLower.includes(`term ${termNum}`) && !dispLower.includes(`term ${termNum}`)) {
-              return false
-            }
-          }
-        }
-
-        // Section filter
-        if (examSectionFilter !== 'ALL') {
-          const targetClassId = String(examSectionFilter)
-          const matchClassId = exam.classId && String(exam.classId) === targetClassId
-          const targetClass = classes.find((c) => String(c.id) === targetClassId)
-          let matchName = false
-          if (targetClass) {
-            const tName = targetClass.name.toLowerCase()
-            const examClsName = (exam.className || '').toLowerCase()
-            const examName = (exam.name || '').toLowerCase()
-            matchName = examClsName === tName || examClsName.includes(tName) || examName.includes(`(${tName})`) || examName.includes(tName)
-          }
-          if (!matchClassId && !matchName) {
-            return false
-          }
-        }
-      }
-
-      return true
-    })
-  }, [exams, examGradeFilter, examYearFilter, examTermFilter, examSectionFilter, classes])
+  const handleDeleteExamSlot = async (scheduleId) => {
+    if (!window.confirm('Are you sure you want to delete this exam schedule?')) return
+    try {
+      await examScheduleService.deleteExamSchedule(scheduleId, getToken)
+      examCache.current.clear()
+      fetchExamSchedules(filteredExams, true)
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to delete exam schedule.')
+    }
+  }
 
   const selectedExam = filteredExams.length > 0 ? filteredExams[0] : null
   const selectedExamId = selectedExam?.id ? String(selectedExam.id) : ''

@@ -31,6 +31,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -88,6 +90,7 @@ public class ExamServiceImpl implements ExamService {
         }
 
         ExamTerm term = request.getTerm() != null ? request.getTerm() : ExamTerm.OTHER;
+        ensureNameMatchesGrade(request.getName(), schoolClass != null ? schoolClass.getGradeLevel() : null);
         ensureTermExamAvailable(schoolClass, request.getAcademicYear(), term, null);
 
         Exam exam = new Exam(
@@ -118,6 +121,10 @@ public class ExamServiceImpl implements ExamService {
         Integer targetYear = request.getAcademicYear() != null ? request.getAcademicYear() : exam.getAcademicYear();
         ExamTerm targetTerm = request.getTerm() != null ? request.getTerm() : exam.getTerm();
         ensureTermExamAvailable(targetClass, targetYear, targetTerm, exam);
+        if (request.getName() != null || request.getClassId() != null) {
+            ensureNameMatchesGrade(request.getName() != null ? request.getName() : exam.getName(),
+                    targetClass != null ? targetClass.getGradeLevel() : null);
+        }
 
         if (request.getName() != null) exam.setName(request.getName().trim());
         if (request.getAcademicYear() != null) exam.setAcademicYear(request.getAcademicYear());
@@ -195,6 +202,7 @@ public class ExamServiceImpl implements ExamService {
             }
             targetClasses.add(schoolClass);
         }
+        ensureNameMatchesGrade(request.getName(), request.getGradeLevel());
         ensureTermExamAvailable(targetClasses.get(0), request.getAcademicYear(), request.getTerm(), null);
 
         List<User> allStaff = userRepository.findAll();
@@ -244,7 +252,7 @@ public class ExamServiceImpl implements ExamService {
                 }
                 if (invigilator == null) {
                     invigilator = allStaff.stream()
-                            .filter(u -> u.getRole() == UserRole.TEACHER || u.getRole() == UserRole.ADMIN || u.getRole() == UserRole.PRINCIPAL)
+                            .filter(u -> u.getRole() == UserRole.TEACHER)
                             .findFirst()
                             .orElse(allStaff.isEmpty() ? null : allStaff.get(0));
                 }
@@ -330,6 +338,7 @@ public class ExamServiceImpl implements ExamService {
         Integer targetYear = request.getAcademicYear() != null ? request.getAcademicYear() : exam.getAcademicYear();
         ExamTerm targetTerm = request.getTerm() != null ? request.getTerm() : exam.getTerm();
         ensureTermExamAvailable(targetClass, targetYear, targetTerm, exam);
+        ensureNameMatchesGrade(request.getName(), request.getGradeLevel());
 
         if (request.getName() != null && !request.getName().isBlank()) {
             exam.setName(request.getName().trim());
@@ -387,7 +396,7 @@ public class ExamServiceImpl implements ExamService {
             }
             if (invigilator == null) {
                 invigilator = allStaff.stream()
-                        .filter(u -> u.getRole() == UserRole.TEACHER || u.getRole() == UserRole.ADMIN || u.getRole() == UserRole.PRINCIPAL)
+                        .filter(u -> u.getRole() == UserRole.TEACHER)
                         .findFirst()
                         .orElse(allStaff.isEmpty() ? null : allStaff.get(0));
             }
@@ -436,6 +445,24 @@ public class ExamServiceImpl implements ExamService {
                 updatedSchedules.size());
 
         return new ExamWithTimetableResponseDTO(List.of(ExamResponseDTO.fromEntity(savedExam)), updatedSchedules, summary);
+    }
+
+    private static final Pattern GRADE_IN_NAME = Pattern.compile("(?i)\\bgrade\\s*(\\d{1,2})\\b");
+
+    // Rejects names like "Grade 10 Term Examination" for Grade 1 classes, which otherwise surface
+    // in the wrong grade's exam lists, report cards and analytics.
+    private void ensureNameMatchesGrade(String name, Integer gradeLevel) {
+        if (name == null || gradeLevel == null) {
+            return;
+        }
+        Matcher matcher = GRADE_IN_NAME.matcher(name);
+        while (matcher.find()) {
+            int namedGrade = Integer.parseInt(matcher.group(1));
+            if (namedGrade != gradeLevel) {
+                throw new IllegalArgumentException("Exam name mentions Grade " + namedGrade
+                        + " but the selected class is in Grade " + gradeLevel + ". Fix the exam name or the grade.");
+            }
+        }
     }
 
     private void ensureTermExamAvailable(SchoolClass schoolClass, Integer academicYear, ExamTerm term, Exam existingExam) {

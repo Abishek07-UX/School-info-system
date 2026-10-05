@@ -40,7 +40,9 @@ const ROLES = [
 ]
 
 export default function UserRoleManagement() {
-  const { getToken, userProfile } = useAuthUser()
+  const { getToken, userProfile, isAdmin } = useAuthUser()
+  const readOnly = !isAdmin
+  const columnCount = readOnly ? 5 : 6
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -79,6 +81,7 @@ export default function UserRoleManagement() {
   }, [fetchUsers])
 
   const handleRoleChange = async (userId, newRole) => {
+    if (readOnly) return
     try {
       setActionLoadingId(userId)
       setFeedback(null)
@@ -111,6 +114,7 @@ export default function UserRoleManagement() {
   }
 
   const handleStatusToggle = async (userId, currentStatus) => {
+    if (readOnly) return
     try {
       setActionLoadingId(userId)
       setFeedback(null)
@@ -144,6 +148,7 @@ export default function UserRoleManagement() {
   }
 
   const handleDeleteUser = async (userId, email) => {
+    if (readOnly) return
     if (!window.confirm(`Are you sure you want to delete staff account ${email}?`)) {
       return
     }
@@ -205,10 +210,12 @@ export default function UserRoleManagement() {
             </div>
             <div>
               <h2 className="text-xl font-bold font-heading text-white">
-                User & Role Management
+                {readOnly ? "Staff Directory" : "User & Role Management"}
               </h2>
               <p className="text-xs text-slate-400">
-                Review registered staff identity credentials, verify NIC & phone contacts, and assign operational roles.
+                {readOnly
+                  ? "Review registered staff, their contact details, roles, and account status."
+                  : "Review registered staff identity credentials, verify NIC & phone contacts, and assign operational roles."}
               </p>
             </div>
           </div>
@@ -261,6 +268,13 @@ export default function UserRoleManagement() {
           </div>
         </Card>
       </div>
+
+      {readOnly && (
+        <Alert>
+          <AlertTitle>View only</AlertTitle>
+          <AlertDescription>Only administrators can change roles or account status.</AlertDescription>
+        </Alert>
+      )}
 
       {/* Feedback Toast Alert */}
       {feedback && (
@@ -331,20 +345,20 @@ export default function UserRoleManagement() {
               <TableHead>Contact & Address</TableHead>
               <TableHead>Assigned Role</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              {!readOnly && <TableHead className="text-right">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-12 text-slate-400">
+                <TableCell colSpan={columnCount} className="text-center py-12 text-slate-400">
                   <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-indigo-400" />
                   Loading registered staff accounts...
                 </TableCell>
               </TableRow>
             ) : filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-12 text-slate-400">
+                <TableCell colSpan={columnCount} className="text-center py-12 text-slate-400">
                   No staff accounts found matching your query.
                 </TableCell>
               </TableRow>
@@ -412,6 +426,11 @@ export default function UserRoleManagement() {
 
                     {/* Role Select Dropdown */}
                     <TableCell>
+                      {readOnly ? (
+                        <Badge variant={ROLES.find((r) => r.value === user.role)?.badgeVariant || "secondary"}>
+                          {ROLES.find((r) => r.value === user.role)?.label || user.role}
+                        </Badge>
+                      ) : (
                       <select
                         value={user.role}
                         disabled={isUpdating || (isCurrent && user.role === "ADMIN")}
@@ -428,10 +447,16 @@ export default function UserRoleManagement() {
                           </option>
                         ))}
                       </select>
+                      )}
                     </TableCell>
 
                     {/* Status Toggle Button */}
                     <TableCell>
+                      {readOnly ? (
+                        <Badge variant={user.status === "ACTIVE" ? "success" : "destructive"}>
+                          {user.status === "ACTIVE" ? "● Active" : "○ Inactive"}
+                        </Badge>
+                      ) : (
                       <Button
                         size="xs"
                         variant={user.status === "ACTIVE" ? "success" : "destructive"}
@@ -442,9 +467,11 @@ export default function UserRoleManagement() {
                       >
                         {user.status === "ACTIVE" ? "● Active" : "○ Inactive"}
                       </Button>
+                      )}
                     </TableCell>
 
                     {/* Delete Action */}
+                    {!readOnly && (
                     <TableCell className="text-right">
                       <Button
                         variant="ghost"
@@ -457,6 +484,7 @@ export default function UserRoleManagement() {
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>
+                    )}
                   </TableRow>
                 )
               })
