@@ -13,5 +13,10 @@ public interface SchoolClassRepository extends JpaRepository<SchoolClass, Long> 
 
     List<SchoolClass> findByGradeLevelOrderByNameAsc(Integer gradeLevel);
 
+    List<SchoolClass> findBySectionIdOrderByNameAsc(Long sectionId);
+
+    List<SchoolClass> findBySectionId(Long sectionId);
+
     List<SchoolClass> findByClassTeacherId(Long teacherId);
 }
+

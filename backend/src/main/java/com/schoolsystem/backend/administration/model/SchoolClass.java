@@ -21,9 +21,13 @@ public class SchoolClass {
     @Column
     private Integer capacity = 45;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "class_teacher_id")
     private User classTeacher;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "section_id")
+    private Section section;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -32,10 +36,15 @@ public class SchoolClass {
     }
 
     public SchoolClass(String name, Integer gradeLevel, Integer capacity, User classTeacher) {
+        this(name, gradeLevel, capacity, classTeacher, null);
+    }
+
+    public SchoolClass(String name, Integer gradeLevel, Integer capacity, User classTeacher, Section section) {
         this.name = name;
         this.gradeLevel = gradeLevel;
         this.capacity = capacity != null ? capacity : 45;
         this.classTeacher = classTeacher;
+        this.section = section;
     }
 
     @PrePersist
@@ -77,6 +86,14 @@ public class SchoolClass {
 
     public void setClassTeacher(User classTeacher) {
         this.classTeacher = classTeacher;
+    }
+
+    public Section getSection() {
+        return section;
+    }
+
+    public void setSection(Section section) {
+        this.section = section;
     }
 
     public LocalDateTime getCreatedAt() {
