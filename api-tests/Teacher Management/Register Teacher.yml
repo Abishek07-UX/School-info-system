@@ -1,0 +1,37 @@
+info:
+  name: Register Teacher
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: http://localhost:8081/api/teachers
+  body: json
+  auth: inherit
+
+body:
+  type: json
+  data: |
+    {
+      "firstName": "Saman",
+      "lastName": "Perera",
+      "dateOfBirth": "1988-04-15",
+      "gender": "Male",
+      "nationalId": "198810501234",
+      "email": "saman.perera@school.edu",
+      "contactNumber": "+94 77 123 4567",
+      "address": "45 Galle Road, Colombo 03",
+      "qualification": "B.Sc (Hons) in Mathematics",
+      "specialization": "Pure Mathematics, Statistics",
+      "department": "Mathematics",
+      "yearsOfExperience": 8,
+      "employmentDate": "2026-01-01",
+      "employmentType": "Full-time",
+      "status": "ACTIVE"
+    }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

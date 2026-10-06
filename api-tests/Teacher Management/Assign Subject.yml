@@ -1,0 +1,33 @@
+info:
+  name: Assign Subject and Class
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: http://localhost:8081/api/teachers/:teacherId/assignments
+  body: json
+  auth: inherit
+
+params:
+  path:
+    teacherId: teacherId
+
+body:
+  type: json
+  data: |
+    {
+      "subjectName": "Combined Mathematics",
+      "className": "Grade 12",
+      "section": "A",
+      "academicYear": "2026",
+      "periodsPerWeek": 5,
+      "isClassTeacher": true,
+      "remarks": "Primary subject teacher for AL batch"
+    }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,6 +1,7 @@
 package com.schoolsystem.backend.teacher.repository;
 
 import com.schoolsystem.backend.teacher.model.TeacherSubject;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -10,6 +11,7 @@ import java.util.Optional;
 @Repository
 public interface TeacherSubjectRepository extends JpaRepository<TeacherSubject, Long> {
 
+    @EntityGraph(attributePaths = {"subject", "schoolClass"})
     List<TeacherSubject> findByTeacherId(Long teacherId);
 
     List<TeacherSubject> findBySchoolClassId(Long classId);
