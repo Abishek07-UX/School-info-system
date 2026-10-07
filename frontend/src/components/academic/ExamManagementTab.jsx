@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { academicService } from "@/services/academicService"
 import { useAuthUser } from "@/context/AuthUserContext"
-import { Card } from "@/components/ui/card"
 import {
   Table,
   TableHeader,
@@ -11,20 +10,28 @@ import {
   TableCell,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import { Skeleton } from "@/components/ui/skeleton"
+import { StatTile } from "@/components/ui/stat-tile"
+import { FilterBar, FilterField, SearchInput } from "@/components/ui/filter-bar"
+import { TableEmptyRow } from "@/components/ui/empty-state"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { useToast } from "@/context/ToastContext"
+import { useConfirm } from "@/context/ConfirmContext"
+import { formatDateRange } from "@/lib/format"
 import {
   Calendar,
+  CalendarClock,
+  CalendarCheck2,
+  ClipboardList,
   Plus,
-  Search,
-  CheckCircle2,
   Edit,
   Trash2,
   Edit3,
   RefreshCw,
-  AlertTriangle,
   Eye,
+  Hourglass,
+  SearchX,
 } from "lucide-react"
 import ExamModal from "./ExamModal"
 import ExamTimetableModal from "./ExamTimetableModal"
@@ -42,7 +49,8 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isTimetableModalOpen, setIsTimetableModalOpen] = useState(false)
   const [editingExam, setEditingExam] = useState(null)
-  const [feedback, setFeedback] = useState(null)
+  const toast = useToast()
+  const confirm = useConfirm()
   const latestFetch = useRef(0)
 
   const availableYears = useMemo(() => {
@@ -85,15 +93,12 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
       if (fetchId === latestFetch.current) setExams(data || [])
     } catch (err) {
       if (fetchId === latestFetch.current) {
-        setFeedback({
-          type: "error",
-          message: err.message || "Failed to load examinations.",
-        })
+        toast.error(err.message || "Failed to load examinations.")
       }
     } finally {
       if (fetchId === latestFetch.current) setLoading(false)
     }
-  }, [filterYear, filterTerm, filterClass, filterStatus, getToken])
+  }, [filterYear, filterTerm, filterClass, filterStatus, getToken, toast])
 
   useEffect(() => {
     fetchExams()
@@ -115,56 +120,46 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
     }
     if (editingExam) {
       await academicService.updateExam(editingExam.id, formData, getToken)
-      setFeedback({
-        type: "success",
-        message: "Examination schedule updated successfully!",
-      })
+      toast.success("Examination schedule updated successfully!")
     } else {
       await academicService.createExam(formData, getToken)
-      setFeedback({
-        type: "success",
-        message: "New examination scheduled successfully!",
-      })
+      toast.success("New examination scheduled successfully!")
     }
     fetchExams()
   }
 
   const handleDeleteExam = async (examId, examName) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete examination "${examName}"? All recorded marks for this exam will also be removed.`
-      )
-    ) {
-      return
-    }
+    const ok = await confirm({
+      title: `Delete "${examName}"?`,
+      description: "All marks recorded for this exam will also be removed. This can't be undone.",
+      confirmLabel: "Delete exam",
+      tone: "danger",
+    })
+    if (!ok) return
     try {
       await academicService.deleteExam(examId, getToken)
-      setFeedback({
-        type: "success",
-        message: `Examination "${examName}" deleted.`,
-      })
+      toast.success(`Examination "${examName}" deleted.`)
       setExams((prev) => prev.filter((e) => e.id !== examId))
     } catch (err) {
-      setFeedback({
-        type: "error",
-        message: err.message || "Failed to delete examination.",
-      })
+      toast.error(err.message || "Failed to delete examination.")
     }
   }
 
+  const STATUS_BADGES = {
+    COMPLETED: { variant: "success", label: "Completed" },
+    ONGOING: { variant: "info", label: "Ongoing" },
+    UPCOMING: { variant: "warning", label: "Upcoming" },
+    CANCELLED: { variant: "destructive", label: "Cancelled" },
+  }
   const getStatusBadge = (status) => {
-    switch (status) {
-      case "COMPLETED":
-        return <Badge variant="success">✓ Completed</Badge>
-      case "ONGOING":
-        return <Badge variant="info">⏳ Ongoing</Badge>
-      case "UPCOMING":
-        return <Badge variant="warning">📅 Upcoming</Badge>
-      case "CANCELLED":
-        return <Badge variant="destructive">✕ Cancelled</Badge>
-      default:
-        return <Badge variant="outline">{status}</Badge>
-    }
+    const badge = STATUS_BADGES[status]
+    return badge ? (
+      <Badge variant={badge.variant} dot>
+        {badge.label}
+      </Badge>
+    ) : (
+      <Badge variant="outline">{status}</Badge>
+    )
   }
 
   const filteredExams = exams.filter((e) => {
@@ -181,45 +176,42 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
   const upcomingCount = exams.filter((e) => e.status === "UPCOMING").length
   const ongoingCount = exams.filter((e) => e.status === "ONGOING").length
 
-  return (
-    <div className="space-y-6">
-      {/* Header & Actions */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-xl font-semibold font-heading text-foreground flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-accent-blue" />
-            Examination Schedules & Terms
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            Manage 3-term examinations across Grades 1 to 13 (Sections A, B, C) for academic evaluation.
-          </p>
-        </div>
+  const currentYear = String(new Date().getFullYear())
+  const activeFilterCount =
+    (filterYear !== currentYear ? 1 : 0) +
+    (filterTerm !== "ALL" ? 1 : 0) +
+    (filterClass !== "ALL" ? 1 : 0) +
+    (filterStatus !== "ALL" ? 1 : 0) +
+    (searchTerm.trim() ? 1 : 0)
+  const clearFilters = () => {
+    setFilterYear(currentYear)
+    setFilterTerm("ALL")
+    setFilterClass("ALL")
+    setFilterStatus("ALL")
+    setSearchTerm("")
+  }
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchExams}
-            disabled={loading}
-            className="gap-1.5"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-            {loading ? "Loading..." : "Refresh"}
-          </Button>
+  return (
+    <div className="space-y-5">
+      {/* Toolbar */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          {isAdmin
+            ? "Schedule term exams for Grades 1–13 and jump straight into mark entry."
+            : "Browse term exams across Grades 1–13 and open their marks."}
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="outline" size="icon-sm" onClick={fetchExams} disabled={loading} aria-label="Refresh exams">
+                <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Refresh</TooltipContent>
+          </Tooltip>
 
           {isAdmin && (
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                onClick={() => {
-                  setEditingExam(null)
-                  setIsTimetableModalOpen(true)
-                }}
-                className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                <Calendar className="h-4 w-4" /> Create Exam Timetable
-              </Button>
-
+            <>
               <Button
                 variant="outline"
                 size="sm"
@@ -231,255 +223,194 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
               >
                 <Plus className="h-4 w-4" /> Single Exam
               </Button>
-            </div>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setEditingExam(null)
+                  setIsTimetableModalOpen(true)
+                }}
+                className="gap-1.5"
+              >
+                <Calendar className="h-4 w-4" /> Create Exam Timetable
+              </Button>
+            </>
           )}
         </div>
       </div>
 
-      {/* Metrics Row */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Card className="border-border p-4">
-          <div className="text-xs text-muted-foreground font-semibold">Total Scheduled</div>
-          <div className="text-2xl font-normal text-foreground mt-1">
-            {exams.length}
-          </div>
-        </Card>
-
-        <Card className="border-border p-4">
-          <div className="text-xs text-muted-foreground font-semibold">Completed</div>
-          <div className="text-2xl font-normal text-foreground mt-1">
-            {completedCount}
-          </div>
-        </Card>
-
-        <Card className="border-border p-4">
-          <div className="text-xs text-muted-foreground font-semibold">Upcoming</div>
-          <div className="text-2xl font-normal text-foreground mt-1">
-            {upcomingCount}
-          </div>
-        </Card>
-
-        <Card className="border-border p-4">
-          <div className="text-xs text-muted-foreground font-semibold">Ongoing</div>
-          <div className="text-2xl font-normal text-foreground mt-1">
-            {ongoingCount}
-          </div>
-        </Card>
+      {/* Metrics */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatTile icon={ClipboardList} label="Total scheduled" value={exams.length} tone="blue" />
+        <StatTile icon={CalendarCheck2} label="Completed" value={completedCount} tone="green" />
+        <StatTile icon={CalendarClock} label="Upcoming" value={upcomingCount} tone="amber" />
+        <StatTile icon={Hourglass} label="Ongoing" value={ongoingCount} tone="neutral" />
       </div>
 
-      {/* Feedback Toast */}
-      {feedback && (
-        <Alert
-          variant={feedback.type === "error" ? "destructive" : "success"}
-          className="animate-in fade-in-0 zoom-in-95"
-        >
-          {feedback.type === "error" ? (
-            <AlertTriangle className="h-4 w-4" />
-          ) : (
-            <CheckCircle2 className="h-4 w-4" />
-          )}
-          <AlertTitle>{feedback.type === "error" ? "Error" : "Success"}</AlertTitle>
-          <AlertDescription className="flex items-center justify-between">
-            <span>{feedback.message}</span>
-            <Button
-              variant="ghost"
-              size="xs"
-              onClick={() => setFeedback(null)}
-              className="h-6 px-2 text-xs"
-            >
-              ✕
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
+      {/* Filters */}
+      <FilterBar
+        activeCount={activeFilterCount}
+        onClear={clearFilters}
+        summary={!loading && `${filteredExams.length} ${filteredExams.length === 1 ? "exam" : "exams"}`}
+      >
+        <FilterField label="Search" htmlFor="exam-search" className="w-full sm:w-64 sm:flex-none">
+          <SearchInput id="exam-search" value={searchTerm} onChange={setSearchTerm} placeholder="Exam name or class…" />
+        </FilterField>
+        <FilterField label="Year" htmlFor="exam-year" className="sm:w-28">
+          <select id="exam-year" value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className="h-9 w-full px-3 text-sm">
+            <option value="ALL">All years</option>
+            {availableYears.map((yr) => (
+              <option key={yr} value={yr}>
+                {yr}
+              </option>
+            ))}
+          </select>
+        </FilterField>
+        <FilterField label="Term" htmlFor="exam-term" className="sm:w-40">
+          <select id="exam-term" value={filterTerm} onChange={(e) => setFilterTerm(e.target.value)} className="h-9 w-full px-3 text-sm">
+            <option value="ALL">All terms</option>
+            <option value="TERM_1">Term 1</option>
+            <option value="TERM_2">Term 2</option>
+            <option value="TERM_3">Term 3</option>
+            <option value="OTHER">Other / School-wide</option>
+          </select>
+        </FilterField>
+        <FilterField label="Class" htmlFor="exam-class" className="sm:w-40">
+          <select id="exam-class" value={filterClass} onChange={(e) => setFilterClass(e.target.value)} className="h-9 w-full px-3 text-sm">
+            <option value="ALL">All classes ({classes.length})</option>
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </FilterField>
+        <FilterField label="Status" htmlFor="exam-status" className="sm:w-36">
+          <select id="exam-status" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="h-9 w-full px-3 text-sm">
+            <option value="ALL">All statuses</option>
+            <option value="UPCOMING">Upcoming</option>
+            <option value="ONGOING">Ongoing</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+        </FilterField>
+      </FilterBar>
 
-      {/* Filter and Search Bar */}
-      <Card className="p-4 border-border">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search exams by name or class..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 bg-surface-2"
+      {/* Exams */}
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Examination</TableHead>
+            <TableHead>Class</TableHead>
+            <TableHead>Term</TableHead>
+            <TableHead>Dates</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {loading ? (
+            Array.from({ length: 5 }, (_, i) => (
+              <TableRow key={i} className="hover:bg-transparent">
+                <TableCell><Skeleton className="h-4 w-56" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                <TableCell><Skeleton className="ml-auto h-7 w-28" /></TableCell>
+              </TableRow>
+            ))
+          ) : filteredExams.length === 0 ? (
+            <TableEmptyRow
+              colSpan={6}
+              icon={activeFilterCount ? SearchX : ClipboardList}
+              title={activeFilterCount ? "No examination schedules match your selected filters." : "No exams scheduled yet"}
+              description={
+                activeFilterCount
+                  ? "Try another term or class, or clear the filters."
+                  : isAdmin
+                    ? "Create an exam timetable to schedule a term exam for a whole grade."
+                    : "Exams will appear here once an administrator schedules them."
+              }
+              action={
+                activeFilterCount ? (
+                  <Button variant="outline" size="sm" onClick={clearFilters}>
+                    Clear filters
+                  </Button>
+                ) : null
+              }
             />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Year */}
-            <select
-              value={filterYear}
-              onChange={(e) => setFilterYear(e.target.value)}
-              className="h-10 rounded-xl border border-border bg-surface-2 px-3 text-xs text-foreground-2 focus:outline-none focus:ring-1 focus:ring-ring"
-            >
-              <option value="ALL">All Years</option>
-              {availableYears.map((yr) => (
-                <option key={yr} value={yr}>
-                  Year {yr}
-                </option>
-              ))}
-            </select>
-
-            {/* Term */}
-            <select
-              value={filterTerm}
-              onChange={(e) => setFilterTerm(e.target.value)}
-              className="h-10 rounded-xl border border-border bg-surface-2 px-3 text-xs text-foreground-2 focus:outline-none focus:ring-1 focus:ring-ring"
-            >
-              <option value="ALL">All Terms</option>
-              <option value="TERM_1">📘 Term 1</option>
-              <option value="TERM_2">📗 Term 2</option>
-              <option value="TERM_3">📙 Term 3</option>
-              <option value="OTHER">🌐 Other / School-wide</option>
-            </select>
-
-            {/* Class */}
-            <select
-              value={filterClass}
-              onChange={(e) => setFilterClass(e.target.value)}
-              className="h-10 rounded-xl border border-border bg-surface-2 px-3 text-xs text-foreground-2 focus:outline-none focus:ring-1 focus:ring-ring max-w-[170px]"
-            >
-              <option value="ALL">All Classes ({classes.length})</option>
-              {classes.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-
-            {/* Status */}
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="h-10 rounded-xl border border-border bg-surface-2 px-3 text-xs text-foreground-2 focus:outline-none focus:ring-1 focus:ring-ring"
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="UPCOMING">Upcoming</option>
-              <option value="ONGOING">Ongoing</option>
-              <option value="CANCELLED">Cancelled</option>
-            </select>
-          </div>
-        </div>
-      </Card>
-
-      {/* Exams Table */}
-      <Card className="border-border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Examination Title</TableHead>
-              <TableHead>Class / Grade</TableHead>
-              <TableHead>Academic Year & Term</TableHead>
-              <TableHead>Exam Period</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
-                  <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-accent-blue" />
-                  Loading examinations...
+          ) : (
+            filteredExams.map((exam) => (
+              <TableRow key={exam.id}>
+                <TableCell className="min-w-[220px]">
+                  <div className="font-medium text-foreground">{exam.name}</div>
+                  {exam.description && (
+                    <div className="max-w-xs truncate text-xs text-muted-foreground">{exam.description}</div>
+                  )}
                 </TableCell>
-              </TableRow>
-            ) : filteredExams.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
-                  No examination schedules match your selected filters.
+                <TableCell>
+                  {exam.classId ? (
+                    <Badge variant="secondary">{exam.className}</Badge>
+                  ) : (
+                    <Badge variant="warning">School-wide</Badge>
+                  )}
                 </TableCell>
-              </TableRow>
-            ) : (
-              filteredExams.map((exam) => (
-                <TableRow key={exam.id} className="hover:bg-surface-2">
-                  {/* Title */}
-                  <TableCell>
-                    <div className="font-semibold text-foreground">{exam.name}</div>
-                    {exam.description && (
-                      <div className="text-xs text-muted-foreground max-w-xs truncate">
-                        {exam.description}
-                      </div>
-                    )}
-                  </TableCell>
-
-                  {/* Class */}
-                  <TableCell>
-                    <Badge variant={exam.classId ? "default" : "outline"} className={`font-semibold ${!exam.classId ? "border-warning/50 bg-warning-soft text-warning" : ""}`}>
-                      {exam.className || "School-wide"}
-                    </Badge>
-                  </TableCell>
-
-                  {/* Term & Year */}
-                  <TableCell>
-                    <div className="font-semibold text-foreground">
-                      {exam.termDisplayName || exam.term}
-                    </div>
-                    <div className="text-xs text-muted-foreground">Year {exam.academicYear}</div>
-                  </TableCell>
-
-                  {/* Dates */}
-                  <TableCell className="text-xs text-foreground-2">
-                    <div>📅 {exam.startDate}</div>
-                    <div className="text-muted-foreground">🏁 {exam.endDate}</div>
-                  </TableCell>
-
-                  {/* Status */}
-                  <TableCell>{getStatusBadge(exam.status)}</TableCell>
-
-                  {/* Actions */}
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <Button
-                        size="xs"
-                        variant="secondary"
-                        onClick={() =>
-                          onSelectExamForMarkEntry && onSelectExamForMarkEntry(exam)
-                        }
-                        className="gap-1 text-accent-blue hover:text-foreground border-accent-blue/30 hover:bg-accent-blue-soft"
-                      >
-                        {isPrincipal ? (
-                          <><Eye className="h-3 w-3" /> View Marks</>
-                        ) : (
-                          <><Edit3 className="h-3 w-3" /> Enter Marks</>
-                        )}
-                      </Button>
-
-                      {isAdmin && (
-                        <>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => {
-                              setEditingExam(exam)
-                              setIsTimetableModalOpen(true)
-                            }}
-                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                            title="Edit exam timetable"
-                          >
-                            <Edit className="h-3.5 w-3.5" />
-                          </Button>
-
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleDeleteExam(exam.id, exam.name)}
-                            className="h-7 w-7 text-muted-foreground hover:text-danger hover:bg-danger-soft"
-                            title="Delete exam"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </>
+                <TableCell className="whitespace-nowrap">
+                  <div className="text-foreground">{exam.termDisplayName || exam.term}</div>
+                  <div className="text-xs text-muted-foreground">{exam.academicYear}</div>
+                </TableCell>
+                <TableCell className="tabular whitespace-nowrap text-foreground-2">
+                  {formatDateRange(exam.startDate, exam.endDate)}
+                </TableCell>
+                <TableCell>{getStatusBadge(exam.status)}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      size="xs"
+                      variant="accent"
+                      onClick={() => onSelectExamForMarkEntry && onSelectExamForMarkEntry(exam)}
+                      className="gap-1.5"
+                    >
+                      {isPrincipal ? (
+                        <><Eye className="h-3.5 w-3.5" /> View Marks</>
+                      ) : (
+                        <><Edit3 className="h-3.5 w-3.5" /> Enter Marks</>
                       )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </Card>
+                    </Button>
+
+                    {isAdmin && (
+                      <>
+                        <Button
+                          size="icon-sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setEditingExam(exam)
+                            setIsTimetableModalOpen(true)
+                          }}
+                          title="Edit exam timetable"
+                          aria-label="Edit exam timetable"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon-sm"
+                          variant="ghost"
+                          onClick={() => handleDeleteExam(exam.id, exam.name)}
+                          className="hover:bg-danger-soft hover:text-danger"
+                          title="Delete exam"
+                          aria-label="Delete exam"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
 
       <ExamModal
         isOpen={isModalOpen}
@@ -499,10 +430,7 @@ export default function ExamManagementTab({ classes, onSelectExamForMarkEntry })
           setEditingExam(null)
         }}
         onSuccess={(result) => {
-          setFeedback({
-            type: "success",
-            message: result?.message || (editingExam ? "Examination timetable updated successfully!" : "Examination timetable created successfully!"),
-          })
+          toast.success(result?.message || (editingExam ? "Examination timetable updated successfully!" : "Examination timetable created successfully!"))
           fetchExams()
         }}
         getToken={getToken}

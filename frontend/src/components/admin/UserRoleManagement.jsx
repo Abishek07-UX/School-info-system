@@ -1,9 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { useAuthUser } from "@/context/AuthUserContext"
 import {
-  Card,
-} from "@/components/ui/card"
-import {
   Table,
   TableHeader,
   TableBody,
@@ -12,31 +9,24 @@ import {
   TableCell,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import { Skeleton } from "@/components/ui/skeleton"
+import { PageHeader } from "@/components/ui/page-header"
+import { StatTile } from "@/components/ui/stat-tile"
+import { FilterBar, FilterField, SearchInput } from "@/components/ui/filter-bar"
+import { TableEmptyRow } from "@/components/ui/empty-state"
+import { useToast } from "@/context/ToastContext"
+import { useConfirm } from "@/context/ConfirmContext"
+import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import {
-  Shield,
-  Users,
-  Clock,
-  Trash2,
-  RefreshCw,
-  Search,
-  AlertTriangle,
-  CheckCircle2,
-  Filter,
-  Phone,
-  MapPin,
-  Mail,
-} from "lucide-react"
+import { Shield, Users, Clock, Trash2, RefreshCw, Phone, MapPin, Eye, UserCheck, SearchX } from "lucide-react"
 
 const ROLES = [
-  { value: "PENDING", label: "PENDING (Unassigned)", badgeVariant: "warning" },
-  { value: "TEACHER", label: "Teacher", badgeVariant: "secondary" },
-  { value: "FINANCE_STAFF", label: "Finance Staff", badgeVariant: "success" },
-  { value: "PRINCIPAL", label: "Principal", badgeVariant: "default" },
-  { value: "ADMIN", label: "Administrator", badgeVariant: "default" },
+  { value: "PENDING", label: "Pending (unassigned)", short: "Pending", badgeVariant: "warning" },
+  { value: "TEACHER", label: "Teacher", short: "Teacher", badgeVariant: "secondary" },
+  { value: "FINANCE_STAFF", label: "Finance Staff", short: "Finance", badgeVariant: "success" },
+  { value: "PRINCIPAL", label: "Principal", short: "Principal", badgeVariant: "default" },
+  { value: "ADMIN", label: "Administrator", short: "Admin", badgeVariant: "default" },
 ]
 
 export default function UserRoleManagement() {
@@ -47,7 +37,8 @@ export default function UserRoleManagement() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterRole, setFilterRole] = useState("ALL")
-  const [feedback, setFeedback] = useState(null)
+  const toast = useToast()
+  const confirm = useConfirm()
   const [actionLoadingId, setActionLoadingId] = useState(null)
 
   const fetchUsers = useCallback(async () => {
@@ -70,11 +61,11 @@ export default function UserRoleManagement() {
         setUsers(resData.data || [])
       }
     } catch (err) {
-      setFeedback({ type: "error", message: err.message })
+      toast.error(err.message)
     } finally {
       setLoading(false)
     }
-  }, [getToken])
+  }, [getToken, toast])
 
   useEffect(() => {
     fetchUsers()
@@ -84,7 +75,6 @@ export default function UserRoleManagement() {
     if (readOnly) return
     try {
       setActionLoadingId(userId)
-      setFeedback(null)
       const token = await getToken()
 
       const res = await fetch(`http://localhost:8080/api/admin/users/${userId}/role`, {
@@ -99,25 +89,30 @@ export default function UserRoleManagement() {
       const resData = await res.json()
       if (res.ok && resData.success) {
         setUsers((prev) => prev.map((u) => (u.id === userId ? resData.data : u)))
-        setFeedback({
-          type: "success",
-          message: `Updated user role to ${newRole} successfully!`,
-        })
+        toast.success(`Updated user role to ${newRole} successfully!`)
       } else {
         throw new Error(resData?.error?.message || "Failed to update user role")
       }
     } catch (err) {
-      setFeedback({ type: "error", message: err.message })
+      toast.error(err.message)
     } finally {
       setActionLoadingId(null)
     }
   }
 
-  const handleStatusToggle = async (userId, currentStatus) => {
+  const handleStatusToggle = async (userId, currentStatus, fullName) => {
     if (readOnly) return
+    if (currentStatus === "ACTIVE") {
+      const ok = await confirm({
+        title: `Deactivate ${fullName}?`,
+        description: "They'll keep their login but won't be able to open any module until you reactivate the account.",
+        confirmLabel: "Deactivate",
+        tone: "danger",
+      })
+      if (!ok) return
+    }
     try {
       setActionLoadingId(userId)
-      setFeedback(null)
       const newStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE"
       const token = await getToken()
 
@@ -133,15 +128,12 @@ export default function UserRoleManagement() {
       const resData = await res.json()
       if (res.ok && resData.success) {
         setUsers((prev) => prev.map((u) => (u.id === userId ? resData.data : u)))
-        setFeedback({
-          type: "success",
-          message: `User status changed to ${newStatus}!`,
-        })
+        toast.success(newStatus === "ACTIVE" ? "Account reactivated." : "Account deactivated.")
       } else {
         throw new Error(resData?.error?.message || "Failed to update user status")
       }
     } catch (err) {
-      setFeedback({ type: "error", message: err.message })
+      toast.error(err.message)
     } finally {
       setActionLoadingId(null)
     }
@@ -149,13 +141,16 @@ export default function UserRoleManagement() {
 
   const handleDeleteUser = async (userId, email) => {
     if (readOnly) return
-    if (!window.confirm(`Are you sure you want to delete staff account ${email}?`)) {
-      return
-    }
+    const ok = await confirm({
+      title: "Delete this staff account?",
+      description: `${email} will be removed permanently. This can't be undone.`,
+      confirmLabel: "Delete account",
+      tone: "danger",
+    })
+    if (!ok) return
 
     try {
       setActionLoadingId(userId)
-      setFeedback(null)
       const token = await getToken()
 
       const res = await fetch(`http://localhost:8080/api/admin/users/${userId}`, {
@@ -169,329 +164,269 @@ export default function UserRoleManagement() {
       const resData = await res.json()
       if (res.ok && resData.success) {
         setUsers((prev) => prev.filter((u) => u.id !== userId))
-        setFeedback({
-          type: "success",
-          message: `User ${email} deleted successfully.`,
-        })
+        toast.success(`User ${email} deleted successfully.`)
       } else {
         throw new Error(resData?.error?.message || "Failed to delete user")
       }
     } catch (err) {
-      setFeedback({ type: "error", message: err.message })
+      toast.error(err.message)
     } finally {
       setActionLoadingId(null)
     }
   }
 
-  const filteredUsers = users.filter((user) => {
-    const fullName = `${user.firstName || ""} ${user.lastName || ""}`.toLowerCase()
-    const matchesSearch =
-      (user.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      fullName.includes(searchTerm.toLowerCase()) ||
-      (user.nicNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (user.phoneNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (user.role || "").toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = users
+    .filter((user) => {
+      const fullName = `${user.firstName || ""} ${user.lastName || ""}`.toLowerCase()
+      const query = searchTerm.toLowerCase()
+      const matchesSearch =
+        (user.email || "").toLowerCase().includes(query) ||
+        fullName.includes(query) ||
+        (user.nicNumber || "").toLowerCase().includes(query) ||
+        (user.phoneNumber || "").toLowerCase().includes(query) ||
+        (user.role || "").toLowerCase().includes(query)
 
-    const matchesRole = filterRole === "ALL" || user.role === filterRole
-    return matchesSearch && matchesRole
-  })
+      const matchesRole = filterRole === "ALL" || user.role === filterRole
+      return matchesSearch && matchesRole
+    })
+    // Accounts waiting for a role go first so they're never missed
+    .sort((a, b) => (a.role === "PENDING" ? 0 : 1) - (b.role === "PENDING" ? 0 : 1))
 
   const pendingCount = users.filter((u) => u.role === "PENDING").length
   const activeCount = users.filter((u) => u.status === "ACTIVE").length
+  const roleCount = (role) => users.filter((u) => u.role === role).length
+  const activeFilterCount = (filterRole !== "ALL" ? 1 : 0) + (searchTerm.trim() ? 1 : 0)
 
   return (
     <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pink-500/15 border border-pink-500/30 text-pink-400">
-              <Shield className="h-5 w-5" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold font-heading text-foreground">
-                {readOnly ? "Staff Directory" : "User & Role Management"}
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                {readOnly
-                  ? "Review registered staff, their contact details, roles, and account status."
-                  : "Review registered staff identity credentials, verify NIC & phone contacts, and assign operational roles."}
-              </p>
-            </div>
+      <PageHeader
+        icon={Shield}
+        title={readOnly ? "Staff Directory" : "User & Role Management"}
+        description={
+          readOnly
+            ? "Registered staff with their contact details, roles and account status."
+            : "Verify new staff, assign roles and manage account access."
+        }
+        actions={
+          <Button onClick={fetchUsers} disabled={loading} variant="outline" size="sm" className="gap-2">
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        }
+      >
+        {readOnly && (
+          <div className="flex items-center gap-1.5 pt-1 text-xs text-muted-foreground">
+            <Eye className="h-3.5 w-3.5" />
+            <span>View only</span>
+            <span aria-hidden>·</span>
+            <span>Only administrators can change roles or account status.</span>
           </div>
-        </div>
+        )}
+      </PageHeader>
 
-        <Button
-          onClick={fetchUsers}
-          disabled={loading}
-          variant="outline"
-          size="sm"
-          className="gap-2 self-start sm:self-auto"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          {loading ? "Refreshing..." : "Refresh Staff List"}
-        </Button>
-      </div>
-
-      {/* Metric Cards Row */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Card className="p-4 flex items-center justify-between">
-          <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">Total Registered Staff</div>
-            <div className="text-2xl font-normal text-foreground">{users.length}</div>
-          </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-surface-2 border border-border text-accent-blue">
-            <Users className="h-4 w-4" />
-          </div>
-        </Card>
-
-        <Card className={`p-4 flex items-center justify-between ${pendingCount > 0 ? "border-warning/30" : ""}`}>
-          <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">Pending Role Assignment</div>
-            <div className="text-2xl font-normal text-foreground flex items-center gap-2">
-              {pendingCount}
-              {pendingCount > 0 && <Badge variant="warning" className="text-[10px]">Action Required</Badge>}
-            </div>
-          </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-surface-2 border border-border text-warning">
-            <Clock className="h-4 w-4" />
-          </div>
-        </Card>
-
-        <Card className="p-4 flex items-center justify-between">
-          <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">Active Accounts</div>
-            <div className="text-2xl font-normal text-foreground">{activeCount}</div>
-          </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-surface-2 border border-border text-success">
-            <CheckCircle2 className="h-4 w-4" />
-          </div>
-        </Card>
+        <StatTile icon={Users} label="Registered staff" value={users.length} tone="blue" />
+        <StatTile
+          icon={Clock}
+          label="Waiting for a role"
+          value={pendingCount}
+          tone={pendingCount > 0 ? "amber" : "neutral"}
+          hint={pendingCount > 0 && !readOnly ? "Assign a role to let them in" : undefined}
+        />
+        <StatTile icon={UserCheck} label="Active accounts" value={activeCount} tone="green" />
       </div>
 
-      {readOnly && (
-        <Alert>
-          <AlertTitle>View only</AlertTitle>
-          <AlertDescription>Only administrators can change roles or account status.</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Feedback Toast Alert */}
-      {feedback && (
-        <Alert
-          variant={feedback.type === "error" ? "destructive" : "success"}
-          className="animate-in fade-in-0 zoom-in-95"
-        >
-          {feedback.type === "error" ? (
-            <AlertTriangle className="h-4 w-4" />
-          ) : (
-            <CheckCircle2 className="h-4 w-4" />
-          )}
-          <AlertTitle>{feedback.type === "error" ? "Error" : "Success"}</AlertTitle>
-          <AlertDescription className="flex items-center justify-between">
-            <span>{feedback.message}</span>
-            <Button
-              variant="ghost"
-              size="xs"
-              onClick={() => setFeedback(null)}
-              className="h-6 px-2 text-xs"
-            >
-              ✕
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Filter and Search Bar */}
-      <Card className="p-4 border-border">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search staff by name, email, NIC, or phone..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 bg-surface-2"
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs text-muted-foreground mr-1 flex items-center gap-1">
-              <Filter className="h-3 w-3" /> Role:
-            </span>
-            {["ALL", "PENDING", "TEACHER", "FINANCE_STAFF", "PRINCIPAL", "ADMIN"].map((r) => (
-              <Button
-                key={r}
-                variant={filterRole === r ? "default" : "outline"}
-                size="xs"
-                onClick={() => setFilterRole(r)}
-                className="text-[11px] font-semibold"
-              >
-                {r === "FINANCE_STAFF" ? "FINANCE" : r}
-                {r === "PENDING" && pendingCount > 0 && ` (${pendingCount})`}
-              </Button>
+      <FilterBar
+        activeCount={activeFilterCount}
+        onClear={() => {
+          setSearchTerm("")
+          setFilterRole("ALL")
+        }}
+        summary={!loading && `${filteredUsers.length} of ${users.length}`}
+      >
+        <FilterField label="Search" htmlFor="staff-search" className="w-full sm:w-72 sm:flex-none">
+          <SearchInput id="staff-search" value={searchTerm} onChange={setSearchTerm} placeholder="Name, email, NIC or phone…" />
+        </FilterField>
+        <FilterField label="Role" htmlFor="staff-role" className="sm:w-48">
+          <select id="staff-role" value={filterRole} onChange={(e) => setFilterRole(e.target.value)} className="h-9 w-full px-3 text-sm">
+            <option value="ALL">All roles ({users.length})</option>
+            {ROLES.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.short} ({roleCount(r.value)})
+              </option>
             ))}
-          </div>
-        </div>
-      </Card>
+          </select>
+        </FilterField>
+      </FilterBar>
 
-      {/* Users Table */}
-      <Card className="border-border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Staff Member</TableHead>
-              <TableHead>NIC / National ID</TableHead>
-              <TableHead>Contact & Address</TableHead>
-              <TableHead>Assigned Role</TableHead>
-              <TableHead>Status</TableHead>
-              {!readOnly && <TableHead className="text-right">Actions</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={columnCount} className="text-center py-12 text-muted-foreground">
-                  <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-accent-blue" />
-                  Loading registered staff accounts...
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Staff member</TableHead>
+            <TableHead>NIC</TableHead>
+            <TableHead>Contact</TableHead>
+            <TableHead>Role</TableHead>
+            <TableHead>Status</TableHead>
+            {!readOnly && <TableHead className="text-right">Actions</TableHead>}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {loading ? (
+            Array.from({ length: 5 }, (_, i) => (
+              <TableRow key={i} className="hover:bg-transparent">
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-9 w-9 rounded-full" />
+                    <div className="space-y-1.5">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-44" />
+                    </div>
+                  </div>
                 </TableCell>
+                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                <TableCell><Skeleton className="h-8 w-32" /></TableCell>
+                <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                {!readOnly && <TableCell />}
               </TableRow>
-            ) : filteredUsers.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={columnCount} className="text-center py-12 text-muted-foreground">
-                  No staff accounts found matching your query.
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredUsers.map((user) => {
-                const isCurrent = user.id === userProfile?.id
-                const isUpdating = actionLoadingId === user.id
-                const fullName =
-                  user.firstName || user.lastName
-                    ? `${user.firstName || ""} ${user.lastName || ""}`.trim()
-                    : "Name Not Provided"
-                const initials =
-                  (user.firstName?.[0] || "S") + (user.lastName?.[0] || "M")
+            ))
+          ) : filteredUsers.length === 0 ? (
+            <TableEmptyRow
+              colSpan={columnCount}
+              icon={SearchX}
+              title="No staff accounts found matching your query."
+              description="Try a different name, email or role."
+            />
+          ) : (
+            filteredUsers.map((user) => {
+              const isCurrent = user.id === userProfile?.id
+              const isUpdating = actionLoadingId === user.id
+              const isPending = user.role === "PENDING"
+              const isActive = user.status === "ACTIVE"
+              const fullName =
+                user.firstName || user.lastName
+                  ? `${user.firstName || ""} ${user.lastName || ""}`.trim()
+                  : "Name not provided"
+              const initials = (user.firstName?.[0] || "S") + (user.lastName?.[0] || "M")
+              const roleInfo = ROLES.find((r) => r.value === user.role)
 
-                return (
-                  <TableRow key={user.id} className="hover:bg-surface-2">
-                    {/* Name & Avatar */}
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9">
-                          <AvatarFallback>{initials}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-semibold text-foreground flex items-center gap-2">
-                            {fullName}
-                            {isCurrent && (
-                              <Badge variant="outline" className="text-[10px] py-0 border-accent-blue/40 text-accent-blue">
-                                You
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="text-xs text-accent-blue flex items-center gap-1">
-                            <Mail className="h-3 w-3 text-muted-foreground" />
-                            {user.email}
-                          </div>
+              return (
+                <TableRow key={user.id} className={cn(isPending && "bg-warning-soft/60 hover:bg-warning-soft")}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-9 w-9">
+                        <AvatarFallback>{initials}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 whitespace-nowrap font-medium text-foreground">
+                          {fullName}
+                          {isCurrent && <Badge variant="info" className="px-1.5 py-0 text-[10px]">You</Badge>}
+                          {isPending && !readOnly && (
+                            <Badge variant="warning" className="px-1.5 py-0 text-[10px]">Needs role</Badge>
+                          )}
                         </div>
+                        <div className="truncate text-xs text-muted-foreground">{user.email}</div>
                       </div>
-                    </TableCell>
+                    </div>
+                  </TableCell>
 
-                    {/* NIC */}
-                    <TableCell>
-                      {user.nicNumber ? (
-                        <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-warning-soft text-warning border border-warning/20">
-                          {user.nicNumber}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground italic">Not provided</span>
-                      )}
-                    </TableCell>
+                  <TableCell>
+                    {user.nicNumber ? (
+                      <span className="tabular whitespace-nowrap text-[13px] text-foreground-2">{user.nicNumber}</span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Not provided</span>
+                    )}
+                  </TableCell>
 
-                    {/* Phone & Address */}
-                    <TableCell className="max-w-xs">
-                      <div className="text-xs text-foreground-2 flex items-center gap-1.5">
-                        <Phone className="h-3 w-3 text-muted-foreground" />
-                        {user.phoneNumber || <span className="text-muted-foreground">No phone</span>}
-                      </div>
-                      <div
-                        className="text-[11px] text-muted-foreground truncate flex items-center gap-1.5 mt-0.5"
-                        title={user.address}
-                      >
-                        <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
-                        <span className="truncate">{user.address || "No address"}</span>
-                      </div>
-                    </TableCell>
+                  <TableCell className="max-w-[16rem]">
+                    <div className="flex items-center gap-1.5 whitespace-nowrap text-[13px] text-foreground-2">
+                      <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                      {user.phoneNumber || <span className="text-muted-foreground">No phone</span>}
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground" title={user.address}>
+                      <MapPin className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{user.address || "No address"}</span>
+                    </div>
+                  </TableCell>
 
-                    {/* Role Select Dropdown */}
-                    <TableCell>
-                      {readOnly ? (
-                        <Badge variant={ROLES.find((r) => r.value === user.role)?.badgeVariant || "secondary"}>
-                          {ROLES.find((r) => r.value === user.role)?.label || user.role}
-                        </Badge>
-                      ) : (
+                  <TableCell>
+                    {readOnly ? (
+                      <Badge variant={roleInfo?.badgeVariant || "secondary"}>{roleInfo?.label || user.role}</Badge>
+                    ) : (
                       <select
                         value={user.role}
+                        aria-label={`Role for ${fullName}`}
                         disabled={isUpdating || (isCurrent && user.role === "ADMIN")}
                         onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                        className="h-8 rounded-lg border border-border bg-surface-2 px-2 text-xs font-semibold text-foreground-2 focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer"
+                        className={cn("h-8 min-w-[10.5rem] px-2.5 text-[13px]", isPending && "border-warning/60")}
                       >
                         {ROLES.map((r) => (
-                          <option
-                            key={r.value}
-                            value={r.value}
-                            className="bg-surface-2 text-foreground"
-                          >
+                          <option key={r.value} value={r.value}>
                             {r.label}
                           </option>
                         ))}
                       </select>
-                      )}
-                    </TableCell>
+                    )}
+                  </TableCell>
 
-                    {/* Status Toggle Button */}
-                    <TableCell>
-                      {readOnly ? (
-                        <Badge variant={user.status === "ACTIVE" ? "success" : "destructive"}>
-                          {user.status === "ACTIVE" ? "● Active" : "○ Inactive"}
-                        </Badge>
-                      ) : (
-                      <Button
-                        size="xs"
-                        variant={user.status === "ACTIVE" ? "success" : "destructive"}
+                  <TableCell>
+                    {readOnly ? (
+                      <Badge variant={isActive ? "success" : "destructive"} dot>
+                        {isActive ? "Active" : "Inactive"}
+                      </Badge>
+                    ) : (
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={isActive}
                         disabled={isUpdating || isCurrent}
-                        onClick={() => handleStatusToggle(user.id, user.status)}
-                        className="text-[11px] font-semibold h-6"
+                        onClick={() => handleStatusToggle(user.id, user.status, fullName)}
                         title={isCurrent ? "Cannot deactivate yourself" : "Toggle account status"}
+                        className={cn(
+                          "group inline-flex items-center gap-2 rounded-full py-1 pl-1 pr-2.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer",
+                          isActive ? "bg-success-soft text-success" : "bg-surface-2 text-muted-foreground hover:text-foreground"
+                        )}
                       >
-                        {user.status === "ACTIVE" ? "● Active" : "○ Inactive"}
-                      </Button>
-                      )}
-                    </TableCell>
+                        <span
+                          aria-hidden
+                          className={cn(
+                            "relative block h-4 w-7 shrink-0 rounded-full transition-colors duration-200",
+                            isActive ? "bg-success" : "bg-border-strong"
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "absolute left-0 top-0.5 h-3 w-3 rounded-full bg-white shadow-sm transition-transform duration-200 ease-out",
+                              isActive ? "translate-x-3.5" : "translate-x-0.5"
+                            )}
+                          />
+                        </span>
+                        {isActive ? "Active" : "Inactive"}
+                      </button>
+                    )}
+                  </TableCell>
 
-                    {/* Delete Action */}
-                    {!readOnly && (
+                  {!readOnly && (
                     <TableCell className="text-right">
                       <Button
                         variant="ghost"
-                        size="icon"
+                        size="icon-sm"
                         disabled={isUpdating || isCurrent}
                         onClick={() => handleDeleteUser(user.id, user.email)}
-                        className="h-8 w-8 text-muted-foreground hover:text-danger hover:bg-danger-soft"
+                        className="hover:bg-danger-soft hover:text-danger"
                         title={isCurrent ? "Cannot delete own account" : "Delete user"}
+                        aria-label={`Delete ${fullName}`}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>
-                    )}
-                  </TableRow>
-                )
-              })
-            )}
-          </TableBody>
-        </Table>
-      </Card>
+                  )}
+                </TableRow>
+              )
+            })
+          )}
+        </TableBody>
+      </Table>
     </div>
   )
 }
