@@ -235,6 +235,7 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
     setStudentMarks((prev) => ({
       ...prev,
       [studentId]: {
+        ...EMPTY_ENTRY,
         ...prev[studentId],
         score: rawValue,
         grade,
@@ -247,6 +248,7 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
     setStudentMarks((prev) => ({
       ...prev,
       [studentId]: {
+        ...EMPTY_ENTRY,
         ...prev[studentId],
         remarks: rawValue,
       },
@@ -536,7 +538,7 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
                           aria-invalid={isInvalid || undefined}
                           data-row={idx}
                           data-col="score"
-                          value={markEntry.score}
+                          value={markEntry.score ?? ""}
                           onChange={(e) => handleScoreChange(student.id, e.target.value)}
                           onBlur={(e) => isInvalid && shake(e.currentTarget)}
                           onWheel={(e) => e.currentTarget.blur()}
@@ -570,7 +572,7 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
                           aria-label={`Remarks for ${student.fullName}`}
                           data-row={idx}
                           data-col="remarks"
-                          value={markEntry.remarks}
+                          value={markEntry.remarks ?? ""}
                           onChange={(e) => handleRemarksChange(student.id, e.target.value)}
                           className="h-9 w-full rounded-[9px] border border-transparent bg-transparent px-2.5 text-[13px] text-foreground placeholder:text-muted-foreground/70 transition-colors hover:border-border focus-visible:border-ring focus-visible:bg-surface focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/20"
                         />
