@@ -49,7 +49,7 @@ export function ToastProvider({ children }) {
       {children}
       <div
         aria-live="polite"
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] flex flex-col items-center gap-2 p-4 sm:inset-x-auto sm:right-0 sm:items-end sm:p-6"
+        className="pointer-events-none fixed inset-x-0 top-14 z-[60] flex flex-col items-center gap-2 p-3 sm:inset-x-auto sm:right-0 sm:items-end sm:p-5"
       >
         {toasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} onDismiss={dismiss} onRemoved={remove} />
@@ -75,7 +75,7 @@ function ToastItem({ toast, onDismiss, onRemoved }) {
   useGSAP(() => {
     startTimer()
     if (!prefersReducedMotion()) {
-      gsap.fromTo(ref.current, { opacity: 0, y: 16, scale: 0.98 }, { opacity: 1, y: 0, scale: 1, duration: 0.3 })
+      gsap.fromTo(ref.current, { opacity: 0, y: -12, scale: 0.98 }, { opacity: 1, y: 0, scale: 1, duration: 0.3 })
     }
     return () => clearTimeout(timer.current)
   }, [])
