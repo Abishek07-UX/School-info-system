@@ -57,6 +57,10 @@ Open your first **Command Prompt** window:
 
 > 🌐 **Frontend URL**: [http://localhost:5173](http://localhost:5173)
 
+> 🧭 **Routing**: each module has its own URL (`/timetable/classes`, `/academics/marks`, `/staff`, …). The Vite dev and preview servers already serve `index.html` for these paths; any production host must do the same (an "SPA fallback" / rewrite of unknown paths to `index.html`), otherwise refreshing a deep link returns 404.
+
+> 🌗 **Theme**: the UI follows the operating system's light/dark setting by default. The sun/moon menu in the sidebar (or header on public pages) switches between Light, Dark and System, and the choice is remembered per browser.
+
 ---
 
 ## ⚙️ 3. Set Up & Run the Backend (Terminal 2)
