@@ -11,13 +11,13 @@ const TONES = {
 
 /**
  * Compact metric tile. Numeric `value`s count up on first render; strings render as-is.
- * `suffix` is appended after the number (e.g. "%", " halls").
+ * `suffix` is appended after the number (e.g. "%", " halls"); `decimals` keeps fractional digits.
  */
-export function StatTile({ icon: Icon, label, value, suffix = "", hint, tone = "blue", className }) {
+export function StatTile({ icon: Icon, label, value, suffix = "", decimals = 0, hint, tone = "blue", className }) {
   const isNumber = typeof value === "number"
-  const ref = useCountUp(isNumber ? value : null, {
-    format: (n) => `${Math.round(n).toLocaleString()}${suffix}`,
-  })
+  const format = (n) =>
+    `${n.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}${suffix}`
+  const ref = useCountUp(isNumber ? value : null, { format })
 
   return (
     <div className={cn("flex items-center gap-3.5 rounded-[12px] border border-border bg-surface p-4 shadow-card", className)}>
@@ -28,7 +28,7 @@ export function StatTile({ icon: Icon, label, value, suffix = "", hint, tone = "
       )}
       <div className="min-w-0">
         <div ref={isNumber ? ref : undefined} className="tabular text-xl font-semibold tracking-tight text-foreground">
-          {isNumber ? `${value.toLocaleString()}${suffix}` : value}
+          {isNumber ? format(value) : value}
         </div>
         <div className="truncate text-xs text-muted-foreground">{label}</div>
         {hint && <div className="mt-0.5 truncate text-[11px] text-muted-foreground/80">{hint}</div>}
