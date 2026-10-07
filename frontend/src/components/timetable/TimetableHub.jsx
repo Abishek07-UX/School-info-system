@@ -565,7 +565,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
       {/* Header Banner */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/60 pb-5">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+          <h2 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
             <Calendar className="h-6 w-6 text-primary" />
             Timetable & Scheduling System
           </h2>
@@ -971,7 +971,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                     className={`h-8 text-xs gap-1.5 font-medium transition-all shadow-xs ${
                       onlyMyDuties
                         ? 'bg-emerald-600 hover:bg-emerald-700 text-white font-semibold ring-2 ring-emerald-500/50'
-                        : 'border border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20'
+                        : 'border border-success/40 text-emerald-600 dark:text-emerald-400 bg-success-soft hover:bg-success-soft'
                     }`}
                   >
                     <CalendarCheck className="h-3.5 w-3.5" />
@@ -980,8 +980,8 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                       variant="secondary"
                       className={`ml-0.5 text-[10px] px-1.5 py-0 h-4 ${
                         onlyMyDuties
-                          ? 'bg-white text-emerald-800 font-bold'
-                          : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-semibold'
+                          ? 'bg-white text-emerald-800 font-semibold'
+                          : 'bg-success-soft text-emerald-700 dark:text-emerald-300 font-semibold'
                       }`}
                     >
                       {teacherDuties.length}
@@ -1116,12 +1116,12 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
 
                   {/* Scope Summary Badge */}
                   {examGradeFilter === 'SCHOOL_WIDE' ? (
-                    <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[11px] gap-1 py-1 font-medium">
+                    <Badge variant="outline" className="border-warning/40 bg-warning-soft text-amber-600 dark:text-amber-400 text-[11px] gap-1 py-1 font-medium">
                       <Sparkles className="h-3 w-3" />
                       School-Wide Date Sheets ({displayedExamSchedules.length} papers)
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[11px] gap-1 py-1 font-medium">
+                    <Badge variant="outline" className="border-accent-blue/30 bg-accent-blue-soft text-blue-600 dark:text-blue-400 text-[11px] gap-1 py-1 font-medium">
                       <GraduationCap className="h-3 w-3" />
                       {examGradeFilter === 'ALL' ? 'All Grades' : `Grade ${examGradeFilter}`}
                       {examTermFilter !== 'ALL' ? ` • ${examTermFilter.replace('TERM_', 'Term ')}` : ''}
@@ -1136,7 +1136,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                   {isTeacher && myDutiesInCurrentExam.length > 0 && (
                     <Badge
                       variant="outline"
-                      className="border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs gap-1.5 py-1 font-medium"
+                      className="border-success/40 bg-success-soft text-emerald-600 dark:text-emerald-400 text-xs gap-1.5 py-1 font-medium"
                     >
                       <CalendarCheck className="h-3.5 w-3.5" />
                       You have {myDutiesInCurrentExam.length} assigned dut{myDutiesInCurrentExam.length === 1 ? 'y' : 'ies'} in this date sheet
@@ -1165,7 +1165,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
               /* When in onlyMyDuties mode: Title & Back toggle */
               <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-border/40">
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs py-0.5 px-2 font-medium flex items-center gap-1.5">
+                  <Badge className="bg-success-soft text-emerald-600 dark:text-emerald-400 border border-success/30 text-xs py-0.5 px-2 font-medium flex items-center gap-1.5">
                     <CalendarCheck className="h-3.5 w-3.5" />
                     Personal Invigilation View: {teacherDuties.length} session{teacherDuties.length === 1 ? '' : 's'} assigned
                   </Badge>
@@ -1204,13 +1204,13 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
             loadingTeacherDuties ? (
               <div className="flex min-h-[250px] items-center justify-center rounded-xl border border-border bg-card">
                 <div className="flex flex-col items-center gap-2 text-xs text-muted-foreground">
-                  <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
+                  <Loader2 className="h-6 w-6 animate-spin text-success" />
                   <span>Loading your assigned exam duties...</span>
                 </div>
               </div>
             ) : teacherDuties.length === 0 ? (
               <Card className="border-dashed p-10 text-center space-y-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 mx-auto text-emerald-600">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success-soft mx-auto text-success">
                   <CalendarCheck className="h-6 w-6" />
                 </div>
                 <div>
@@ -1237,7 +1237,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                     (userProfile?.firstName && duty.invigilatorName?.toLowerCase().includes(userProfile.firstName.toLowerCase()))
 
                   return (
-                    <Card key={duty.id} className="border-emerald-500/30 shadow-xs hover:shadow-md transition-shadow bg-card">
+                    <Card key={duty.id} className="border-success/30 shadow-xs hover:shadow-md transition-shadow bg-card">
                       <CardContent className="p-4 space-y-2.5">
                         <div className="flex items-center justify-between gap-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
@@ -1298,7 +1298,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                         </div>
 
                         {duty.instructions && (
-                          <p className="text-[11px] text-muted-foreground italic border-l-2 border-emerald-500/40 pl-2">
+                          <p className="text-[11px] text-muted-foreground italic border-l-2 border-success/40 pl-2">
                             {duty.instructions}
                           </p>
                         )}
@@ -1355,7 +1355,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
               </Card>
             ) : displayedExamSchedules.length === 0 ? (
               <Card className="border-dashed p-10 text-center space-y-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10 mx-auto text-amber-600">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-warning-soft mx-auto text-warning">
                   <Calendar className="h-6 w-6" />
                 </div>
                 <div>
@@ -1410,7 +1410,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <Badge
                               variant={item.classId ? "secondary" : "outline"}
-                              className={`font-bold text-xs ${!item.classId ? "border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-400" : ""}`}
+                              className={`font-semibold text-xs ${!item.classId ? "border-warning/50 bg-warning-soft text-amber-600 dark:text-amber-400" : ""}`}
                             >
                               {item.className || 'School-wide'}
                             </Badge>
@@ -1432,7 +1432,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                           <h4 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
                             <span>{item.subjectName || item.customSubjectName || 'Assessment'}</span>
                             {(!item.subjectId || item.customSubjectName) && (
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-indigo-500/30 text-indigo-400 bg-indigo-500/10 font-normal">
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-accent-blue/30 text-accent-blue bg-accent-blue-soft font-normal">
                                 Custom
                               </Badge>
                             )}

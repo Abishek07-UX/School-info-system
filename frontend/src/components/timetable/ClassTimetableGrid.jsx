@@ -24,13 +24,13 @@ const PERIODS = [
 ]
 
 const SUBJECT_COLORS = [
-  'bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-300 dark:bg-blue-950/40',
-  'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 dark:bg-emerald-950/40',
-  'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300 dark:bg-amber-950/40',
+  'bg-accent-blue-soft border-accent-blue/30 text-blue-700 dark:text-blue-300 dark:bg-blue-950/40',
+  'bg-success-soft border-success/30 text-emerald-700 dark:text-emerald-300 dark:bg-emerald-950/40',
+  'bg-warning-soft border-warning/30 text-amber-700 dark:text-amber-300 dark:bg-amber-950/40',
   'bg-purple-500/10 border-purple-500/30 text-purple-700 dark:text-purple-300 dark:bg-purple-950/40',
-  'bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300 dark:bg-rose-950/40',
+  'bg-danger-soft border-danger/30 text-rose-700 dark:text-rose-300 dark:bg-rose-950/40',
   'bg-cyan-500/10 border-cyan-500/30 text-cyan-700 dark:text-cyan-300 dark:bg-cyan-950/40',
-  'bg-indigo-500/10 border-indigo-500/30 text-indigo-700 dark:text-indigo-300 dark:bg-indigo-950/40',
+  'bg-accent-blue-soft border-accent-blue/30 text-indigo-700 dark:text-indigo-300 dark:bg-indigo-950/40',
   'bg-orange-500/10 border-orange-500/30 text-orange-700 dark:text-orange-300 dark:bg-orange-950/40',
 ]
 
@@ -58,7 +58,7 @@ export function ClassTimetableGrid({
         {/* Class Banner Info */}
         <div className="mb-4 flex flex-wrap items-center justify-between gap-4 rounded-lg bg-muted/40 p-4 border border-border/50">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary font-semibold">
               {timetableData?.gradeLevel || '—'}
             </div>
             <div>
@@ -95,7 +95,7 @@ export function ClassTimetableGrid({
           ))}
 
           {/* Interval Column Header */}
-          <div className="flex flex-col justify-center rounded-md bg-amber-500/15 py-2 px-1 text-amber-700 dark:text-amber-300 font-semibold border border-amber-500/30">
+          <div className="flex flex-col justify-center rounded-md bg-warning-soft py-2 px-1 text-amber-700 dark:text-amber-300 font-semibold border border-warning/30">
             <div>Interval</div>
             <div className="text-[9px] font-normal">10:30-10:50</div>
           </div>
@@ -136,8 +136,8 @@ export function ClassTimetableGrid({
                 })}
 
                 {/* Interval Cell */}
-                <div className="flex items-center justify-center rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 font-medium text-[11px] py-3">
-                  <span className="[writing-mode:vertical-lr] rotate-180 tracking-wider uppercase text-[9px] font-bold">
+                <div className="flex items-center justify-center rounded-md bg-warning-soft border border-warning/20 text-amber-600 dark:text-amber-400 font-medium text-[11px] py-3">
+                  <span className="[writing-mode:vertical-lr] rotate-180 tracking-wider uppercase text-[9px] font-semibold">
                     Interval
                   </span>
                 </div>

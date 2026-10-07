@@ -17,8 +17,8 @@ export default function PrintableReportCard({ reportCard, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-2xl bg-white text-slate-900 shadow-2xl p-8 sm:p-10 font-sans">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm overflow-y-auto">
+      <div className="relative w-full max-w-4xl max-h-[92vh] overflow-y-auto print-surface rounded-2xl bg-white text-slate-900 shadow-2xl p-8 sm:p-10 font-sans">
         {/* Modal Controls (Hidden during print) */}
         <div className="no-print mb-6 flex items-center justify-between border-b border-slate-200 pb-4">
           <div className="flex items-center gap-2 text-sm font-bold text-slate-700">

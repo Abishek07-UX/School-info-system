@@ -209,10 +209,10 @@ export default function UserRoleManagement() {
               <Shield className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-xl font-bold font-heading text-white">
+              <h2 className="text-xl font-semibold font-heading text-foreground">
                 {readOnly ? "Staff Directory" : "User & Role Management"}
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-muted-foreground">
                 {readOnly
                   ? "Review registered staff, their contact details, roles, and account status."
                   : "Review registered staff identity credentials, verify NIC & phone contacts, and assign operational roles."}
@@ -237,33 +237,33 @@ export default function UserRoleManagement() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Card className="p-4 flex items-center justify-between">
           <div className="space-y-1">
-            <div className="text-xs text-[#858687]">Total Registered Staff</div>
-            <div className="text-2xl font-normal text-white">{users.length}</div>
+            <div className="text-xs text-muted-foreground">Total Registered Staff</div>
+            <div className="text-2xl font-normal text-foreground">{users.length}</div>
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#1f1f21] border-[0.5px] border-white/10 text-[#3b82f6]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-surface-2 border border-border text-accent-blue">
             <Users className="h-4 w-4" />
           </div>
         </Card>
 
-        <Card className={`p-4 flex items-center justify-between ${pendingCount > 0 ? "border-[#ea580c]/30" : ""}`}>
+        <Card className={`p-4 flex items-center justify-between ${pendingCount > 0 ? "border-warning/30" : ""}`}>
           <div className="space-y-1">
-            <div className="text-xs text-[#858687]">Pending Role Assignment</div>
-            <div className="text-2xl font-normal text-white flex items-center gap-2">
+            <div className="text-xs text-muted-foreground">Pending Role Assignment</div>
+            <div className="text-2xl font-normal text-foreground flex items-center gap-2">
               {pendingCount}
               {pendingCount > 0 && <Badge variant="warning" className="text-[10px]">Action Required</Badge>}
             </div>
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#1f1f21] border-[0.5px] border-white/10 text-[#ea580c]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-surface-2 border border-border text-warning">
             <Clock className="h-4 w-4" />
           </div>
         </Card>
 
         <Card className="p-4 flex items-center justify-between">
           <div className="space-y-1">
-            <div className="text-xs text-[#858687]">Active Accounts</div>
-            <div className="text-2xl font-normal text-white">{activeCount}</div>
+            <div className="text-xs text-muted-foreground">Active Accounts</div>
+            <div className="text-2xl font-normal text-foreground">{activeCount}</div>
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#1f1f21] border-[0.5px] border-white/10 text-[#4ade80]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-surface-2 border border-border text-success">
             <CheckCircle2 className="h-4 w-4" />
           </div>
         </Card>
@@ -303,20 +303,20 @@ export default function UserRoleManagement() {
       )}
 
       {/* Filter and Search Bar */}
-      <Card className="p-4 border-white/10">
+      <Card className="p-4 border-border">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search staff by name, email, NIC, or phone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 bg-slate-950/70"
+              className="pl-9 bg-surface-2"
             />
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs text-slate-400 mr-1 flex items-center gap-1">
+            <span className="text-xs text-muted-foreground mr-1 flex items-center gap-1">
               <Filter className="h-3 w-3" /> Role:
             </span>
             {["ALL", "PENDING", "TEACHER", "FINANCE_STAFF", "PRINCIPAL", "ADMIN"].map((r) => (
@@ -336,7 +336,7 @@ export default function UserRoleManagement() {
       </Card>
 
       {/* Users Table */}
-      <Card className="border-white/10 overflow-hidden">
+      <Card className="border-border overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -351,14 +351,14 @@ export default function UserRoleManagement() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={columnCount} className="text-center py-12 text-slate-400">
-                  <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-indigo-400" />
+                <TableCell colSpan={columnCount} className="text-center py-12 text-muted-foreground">
+                  <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-accent-blue" />
                   Loading registered staff accounts...
                 </TableCell>
               </TableRow>
             ) : filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={columnCount} className="text-center py-12 text-slate-400">
+                <TableCell colSpan={columnCount} className="text-center py-12 text-muted-foreground">
                   No staff accounts found matching your query.
                 </TableCell>
               </TableRow>
@@ -374,7 +374,7 @@ export default function UserRoleManagement() {
                   (user.firstName?.[0] || "S") + (user.lastName?.[0] || "M")
 
                 return (
-                  <TableRow key={user.id} className="hover:bg-slate-800/40">
+                  <TableRow key={user.id} className="hover:bg-surface-2">
                     {/* Name & Avatar */}
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -382,16 +382,16 @@ export default function UserRoleManagement() {
                           <AvatarFallback>{initials}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <div className="font-semibold text-white flex items-center gap-2">
+                          <div className="font-semibold text-foreground flex items-center gap-2">
                             {fullName}
                             {isCurrent && (
-                              <Badge variant="outline" className="text-[10px] py-0 border-indigo-500/40 text-indigo-300">
+                              <Badge variant="outline" className="text-[10px] py-0 border-accent-blue/40 text-accent-blue">
                                 You
                               </Badge>
                             )}
                           </div>
-                          <div className="text-xs text-indigo-300/90 flex items-center gap-1">
-                            <Mail className="h-3 w-3 text-slate-500" />
+                          <div className="text-xs text-accent-blue flex items-center gap-1">
+                            <Mail className="h-3 w-3 text-muted-foreground" />
                             {user.email}
                           </div>
                         </div>
@@ -401,25 +401,25 @@ export default function UserRoleManagement() {
                     {/* NIC */}
                     <TableCell>
                       {user.nicNumber ? (
-                        <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                        <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-warning-soft text-warning border border-warning/20">
                           {user.nicNumber}
                         </span>
                       ) : (
-                        <span className="text-xs text-slate-500 italic">Not provided</span>
+                        <span className="text-xs text-muted-foreground italic">Not provided</span>
                       )}
                     </TableCell>
 
                     {/* Phone & Address */}
                     <TableCell className="max-w-xs">
-                      <div className="text-xs text-slate-200 flex items-center gap-1.5">
-                        <Phone className="h-3 w-3 text-slate-500" />
-                        {user.phoneNumber || <span className="text-slate-500">No phone</span>}
+                      <div className="text-xs text-foreground-2 flex items-center gap-1.5">
+                        <Phone className="h-3 w-3 text-muted-foreground" />
+                        {user.phoneNumber || <span className="text-muted-foreground">No phone</span>}
                       </div>
                       <div
-                        className="text-[11px] text-slate-400 truncate flex items-center gap-1.5 mt-0.5"
+                        className="text-[11px] text-muted-foreground truncate flex items-center gap-1.5 mt-0.5"
                         title={user.address}
                       >
-                        <MapPin className="h-3 w-3 text-slate-500 shrink-0" />
+                        <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
                         <span className="truncate">{user.address || "No address"}</span>
                       </div>
                     </TableCell>
@@ -435,13 +435,13 @@ export default function UserRoleManagement() {
                         value={user.role}
                         disabled={isUpdating || (isCurrent && user.role === "ADMIN")}
                         onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                        className="h-8 rounded-lg border border-white/10 bg-slate-950/80 px-2 text-xs font-semibold text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                        className="h-8 rounded-lg border border-border bg-surface-2 px-2 text-xs font-semibold text-foreground-2 focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer"
                       >
                         {ROLES.map((r) => (
                           <option
                             key={r.value}
                             value={r.value}
-                            className="bg-slate-900 text-slate-100"
+                            className="bg-surface-2 text-foreground"
                           >
                             {r.label}
                           </option>
@@ -478,7 +478,7 @@ export default function UserRoleManagement() {
                         size="icon"
                         disabled={isUpdating || isCurrent}
                         onClick={() => handleDeleteUser(user.id, user.email)}
-                        className="h-8 w-8 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10"
+                        className="h-8 w-8 text-muted-foreground hover:text-danger hover:bg-danger-soft"
                         title={isCurrent ? "Cannot delete own account" : "Delete user"}
                       >
                         <Trash2 className="h-4 w-4" />

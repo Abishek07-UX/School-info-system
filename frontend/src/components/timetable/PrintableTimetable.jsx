@@ -45,7 +45,7 @@ export function PrintableTimetable({ timetableData, isTeacherView = false, onClo
       </div>
 
       {/* Printable Sheet */}
-      <div className="max-w-5xl mx-auto rounded-xl border border-border bg-white text-black p-8 shadow-md print:border-none print:shadow-none print:p-0">
+      <div className="print-surface max-w-5xl mx-auto rounded-xl border border-border bg-white text-black p-8 shadow-md print:border-none print:shadow-none print:p-0">
         {/* Header */}
         <div className="text-center pb-4 border-b-2 border-black/80 mb-6">
           <h1 className="text-2xl font-bold uppercase tracking-wider">{SCHOOL_NAME}</h1>

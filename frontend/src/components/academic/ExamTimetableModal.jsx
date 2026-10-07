@@ -437,7 +437,7 @@ export default function ExamTimetableModal({
                 <div className="p-2 rounded-lg bg-primary/10 text-primary">
                   <Calendar className="h-5 w-5" />
                 </div>
-                <DialogTitle className="text-xl font-bold tracking-tight">
+                <DialogTitle className="text-xl font-semibold tracking-tight">
                   {examToEdit ? "Edit Examination Timetable" : "Unified Examination Timetable Creator"}
                 </DialogTitle>
               </div>
@@ -502,7 +502,7 @@ export default function ExamTimetableModal({
                   setLoadingData(true)
                   setIsNameCustomized(false)
                 }}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-bold text-primary shadow-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-semibold text-primary shadow-xs focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 {Array.from({ length: 13 }, (_, i) => i + 1).map((g) => (
                   <option key={g} value={g}>
@@ -534,7 +534,7 @@ export default function ExamTimetableModal({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-primary" />
-                <span className="text-xs font-bold text-foreground">
+                <span className="text-xs font-semibold text-foreground">
                   Select Classes for Grade {gradeLevel} ({selectedClassIds.length} of {availableClasses.length} selected)
                 </span>
               </div>
@@ -588,7 +588,7 @@ export default function ExamTimetableModal({
             )}
 
             {/* Room Allocation Info Banner */}
-            <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs">
+            <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-success-soft border border-success/20 text-emerald-600 dark:text-emerald-400 text-xs">
               <Building2 className="h-4 w-4 shrink-0 mt-0.5" />
               <div>
                 <strong className="font-semibold">Respective Classroom Allocation:</strong> Exams will be held simultaneously in each class&apos;s assigned classroom:{" "}
@@ -609,7 +609,7 @@ export default function ExamTimetableModal({
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-primary" />
-                <span className="text-xs font-bold text-foreground">Examination Date Range</span>
+                <span className="text-xs font-semibold text-foreground">Examination Date Range</span>
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <label className="flex items-center gap-1.5 text-xs text-foreground cursor-pointer select-none bg-background border border-border/60 px-2.5 py-1 rounded-md">
@@ -631,7 +631,7 @@ export default function ExamTimetableModal({
                   size="sm"
                   onClick={handleAutoDistributeDates}
                   disabled={!startDate || !endDate}
-                  className="h-7 text-xs gap-1.5 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+                  className="h-7 text-xs gap-1.5 text-indigo-600 dark:text-indigo-400 border border-accent-blue/30 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
                 >
                   <Sparkles className="h-3.5 w-3.5 text-indigo-500 animate-pulse" />
                   Auto-Distribute Dates
@@ -687,7 +687,7 @@ export default function ExamTimetableModal({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-primary" />
-                <h3 className="text-sm font-bold text-foreground">
+                <h3 className="text-sm font-semibold text-foreground">
                   Grade {gradeLevel} Curriculum Subjects ({includedCount} included)
                 </h3>
               </div>
@@ -770,7 +770,7 @@ export default function ExamTimetableModal({
                                     variant="outline"
                                     className={`text-[10px] px-1.5 py-0 h-5 font-medium shrink-0 ${
                                       isWeekend
-                                        ? "border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold"
+                                        ? "border-warning/40 bg-warning-soft text-amber-600 dark:text-amber-400 font-semibold"
                                         : "text-muted-foreground border-border/50"
                                     }`}
                                   >

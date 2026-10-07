@@ -29,7 +29,7 @@ export default function DeactivatedAccountView() {
     <div className="mx-auto max-w-xl px-4 py-12">
       <Card className="p-2">
         <CardHeader className="text-center pb-6">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[10px] bg-[#1f1f21] border-[0.5px] border-white/10 text-[#f87171]">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[10px] bg-surface-2 border border-border text-danger">
             <Ban className="h-6 w-6" />
           </div>
 
@@ -39,10 +39,10 @@ export default function DeactivatedAccountView() {
             </Badge>
           </div>
 
-          <CardTitle className="text-xl font-normal tracking-tight text-[#ffffff]">
+          <CardTitle className="text-xl font-normal tracking-tight text-foreground">
             Your account is deactivated, {fullName}
           </CardTitle>
-          <CardDescription className="text-xs text-[#858687] max-w-md mx-auto">
+          <CardDescription className="text-xs text-muted-foreground max-w-md mx-auto">
             An Administrator has deactivated this staff account, so school records are not available.
             Contact an Administrator if you need access again.
           </CardDescription>

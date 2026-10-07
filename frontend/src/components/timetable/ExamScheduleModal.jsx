@@ -369,7 +369,7 @@ export function ExamScheduleModal({
                   <AlertDescription className="text-xs mt-0.5">{conflictState.message}</AlertDescription>
                 </Alert>
               ) : (
-                <div className="flex items-center gap-2 rounded-md bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-300">
+                <div className="flex items-center gap-2 rounded-md bg-success-soft border border-success/20 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-300">
                   <CheckCircle2 className="h-4 w-4 shrink-0" />
                   <span>No exam clashes. Venue and invigilators are completely available.</span>
                 </div>

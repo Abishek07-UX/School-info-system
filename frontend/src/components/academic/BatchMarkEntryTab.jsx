@@ -198,17 +198,17 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
   const getGradeBadge = (grade) => {
     switch (grade) {
       case "A":
-        return <Badge variant="success" className="font-bold">A (Distinction)</Badge>
+        return <Badge variant="success" className="font-semibold">A (Distinction)</Badge>
       case "B":
-        return <Badge variant="info" className="font-bold">B (Very Good)</Badge>
+        return <Badge variant="info" className="font-semibold">B (Very Good)</Badge>
       case "C":
-        return <Badge variant="warning" className="font-bold">C (Good)</Badge>
+        return <Badge variant="warning" className="font-semibold">C (Good)</Badge>
       case "S":
-        return <Badge variant="purple" className="font-bold">S (Pass)</Badge>
+        return <Badge variant="purple" className="font-semibold">S (Pass)</Badge>
       case "F":
-        return <Badge variant="destructive" className="font-bold">F (Fail)</Badge>
+        return <Badge variant="destructive" className="font-semibold">F (Fail)</Badge>
       default:
-        return <span className="text-slate-500 font-mono">—</span>
+        return <span className="text-muted-foreground font-mono">—</span>
     }
   }
 
@@ -314,11 +314,11 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
       {/* Header & Batch Action */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold font-heading text-white flex items-center gap-2">
+          <h2 className="text-xl font-semibold font-heading text-foreground flex items-center gap-2">
             <Edit3 className="h-5 w-5 text-purple-400" />
             {canEditMarks ? "Batch Subject Mark Entry" : "Student Marks"}
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-muted-foreground">
             {canEditMarks
               ? "Enter numerical scores (0–100) per subject. Scores convert to letter grades automatically."
               : "View the scores, grades, and remarks for this class."}
@@ -330,7 +330,7 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
             onClick={handleSaveAll}
             disabled={saving || loading || students.length === 0 || !activeExamId}
             size="sm"
-            className="gap-2 shadow-lg shadow-indigo-500/25"
+            className="gap-2 shadow-lg shadow-accent-blue/25"
           >
             <Save className={`h-4 w-4 ${saving ? "animate-spin" : ""}`} />
             {saving ? "Saving Marks..." : "Save All Marks"}
@@ -376,17 +376,17 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
       )}
 
       {/* Selection Control Panel */}
-      <Card className="p-4 border-white/10">
+      <Card className="p-4 border-border">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 items-end">
           {/* Year */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-400">
+            <label className="text-xs font-semibold text-muted-foreground">
               Academic Year
             </label>
             <select
               value={filterYear}
               onChange={(e) => setFilterYear(e.target.value)}
-              className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="h-10 w-full rounded-xl border border-border bg-surface-2 px-3 text-xs text-foreground-2 focus:outline-none focus:ring-1 focus:ring-ring"
             >
               {Array.from(new Set([filterYear, "2026", "2025", "2024"]))
                 .sort((a, b) => Number(b) - Number(a))
@@ -397,7 +397,7 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
           {/* Class Cohort Selector */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-slate-400">
+              <label className="text-xs font-semibold text-muted-foreground">
                 Class Cohort *
               </label>
               {isAssignedClass && (
@@ -412,7 +412,7 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
                 manuallySelectedClass.current = true
                 setSelectedClassId(e.target.value)
               }}
-              className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="h-10 w-full rounded-xl border border-border bg-surface-2 px-3 text-xs text-foreground-2 focus:outline-none focus:ring-1 focus:ring-ring"
             >
               {classes.map((cls) => (
                 <option key={cls.id} value={cls.id}>
@@ -424,13 +424,13 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
 
           {/* Exam Selector */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-400">
+            <label className="text-xs font-semibold text-muted-foreground">
               Target Examination *
             </label>
             <select
               value={activeExamId}
               onChange={(e) => setSelectedExamId(e.target.value)}
-              className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="h-10 w-full rounded-xl border border-border bg-surface-2 px-3 text-xs text-foreground-2 focus:outline-none focus:ring-1 focus:ring-ring"
             >
               {relevantExams.length === 0 && <option value="">No term examinations scheduled</option>}
               {relevantExams.map((ex) => (
@@ -443,13 +443,13 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
 
           {/* Subject Selector */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-400">
+            <label className="text-xs font-semibold text-muted-foreground">
               Curriculum Subject *
             </label>
             <select
               value={selectedSubjectId}
               onChange={(e) => setSelectedSubjectId(e.target.value)}
-              className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="h-10 w-full rounded-xl border border-border bg-surface-2 px-3 text-xs text-foreground-2 focus:outline-none focus:ring-1 focus:ring-ring"
             >
               {subjects.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -462,23 +462,23 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
       </Card>
 
       {/* Roster Progress Summary Bar */}
-      <Card className="p-4 border-white/10 bg-slate-950/40">
+      <Card className="p-4 border-border bg-surface-2">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-2 text-xs">
-          <div className="flex items-center gap-2 text-slate-300">
-            <Users className="h-4 w-4 text-indigo-400" />
+          <div className="flex items-center gap-2 text-foreground-2">
+            <Users className="h-4 w-4 text-accent-blue" />
             <span>Enrolled Students in Class:</span>
-            <span className="font-bold text-white">{students.length}</span>
+            <span className="font-semibold text-foreground">{students.length}</span>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-slate-400">Marks Completion:</span>
+            <span className="text-muted-foreground">Marks Completion:</span>
             <Badge
               variant={
                 enteredCount === students.length && students.length > 0
                   ? "success"
                   : "warning"
               }
-              className="font-bold"
+              className="font-semibold"
             >
               {enteredCount} / {students.length} ({progressPercent}%)
             </Badge>
@@ -488,7 +488,7 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
       </Card>
 
       {/* Spreadsheet Mark Entry Grid */}
-      <Card className="border-white/10 overflow-hidden">
+      <Card className="border-border overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -503,14 +503,14 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-12 text-slate-400">
-                  <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-indigo-400" />
+                <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                  <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-accent-blue" />
                   Loading class roster and existing marks...
                 </TableCell>
               </TableRow>
             ) : students.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-12 text-slate-400">
+                <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
                   No students found in this class.
                 </TableCell>
               </TableRow>
@@ -526,21 +526,21 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
                   (parseFloat(markEntry.score) < 0 || parseFloat(markEntry.score) > 100)
 
                 return (
-                  <TableRow key={student.id} className="hover:bg-slate-800/30">
+                  <TableRow key={student.id} className="hover:bg-surface-2">
                     {/* Index */}
-                    <TableCell className="text-xs text-slate-400 font-mono">
+                    <TableCell className="text-xs text-muted-foreground font-mono">
                       {idx + 1}
                     </TableCell>
 
                     {/* Admission */}
                     <TableCell>
-                      <code className="text-xs font-mono font-semibold text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                      <code className="text-xs font-mono font-semibold text-accent-blue bg-accent-blue-soft px-2 py-0.5 rounded border border-accent-blue/20">
                         {student.admissionNumber}
                       </code>
                     </TableCell>
 
                     {/* Full Name */}
-                    <TableCell className="font-semibold text-white">
+                    <TableCell className="font-semibold text-foreground">
                       {student.fullName}
                     </TableCell>
 
@@ -555,14 +555,14 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
                           placeholder="0–100"
                           value={markEntry.score}
                           onChange={(e) => handleScoreChange(student.id, e.target.value)}
-                          className={`h-9 w-28 text-center font-bold text-sm ${
+                          className={`h-9 w-28 text-center font-semibold text-sm ${
                             isInvalid
-                              ? "border-rose-500 focus-visible:ring-rose-500 bg-rose-950/20 text-rose-300"
-                              : "bg-slate-950/80 text-white"
+                              ? "border-danger focus-visible:ring-rose-500 bg-rose-950/20 text-danger"
+                              : "bg-surface-2 text-foreground"
                           }`}
                         />
                       ) : (
-                        <span className="text-sm text-white">{markEntry.score === "" ? "—" : markEntry.score}</span>
+                        <span className="text-sm text-foreground">{markEntry.score === "" ? "—" : markEntry.score}</span>
                       )}
                     </TableCell>
 
@@ -579,10 +579,10 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
                           placeholder="e.g. Good comprehension, consistent effort"
                           value={markEntry.remarks}
                           onChange={(e) => handleRemarksChange(student.id, e.target.value)}
-                          className="h-9 text-xs bg-slate-950/60"
+                          className="h-9 text-xs bg-surface-2"
                         />
                       ) : (
-                        <span className="text-xs text-slate-300">{markEntry.remarks || "—"}</span>
+                        <span className="text-xs text-foreground-2">{markEntry.remarks || "—"}</span>
                       )}
                     </TableCell>
                   </TableRow>

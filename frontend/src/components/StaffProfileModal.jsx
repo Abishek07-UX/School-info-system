@@ -109,11 +109,11 @@ export default function StaffProfileModal({ isOpen, onClose, required = false })
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#1f1f21] border-[0.5px] border-white/10 text-[#3b82f6]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-surface-2 border border-border text-accent-blue">
               <User className="h-4 w-4" />
             </div>
             <div>
-              <DialogTitle className="text-lg font-normal tracking-tight text-white">
+              <DialogTitle className="text-lg font-normal tracking-tight text-foreground">
                 {required ? "Complete Staff Profile" : "Staff Profile & Credentials"}
               </DialogTitle>
               <div className="flex items-center gap-2 mt-1">
@@ -126,7 +126,7 @@ export default function StaffProfileModal({ isOpen, onClose, required = false })
               </div>
             </div>
           </div>
-          <DialogDescription className="text-[#858687] text-xs mt-2">
+          <DialogDescription className="text-muted-foreground text-xs mt-2">
             View and update your registered identification and contact details in the school operational database.
           </DialogDescription>
         </DialogHeader>
@@ -151,7 +151,7 @@ export default function StaffProfileModal({ isOpen, onClose, required = false })
           {/* First & Last Name */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1">
-              <Label htmlFor="prof-firstName" className="text-xs text-[#cececf]">First Name *</Label>
+              <Label htmlFor="prof-firstName" className="text-xs text-foreground-2">First Name *</Label>
               <Input
                 id="prof-firstName"
                 type="text"
@@ -163,7 +163,7 @@ export default function StaffProfileModal({ isOpen, onClose, required = false })
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="prof-lastName" className="text-xs text-[#cececf]">Last Name *</Label>
+              <Label htmlFor="prof-lastName" className="text-xs text-foreground-2">Last Name *</Label>
               <Input
                 id="prof-lastName"
                 type="text"
@@ -177,7 +177,7 @@ export default function StaffProfileModal({ isOpen, onClose, required = false })
 
           {/* Email */}
           <div className="space-y-1">
-            <Label htmlFor="prof-email" className="text-xs text-[#cececf]">Official Email Address *</Label>
+            <Label htmlFor="prof-email" className="text-xs text-foreground-2">Official Email Address *</Label>
             <Input
               id="prof-email"
               type="email"
@@ -191,7 +191,7 @@ export default function StaffProfileModal({ isOpen, onClose, required = false })
           {/* Phone & NIC */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1">
-              <Label htmlFor="prof-phone" className="text-xs text-[#cececf]">Phone (10 Digits) *</Label>
+              <Label htmlFor="prof-phone" className="text-xs text-foreground-2">Phone (10 Digits) *</Label>
               <Input
                 id="prof-phone"
                 type="tel"
@@ -209,7 +209,7 @@ export default function StaffProfileModal({ isOpen, onClose, required = false })
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="prof-nic" className="text-xs text-[#cececf]">National ID (NIC) *</Label>
+              <Label htmlFor="prof-nic" className="text-xs text-foreground-2">National ID (NIC) *</Label>
               <Input
                 id="prof-nic"
                 type="text"
@@ -225,7 +225,7 @@ export default function StaffProfileModal({ isOpen, onClose, required = false })
 
           {/* Address */}
           <div className="space-y-1">
-            <Label htmlFor="prof-address" className="text-xs text-[#cececf]">Residential Address *</Label>
+            <Label htmlFor="prof-address" className="text-xs text-foreground-2">Residential Address *</Label>
             <Textarea
               id="prof-address"
               required

@@ -96,7 +96,7 @@ export default function OnboardingView() {
     <div className="mx-auto max-w-xl px-4 py-12">
       <Card className="p-2">
         <CardHeader className="text-center pb-6">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[10px] bg-[#1f1f21] border-[0.5px] border-white/10 text-[#3b82f6]">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[10px] bg-surface-2 border border-border text-accent-blue">
             <UserCheck className="h-6 w-6" />
           </div>
 
@@ -106,10 +106,10 @@ export default function OnboardingView() {
             </Badge>
           </div>
 
-          <CardTitle className="text-xl font-normal tracking-tight text-[#ffffff]">
+          <CardTitle className="text-xl font-normal tracking-tight text-foreground">
             Complete Staff Registration
           </CardTitle>
-          <CardDescription className="text-xs text-[#858687] max-w-md mx-auto">
+          <CardDescription className="text-xs text-muted-foreground max-w-md mx-auto">
             Please register your official identity credentials. Once submitted, your profile will be queued for Administrator verification.
           </CardDescription>
         </CardHeader>
@@ -127,9 +127,9 @@ export default function OnboardingView() {
             {/* First & Last Name */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="firstName" className="text-xs text-[#cececf] flex items-center gap-1.5">
-                  <User className="h-3 w-3 text-[#858687]" />
-                  First Name <span className="text-[#f87171]">*</span>
+                <Label htmlFor="firstName" className="text-xs text-foreground-2 flex items-center gap-1.5">
+                  <User className="h-3 w-3 text-muted-foreground" />
+                  First Name <span className="text-danger">*</span>
                 </Label>
                 <Input
                   id="firstName"
@@ -142,9 +142,9 @@ export default function OnboardingView() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="lastName" className="text-xs text-[#cececf] flex items-center gap-1.5">
-                  <User className="h-3 w-3 text-[#858687]" />
-                  Last Name <span className="text-[#f87171]">*</span>
+                <Label htmlFor="lastName" className="text-xs text-foreground-2 flex items-center gap-1.5">
+                  <User className="h-3 w-3 text-muted-foreground" />
+                  Last Name <span className="text-danger">*</span>
                 </Label>
                 <Input
                   id="lastName"
@@ -159,9 +159,9 @@ export default function OnboardingView() {
 
             {/* Email Address */}
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs text-[#cececf] flex items-center gap-1.5">
-                <Mail className="h-3 w-3 text-[#858687]" />
-                Official Email Address <span className="text-[#f87171]">*</span>
+              <Label htmlFor="email" className="text-xs text-foreground-2 flex items-center gap-1.5">
+                <Mail className="h-3 w-3 text-muted-foreground" />
+                Official Email Address <span className="text-danger">*</span>
               </Label>
               <Input
                 id="email"
@@ -176,9 +176,9 @@ export default function OnboardingView() {
             {/* Phone & NIC */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="phoneNumber" className="text-xs text-[#cececf] flex items-center gap-1.5">
-                  <Phone className="h-3 w-3 text-[#858687]" />
-                  Phone (10 Digits) <span className="text-[#f87171]">*</span>
+                <Label htmlFor="phoneNumber" className="text-xs text-foreground-2 flex items-center gap-1.5">
+                  <Phone className="h-3 w-3 text-muted-foreground" />
+                  Phone (10 Digits) <span className="text-danger">*</span>
                 </Label>
                 <Input
                   id="phoneNumber"
@@ -197,9 +197,9 @@ export default function OnboardingView() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="nicNumber" className="text-xs text-[#cececf] flex items-center gap-1.5">
-                  <CreditCard className="h-3 w-3 text-[#858687]" />
-                  National ID (NIC) <span className="text-[#f87171]">*</span>
+                <Label htmlFor="nicNumber" className="text-xs text-foreground-2 flex items-center gap-1.5">
+                  <CreditCard className="h-3 w-3 text-muted-foreground" />
+                  National ID (NIC) <span className="text-danger">*</span>
                 </Label>
                 <Input
                   id="nicNumber"
@@ -216,9 +216,9 @@ export default function OnboardingView() {
 
             {/* Address */}
             <div className="space-y-1.5">
-              <Label htmlFor="address" className="text-xs text-[#cececf] flex items-center gap-1.5">
-                <MapPin className="h-3 w-3 text-[#858687]" />
-                Residential Address <span className="text-[#f87171]">*</span>
+              <Label htmlFor="address" className="text-xs text-foreground-2 flex items-center gap-1.5">
+                <MapPin className="h-3 w-3 text-muted-foreground" />
+                Residential Address <span className="text-danger">*</span>
               </Label>
               <Textarea
                 id="address"

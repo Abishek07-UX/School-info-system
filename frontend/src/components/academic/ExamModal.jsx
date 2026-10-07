@@ -100,14 +100,14 @@ export default function ExamModal({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-blue-soft border border-accent-blue/30 text-accent-blue">
               <Calendar className="h-5 w-5" />
             </div>
             <div>
-              <DialogTitle className="text-xl font-bold font-heading">
+              <DialogTitle className="text-xl font-semibold font-heading">
                 {examToEdit ? "Edit Examination" : "Schedule New Examination"}
               </DialogTitle>
-              <DialogDescription className="text-slate-400 text-xs">
+              <DialogDescription className="text-muted-foreground text-xs">
                 Configure examination title, class cohort, evaluation term, and date schedule.
               </DialogDescription>
             </div>
@@ -143,7 +143,7 @@ export default function ExamModal({
                 id="exam-year"
                 value={formData.academicYear}
                 onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })}
-                className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="h-10 w-full rounded-xl border border-border bg-surface-2 px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 <option value={2026}>2026</option>
                 <option value={2025}>2025</option>
@@ -165,7 +165,7 @@ export default function ExamModal({
                     ...(newTerm === "OTHER" ? { classId: "" } : {}),
                   }))
                 }}
-                className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="h-10 w-full rounded-xl border border-border bg-surface-2 px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 <option value="TERM_1">📘 Term 1 (First Term)</option>
                 <option value="TERM_2">📗 Term 2 (Second Term)</option>
@@ -183,7 +183,7 @@ export default function ExamModal({
                 id="exam-class"
                 value={formData.classId}
                 onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
-                className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="h-10 w-full rounded-xl border border-border bg-surface-2 px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 <option value="">🌐 Open / School-wide (No specific class)</option>
                 {classes.map((c) => (
@@ -200,7 +200,7 @@ export default function ExamModal({
                 id="exam-status"
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="h-10 w-full rounded-xl border border-border bg-surface-2 px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 <option value="UPCOMING">Upcoming</option>
                 <option value="ONGOING">Ongoing</option>

@@ -110,8 +110,8 @@ export default function AcademicDashboard({ onBack }) {
           Back to Portal Overview
         </Button>
 
-        <div className="flex items-center gap-2 text-xs text-[#858687]">
-          <Building2 className="h-3.5 w-3.5 text-[#858687]" />
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
           <span>School Academic Management</span>
           <span>&bull;</span>
           <Badge variant="outline" className="text-xs">
@@ -123,19 +123,19 @@ export default function AcademicDashboard({ onBack }) {
       {/* Hero Banner Card */}
       <Card className="p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] bg-[#1f1f21] border-[0.5px] border-white/10 text-[#3b82f6]">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] bg-surface-2 border border-border text-accent-blue">
             <GraduationCap className="h-6 w-6" />
           </div>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-xl font-normal text-white">
+              <h1 className="text-xl font-normal text-foreground">
                 Academic & Examination Management Hub
               </h1>
               <Badge variant="success" className="hidden sm:inline-flex text-[10px]">
                 Active Term
               </Badge>
             </div>
-            <p className="text-xs text-[#858687] max-w-3xl leading-relaxed">
+            <p className="text-xs text-muted-foreground max-w-3xl leading-relaxed">
               Comprehensive evaluation platform supporting 3-term academic schedules, per-term independent class ranking, batch numerical marks recording, automated letter grade conversions, and official transcript generation.
             </p>
           </div>
@@ -151,27 +151,27 @@ export default function AcademicDashboard({ onBack }) {
             <div
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`group cursor-pointer rounded-[10px] border-[0.5px] p-4 transition-all ${
+              className={`group cursor-pointer rounded-[10px] border p-4 transition-all ${
                 isActive
-                  ? "border-white/20 bg-[#1f1f21] ring-1 ring-[#3b82f6]/30 text-white"
-                  : "border-white/[0.07] bg-[#131416] text-[#858687] hover:border-white/15 hover:text-white"
+                  ? "border-border-strong bg-surface-2 ring-1 ring-ring/30 text-foreground"
+                  : "border-border bg-surface text-muted-foreground hover:border-border-strong hover:text-foreground"
               }`}
             >
               <div className="flex items-center gap-3 mb-2">
                 <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-[6px] border-[0.5px] transition-colors ${
+                  className={`flex h-8 w-8 items-center justify-center rounded-[6px] border transition-colors ${
                     isActive
-                      ? "bg-[#131416] border-[#3b82f6]/40 text-[#3b82f6]"
-                      : "bg-[#1f1f21] border-white/10 text-[#858687] group-hover:text-white"
+                      ? "bg-surface border-accent-blue/40 text-accent-blue"
+                      : "bg-surface-2 border-border text-muted-foreground group-hover:text-foreground"
                   }`}
                 >
                   <Icon className="h-4 w-4" />
                 </div>
-                <div className="font-normal text-xs text-white">
+                <div className="font-normal text-xs text-foreground">
                   {tab.label}
                 </div>
               </div>
-              <p className="text-[11px] text-[#858687] leading-relaxed line-clamp-2">
+              <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">
                 {tab.desc}
               </p>
             </div>

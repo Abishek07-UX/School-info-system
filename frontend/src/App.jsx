@@ -116,8 +116,8 @@ function DashboardView() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 text-[#858687]">
-        <div className="h-8 w-8 animate-spin rounded-full border-[0.5px] border-[#3b82f6] border-t-transparent mb-4" />
+      <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
+        <div className="h-8 w-8 animate-spin rounded-full border border-accent-blue border-t-transparent mb-4" />
         <div className="text-xs font-normal">Loading staff credentials and permissions...</div>
       </div>
     )
@@ -126,14 +126,14 @@ function DashboardView() {
   return (
     <div className="mx-auto max-w-[1080px] px-4 py-8 sm:px-6 space-y-8">
       {/* Header Banner */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b-[0.5px] border-white/[0.07] pb-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-border pb-6">
         <div>
           <div className="flex items-center gap-3 mb-1.5">
-            <h1 className="text-2xl sm:text-3xl font-normal tracking-tight text-[#ffffff]">
+            <h1 className="text-2xl sm:text-3xl font-normal tracking-tight text-foreground">
               Welcome back, {displayName}
             </h1>
           </div>
-          <p className="text-xs text-[#858687]">
+          <p className="text-xs text-muted-foreground">
             {PORTAL_NAME} &bull; Academic Operations Portal
           </p>
         </div>
@@ -157,7 +157,7 @@ function DashboardView() {
               onClick={() => setActiveTab("timetable")}
               className="gap-1.5 text-xs"
             >
-              <Calendar className="h-3.5 w-3.5 text-[#3b82f6]" />
+              <Calendar className="h-3.5 w-3.5 text-accent-blue" />
               Timetable
             </Button>
           )}
@@ -181,7 +181,7 @@ function DashboardView() {
               onClick={() => setActiveTab("admin")}
               className="gap-1.5 text-xs"
             >
-              <Shield className="h-3.5 w-3.5 text-[#858687]" />
+              <Shield className="h-3.5 w-3.5 text-muted-foreground" />
               Staff Accounts
             </Button>
           )}
@@ -220,42 +220,42 @@ function DashboardView() {
           {/* Quick Stats Grid */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Card className="p-5 flex items-center gap-3.5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#1f1f21] text-[#3b82f6] border-[0.5px] border-white/10">
+              <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-surface-2 text-accent-blue border border-border">
                 <Users className="h-4 w-4" />
               </div>
               <div>
-                <div className="text-xl font-normal text-[#ffffff] tracking-tight">1,387</div>
-                <div className="text-[11px] text-[#858687]">Enrolled Students</div>
+                <div className="text-xl font-normal text-foreground tracking-tight">1,387</div>
+                <div className="text-[11px] text-muted-foreground">Enrolled Students</div>
               </div>
             </Card>
 
             <Card className="p-5 flex items-center gap-3.5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#1f1f21] text-[#3b82f6] border-[0.5px] border-white/10">
+              <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-surface-2 text-accent-blue border border-border">
                 <GraduationCap className="h-4 w-4" />
               </div>
               <div>
-                <div className="text-xl font-normal text-[#ffffff] tracking-tight">62</div>
-                <div className="text-[11px] text-[#858687]">Teaching Faculty</div>
+                <div className="text-xl font-normal text-foreground tracking-tight">62</div>
+                <div className="text-[11px] text-muted-foreground">Teaching Faculty</div>
               </div>
             </Card>
 
             <Card className="p-5 flex items-center gap-3.5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#1f1f21] text-[#4ade80] border-[0.5px] border-white/10">
+              <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-surface-2 text-success border border-border">
                 <School className="h-4 w-4" />
               </div>
               <div>
-                <div className="text-xl font-normal text-[#ffffff] tracking-tight">39</div>
-                <div className="text-[11px] text-[#858687]">Classes (1–13)</div>
+                <div className="text-xl font-normal text-foreground tracking-tight">39</div>
+                <div className="text-[11px] text-muted-foreground">Classes (1–13)</div>
               </div>
             </Card>
 
             <Card className="p-5 flex items-center gap-3.5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#1f1f21] text-[#60a5fa] border-[0.5px] border-white/10">
+              <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-surface-2 text-accent-blue border border-border">
                 <Calendar className="h-4 w-4" />
               </div>
               <div>
-                <div className="text-xl font-normal text-[#ffffff] tracking-tight">45 Halls</div>
-                <div className="text-[11px] text-[#858687]">Buildings E, F, G</div>
+                <div className="text-xl font-normal text-foreground tracking-tight">45 Halls</div>
+                <div className="text-[11px] text-muted-foreground">Buildings E, F, G</div>
               </div>
             </Card>
           </div>
@@ -264,11 +264,11 @@ function DashboardView() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-base font-normal tracking-tight text-[#ffffff]">
+                <h2 className="text-base font-normal tracking-tight text-foreground">
                   Accessible Operational Modules
                 </h2>
-                <p className="text-xs text-[#858687]">
-                  Authorized for assigned role: <span className="text-[#ffffff]">{role}</span>
+                <p className="text-xs text-muted-foreground">
+                  Authorized for assigned role: <span className="text-foreground">{role}</span>
                 </p>
               </div>
             </div>
@@ -294,39 +294,39 @@ function DashboardView() {
                         setSelectedPreviewModule(mod)
                       }
                     }}
-                    className="p-6 cursor-pointer hover:border-white/20 transition-all group relative"
+                    className="p-6 cursor-pointer hover:border-border-strong transition-all group relative"
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#1f1f21] text-[#3b82f6] border-[0.5px] border-white/10 group-hover:border-[#3b82f6]/40 transition-colors">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-surface-2 text-accent-blue border border-border group-hover:border-accent-blue/40 transition-colors">
                         <Icon className="h-4 w-4" />
                       </div>
-                      <Badge variant="outline" className="text-[10px] font-normal text-[#858687]">
+                      <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground">
                         {mod.count}
                       </Badge>
                     </div>
 
-                    <h3 className="text-sm font-normal text-[#ffffff] group-hover:text-[#ffffff] transition-colors">
+                    <h3 className="text-sm font-normal text-foreground group-hover:text-foreground transition-colors">
                       {mod.name}
                     </h3>
-                    <p className="text-xs text-[#858687] mt-1.5 leading-relaxed">
+                    <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
                       {mod.desc}
                     </p>
 
-                    <div className="mt-4 pt-3 border-t-[0.5px] border-white/[0.05] flex items-center justify-between text-xs">
+                    <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
                       {isTimetable ? (
-                        <span className="text-[#3b82f6] flex items-center gap-1">
+                        <span className="text-accent-blue flex items-center gap-1">
                           Open Timetable Engine <ArrowRight className="h-3 w-3" />
                         </span>
                       ) : isAcademics ? (
-                        <span className="text-[#60a5fa] flex items-center gap-1">
+                        <span className="text-accent-blue flex items-center gap-1">
                           Open Evaluation Hub <ArrowRight className="h-3 w-3" />
                         </span>
                       ) : isAdminModule ? (
-                        <span className="text-[#cececf] flex items-center gap-1">
+                        <span className="text-foreground-2 flex items-center gap-1">
                           Manage Staff Accounts <ArrowRight className="h-3 w-3" />
                         </span>
                       ) : (
-                        <span className="text-[#858687] flex items-center gap-1 group-hover:text-[#ffffff]">
+                        <span className="text-muted-foreground flex items-center gap-1 group-hover:text-foreground">
                           View Specifications <ArrowRight className="h-3 w-3" />
                         </span>
                       )}
@@ -355,8 +355,8 @@ function AuthenticatedPortal({ onOpenProfile }) {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-28 text-[#858687]">
-        <div className="h-8 w-8 animate-spin rounded-full border-[0.5px] border-[#3b82f6] border-t-transparent mb-4" />
+      <div className="flex flex-col items-center justify-center py-28 text-muted-foreground">
+        <div className="h-8 w-8 animate-spin rounded-full border border-accent-blue border-t-transparent mb-4" />
         <div className="text-xs font-normal">Loading staff account permissions...</div>
       </div>
     )
@@ -387,7 +387,7 @@ function LandingView({ isClerkConfigured }) {
       {/* Notice if Clerk not configured */}
       {!isClerkConfigured && (
         <Alert variant="warning">
-          <AlertTriangle className="h-4 w-4 text-[#ea580c]" />
+          <AlertTriangle className="h-4 w-4 text-warning" />
           <AlertTitle>Clerk Authentication Notice</AlertTitle>
           <AlertDescription>
             Copy <code>.env.example</code> to <code>.env</code> inside the <code>frontend/</code> directory and configure your <code>VITE_CLERK_PUBLISHABLE_KEY</code> for live staff sign-in.
@@ -398,11 +398,11 @@ function LandingView({ isClerkConfigured }) {
       {/* Hero Section — 2-column split with whisper-weight headline */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
         <div className="lg:col-span-7 space-y-6">
-          <h1 className="text-4xl sm:text-5xl lg:text-[52px] font-normal tracking-[-1.3px] text-[#ffffff] leading-[1.05]">
+          <h1 className="text-4xl sm:text-5xl lg:text-[52px] font-normal tracking-[-1.3px] text-foreground leading-[1.05]">
             Unified academic and administrative operations.
           </h1>
 
-          <p className="text-base sm:text-[18px] text-[#858687] leading-relaxed tracking-[-0.61px] max-w-xl">
+          <p className="text-base sm:text-[18px] text-muted-foreground leading-relaxed tracking-[-0.61px] max-w-xl">
             Centralized infrastructure for school administrators and faculty: conflict-free weekly timetables, classroom routing, attendance, 3-term numerical mark entry, and offline fee reconciliation.
           </p>
 
@@ -441,11 +441,11 @@ function LandingView({ isClerkConfigured }) {
 
         {/* Hero Product Mockup Panel with live status indicator */}
         <div className="lg:col-span-5">
-          <div className="rounded-[12px] border-[0.5px] border-white/10 bg-[#131416] p-5 shadow-[0_20px_44px_rgba(0,0,0,0.2)]">
-            <div className="flex items-center justify-between border-b-[0.5px] border-white/[0.07] pb-3 mb-4">
+          <div className="rounded-[12px] border border-border bg-surface p-5 shadow-pop">
+            <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
               <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-[#4ade80]" />
-                <span className="text-xs font-normal text-[#ffffff]">Academic Engine Active</span>
+                <span className="h-2 w-2 rounded-full bg-success" />
+                <span className="text-xs font-normal text-foreground">Academic Engine Active</span>
               </div>
               <Badge variant="success" className="text-[10px] py-0 px-2">
                 Live 2026 Term
@@ -453,30 +453,30 @@ function LandingView({ isClerkConfigured }) {
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="rounded-[8px] border-[0.5px] border-white/5 bg-[#1f1f21] p-3 flex items-center justify-between">
+              <div className="rounded-[8px] border border-border bg-surface-2 p-3 flex items-center justify-between">
                 <div>
-                  <div className="text-[#ffffff]">Grade 10-A Timetable</div>
-                  <div className="text-[11px] text-[#858687]">40-min periods &bull; Hall E-204</div>
+                  <div className="text-foreground">Grade 10-A Timetable</div>
+                  <div className="text-[11px] text-muted-foreground">40-min periods &bull; Hall E-204</div>
                 </div>
-                <span className="text-[#4ade80] text-[11px] flex items-center gap-1">
+                <span className="text-success text-[11px] flex items-center gap-1">
                   <CheckCircle2 className="h-3 w-3" /> Conflict-Free
                 </span>
               </div>
 
-              <div className="rounded-[8px] border-[0.5px] border-white/5 bg-[#1f1f21] p-3 flex items-center justify-between">
+              <div className="rounded-[8px] border border-border bg-surface-2 p-3 flex items-center justify-between">
                 <div>
-                  <div className="text-[#ffffff]">Grade 11 Mathematics Term 1</div>
-                  <div className="text-[11px] text-[#858687]">42 Student Records Graded</div>
+                  <div className="text-foreground">Grade 11 Mathematics Term 1</div>
+                  <div className="text-[11px] text-muted-foreground">42 Student Records Graded</div>
                 </div>
-                <span className="text-[#60a5fa] text-[11px]">Letter Calc Done</span>
+                <span className="text-accent-blue text-[11px]">Letter Calc Done</span>
               </div>
 
-              <div className="rounded-[8px] border-[0.5px] border-white/5 bg-[#1f1f21] p-3 flex items-center justify-between">
+              <div className="rounded-[8px] border border-border bg-surface-2 p-3 flex items-center justify-between">
                 <div>
-                  <div className="text-[#ffffff]">Daily Faculty Attendance</div>
-                  <div className="text-[11px] text-[#858687]">62/62 Verified on Campus</div>
+                  <div className="text-foreground">Daily Faculty Attendance</div>
+                  <div className="text-[11px] text-muted-foreground">62/62 Verified on Campus</div>
                 </div>
-                <span className="text-[#4ade80] text-[11px]">100% Present</span>
+                <span className="text-success text-[11px]">100% Present</span>
               </div>
             </div>
           </div>
@@ -484,70 +484,70 @@ function LandingView({ isClerkConfigured }) {
       </div>
 
       {/* Monochrome Stats Strip — Floating row without card container per design.md */}
-      <div className="border-y-[0.5px] border-white/[0.07] py-8">
+      <div className="border-y border-border py-8">
         <div className="grid grid-cols-2 gap-6 sm:grid-cols-4 text-center">
           <div>
-            <div className="text-3xl font-normal text-[#ffffff] tracking-tight">1,387</div>
-            <div className="text-xs text-[#858687] mt-1">Enrolled Students</div>
+            <div className="text-3xl font-normal text-foreground tracking-tight">1,387</div>
+            <div className="text-xs text-muted-foreground mt-1">Enrolled Students</div>
           </div>
           <div>
-            <div className="text-3xl font-normal text-[#ffffff] tracking-tight">62</div>
-            <div className="text-xs text-[#858687] mt-1">Teaching Faculty</div>
+            <div className="text-3xl font-normal text-foreground tracking-tight">62</div>
+            <div className="text-xs text-muted-foreground mt-1">Teaching Faculty</div>
           </div>
           <div>
-            <div className="text-3xl font-normal text-[#ffffff] tracking-tight">39</div>
-            <div className="text-xs text-[#858687] mt-1">Grade 1–13 Classes</div>
+            <div className="text-3xl font-normal text-foreground tracking-tight">39</div>
+            <div className="text-xs text-muted-foreground mt-1">Grade 1–13 Classes</div>
           </div>
           <div>
-            <div className="text-3xl font-normal text-[#ffffff] tracking-tight">45</div>
-            <div className="text-xs text-[#858687] mt-1">Halls in Buildings E, F, G</div>
+            <div className="text-3xl font-normal text-foreground tracking-tight">45</div>
+            <div className="text-xs text-muted-foreground mt-1">Halls in Buildings E, F, G</div>
           </div>
         </div>
       </div>
 
       {/* Feature Showcase Grid — 0.5px hairline cards */}
       <div id="infrastructure-specs" className="space-y-6">
-        <h2 className="text-2xl font-normal tracking-tight text-[#ffffff]">
+        <h2 className="text-2xl font-normal tracking-tight text-foreground">
           Core Operational Systems
         </h2>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="p-6 space-y-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#1f1f21] text-[#3b82f6] border-[0.5px] border-white/10">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-surface-2 text-accent-blue border border-border">
               <Calendar className="h-4 w-4" />
             </div>
-            <h3 className="text-sm font-normal text-[#ffffff]">Conflict-Free Timetables</h3>
-            <p className="text-xs text-[#858687] leading-relaxed">
+            <h3 className="text-sm font-normal text-foreground">Conflict-Free Timetables</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
               40-minute periods, 07:50 AM start, interval breaks, classroom routing across Buildings E, F, G, and complete clash prevention.
             </p>
           </Card>
 
           <Card className="p-6 space-y-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#1f1f21] text-[#4ade80] border-[0.5px] border-white/10">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-surface-2 text-success border border-border">
               <CalendarCheck className="h-4 w-4" />
             </div>
-            <h3 className="text-sm font-normal text-[#ffffff]">Attendance Tracking</h3>
-            <p className="text-xs text-[#858687] leading-relaxed">
+            <h3 className="text-sm font-normal text-foreground">Attendance Tracking</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Fast daily student & teacher attendance recording with monthly compliance reports and 80% threshold notifications.
             </p>
           </Card>
 
           <Card className="p-6 space-y-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#1f1f21] text-[#60a5fa] border-[0.5px] border-white/10">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-surface-2 text-accent-blue border border-border">
               <BookOpen className="h-4 w-4" />
             </div>
-            <h3 className="text-sm font-normal text-[#ffffff]">Exams & Grading</h3>
-            <p className="text-xs text-[#858687] leading-relaxed">
+            <h3 className="text-sm font-normal text-foreground">Exams & Grading</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Numerical mark recording with automated letter grade conversion, ranking summaries, and printable report cards.
             </p>
           </Card>
 
           <Card className="p-6 space-y-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#1f1f21] text-[#cececf] border-[0.5px] border-white/10">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-surface-2 text-foreground-2 border border-border">
               <CreditCard className="h-4 w-4" />
             </div>
-            <h3 className="text-sm font-normal text-[#ffffff]">Finance Ledger</h3>
-            <p className="text-xs text-[#858687] leading-relaxed">
+            <h3 className="text-sm font-normal text-foreground">Finance Ledger</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Fee structure setup, offline collection receipt logging, and term-end balance tracking.
             </p>
           </Card>
@@ -562,7 +562,7 @@ function MainApp({ isClerkConfigured = true }) {
   const [activeTab, setActiveTab] = useState("overview")
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#0b0c0e] text-[#cececf]">
+    <div className="flex min-h-screen flex-col bg-background text-foreground-2">
       <Navbar
         isClerkConfigured={isClerkConfigured}
         onOpenProfile={() => setShowProfileModal(true)}
@@ -590,10 +590,10 @@ function MainApp({ isClerkConfigured = true }) {
         onClose={() => setShowProfileModal(false)}
       />
 
-      <footer className="border-t-[0.5px] border-white/[0.07] bg-[#0b0c0e] py-12 text-center text-xs text-[#858687]">
+      <footer className="border-t border-border bg-background py-12 text-center text-xs text-muted-foreground">
         <div className="max-w-[1080px] mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>{PORTAL_NAME} &bull; Internal Staff Operations Portal</div>
-          <div className="text-[11px] text-[#71717a]">&copy; {new Date().getFullYear()} All rights reserved.</div>
+          <div className="text-[11px] text-muted-foreground">&copy; {new Date().getFullYear()} All rights reserved.</div>
         </div>
       </footer>
     </div>

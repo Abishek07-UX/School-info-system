@@ -25,13 +25,13 @@ export default function ModuleModal({ module, isOpen, onClose, onNavigate }) {
 
   const getModuleIcon = (id) => {
     switch (id) {
-      case "students": return <Users className="h-5 w-5 text-[#3b82f6]" />
-      case "teachers": return <GraduationCap className="h-5 w-5 text-[#3b82f6]" />
-      case "attendance": return <CalendarCheck className="h-5 w-5 text-[#4ade80]" />
-      case "academics": return <BookOpen className="h-5 w-5 text-[#60a5fa]" />
-      case "finance": return <CreditCard className="h-5 w-5 text-[#cececf]" />
-      case "tickets": return <Ticket className="h-5 w-5 text-[#cececf]" />
-      default: return <BookOpen className="h-5 w-5 text-[#3b82f6]" />
+      case "students": return <Users className="h-5 w-5 text-accent-blue" />
+      case "teachers": return <GraduationCap className="h-5 w-5 text-accent-blue" />
+      case "attendance": return <CalendarCheck className="h-5 w-5 text-success" />
+      case "academics": return <BookOpen className="h-5 w-5 text-accent-blue" />
+      case "finance": return <CreditCard className="h-5 w-5 text-foreground-2" />
+      case "tickets": return <Ticket className="h-5 w-5 text-foreground-2" />
+      default: return <BookOpen className="h-5 w-5 text-accent-blue" />
     }
   }
 
@@ -79,11 +79,11 @@ export default function ModuleModal({ module, isOpen, onClose, onNavigate }) {
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#1f1f21] border-[0.5px] border-white/10">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-surface-2 border border-border">
               {getModuleIcon(module.id)}
             </div>
             <div>
-              <DialogTitle className="text-lg font-normal text-white">
+              <DialogTitle className="text-lg font-normal text-foreground">
                 {module.name}
               </DialogTitle>
               <div className="flex items-center gap-2 mt-1">
@@ -96,21 +96,21 @@ export default function ModuleModal({ module, isOpen, onClose, onNavigate }) {
               </div>
             </div>
           </div>
-          <DialogDescription className="text-[#858687] text-xs">
+          <DialogDescription className="text-muted-foreground text-xs">
             {module.desc}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 my-2">
-          <div className="rounded-[10px] border-[0.5px] border-white/10 bg-[#1f1f21] p-4">
-            <h4 className="text-[11px] font-medium uppercase tracking-wider text-[#858687] mb-3 flex items-center gap-1.5">
-              <ShieldCheck className="h-3.5 w-3.5 text-[#3b82f6]" />
+          <div className="rounded-[10px] border border-border bg-surface-2 p-4">
+            <h4 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5 text-accent-blue" />
               Module Capabilities & Specifications
             </h4>
             <div className="space-y-2.5">
               {features.map((feature, i) => (
-                <div key={i} className="flex items-start gap-2.5 text-xs text-[#cececf]">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-[#4ade80] shrink-0 mt-0.5" />
+                <div key={i} className="flex items-start gap-2.5 text-xs text-foreground-2">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0 mt-0.5" />
                   <span>{feature}</span>
                 </div>
               ))}
@@ -146,7 +146,7 @@ export default function ModuleModal({ module, isOpen, onClose, onNavigate }) {
             <Button
               variant="outline"
               onClick={onClose}
-              className="text-xs text-[#cececf]"
+              className="text-xs text-foreground-2"
             >
               Module Ready in System
             </Button>

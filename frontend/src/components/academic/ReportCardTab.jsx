@@ -166,24 +166,24 @@ export default function ReportCardTab({ classes = [] }) {
     if (rank === 1)
       return {
         variant: "warning",
-        bg: "bg-amber-500/20 text-amber-300 border-amber-500/40",
+        bg: "bg-warning-soft text-warning border-warning/40",
         text: "🥇 1st Place",
       }
     if (rank === 2)
       return {
         variant: "secondary",
-        bg: "bg-slate-700/60 text-slate-200 border-slate-500/40",
+        bg: "bg-surface-2 text-foreground-2 border-slate-500/40",
         text: "🥈 2nd Place",
       }
     if (rank === 3)
       return {
         variant: "default",
-        bg: "bg-amber-700/20 text-amber-400 border-amber-600/40",
+        bg: "bg-amber-700/20 text-warning border-amber-600/40",
         text: "🥉 3rd Place",
       }
     return {
       variant: "outline",
-      bg: "bg-indigo-500/10 text-indigo-300 border-indigo-500/30",
+      bg: "bg-accent-blue-soft text-accent-blue border-accent-blue/30",
       text: `#${rank} in Class`,
     }
   }
@@ -193,11 +193,11 @@ export default function ReportCardTab({ classes = [] }) {
       {/* Header & Print Action */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold font-heading text-white flex items-center gap-2">
-            <Award className="h-5 w-5 text-amber-400" />
+          <h2 className="text-xl font-semibold font-heading text-foreground flex items-center gap-2">
+            <Award className="h-5 w-5 text-warning" />
             Term Report Cards & Class Rankings
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-muted-foreground">
             Generate individual student report cards, track 3-term progression, and view live class leaderboards.
           </p>
         </div>
@@ -214,12 +214,12 @@ export default function ReportCardTab({ classes = [] }) {
       </div>
 
       {/* Control Panel */}
-      <Card className="p-4 border-white/10">
+      <Card className="p-4 border-border">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Class */}
           <div className="min-w-0 space-y-1.5">
             <div className="flex h-5 items-center justify-between gap-2">
-              <label className="text-xs font-semibold text-slate-400">Class / Grade</label>
+              <label className="text-xs font-semibold text-muted-foreground">Class / Grade</label>
               {assignedClass && String(assignedClass.id) === String(selectedClassId) && (
                 <Badge variant="default" className="shrink-0 text-[9px] py-0 px-1.5">
                   Your Class
@@ -229,7 +229,7 @@ export default function ReportCardTab({ classes = [] }) {
             <select
               value={selectedClassId}
               onChange={(e) => setSelectedClassId(e.target.value)}
-              className="h-10 w-full min-w-0 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="h-10 w-full min-w-0 rounded-xl border border-border bg-surface-2 px-3 text-xs text-foreground-2 focus:outline-none focus:ring-1 focus:ring-ring"
             >
               {classes.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -241,11 +241,11 @@ export default function ReportCardTab({ classes = [] }) {
 
           {/* Academic Year */}
           <div className="min-w-0 space-y-1.5">
-            <label className="flex h-5 items-center text-xs font-semibold text-slate-400">Academic Year</label>
+            <label className="flex h-5 items-center text-xs font-semibold text-muted-foreground">Academic Year</label>
             <select
               value={academicYear}
               onChange={(e) => setAcademicYear(e.target.value)}
-              className="h-10 w-full min-w-0 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="h-10 w-full min-w-0 rounded-xl border border-border bg-surface-2 px-3 text-xs text-foreground-2 focus:outline-none focus:ring-1 focus:ring-ring"
             >
               <option value="2026">2026</option>
               <option value="2025">2025</option>
@@ -256,11 +256,11 @@ export default function ReportCardTab({ classes = [] }) {
           {/* Term Selector */}
           {viewMode !== "ANNUAL_SUMMARY" && (
             <div className={`min-w-0 space-y-1.5 ${viewMode === "CLASS_LEADERBOARD" ? "sm:col-span-2 lg:col-span-2" : ""}`}>
-              <label className="flex h-5 items-center text-xs font-semibold text-slate-400">Term</label>
+              <label className="flex h-5 items-center text-xs font-semibold text-muted-foreground">Term</label>
               <select
                 value={selectedTerm}
                 onChange={(e) => setSelectedTerm(e.target.value)}
-                className="h-10 w-full min-w-0 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="h-10 w-full min-w-0 rounded-xl border border-border bg-surface-2 px-3 text-xs text-foreground-2 focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 <option value="TERM_1">📘 Term 1</option>
                 <option value="TERM_2">📗 Term 2</option>
@@ -272,11 +272,11 @@ export default function ReportCardTab({ classes = [] }) {
           {/* Student Selector */}
           {viewMode !== "CLASS_LEADERBOARD" && (
             <div className={`min-w-0 space-y-1.5 ${viewMode === "ANNUAL_SUMMARY" ? "sm:col-span-2 lg:col-span-2" : ""}`}>
-              <label className="flex h-5 items-center text-xs font-semibold text-slate-400">Select Student</label>
+              <label className="flex h-5 items-center text-xs font-semibold text-muted-foreground">Select Student</label>
               <select
                 value={selectedStudentId}
                 onChange={(e) => setSelectedStudentId(e.target.value)}
-                className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="h-10 w-full rounded-xl border border-border bg-surface-2 px-3 text-xs text-foreground-2 focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 {students.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -289,8 +289,8 @@ export default function ReportCardTab({ classes = [] }) {
         </div>
 
         {/* Format Switcher */}
-        <div className="mt-4 space-y-1.5 border-t border-white/10 pt-4">
-          <label className="flex h-5 items-center text-xs font-semibold text-slate-400">Report View Format</label>
+        <div className="mt-4 space-y-1.5 border-t border-border pt-4">
+          <label className="flex h-5 items-center text-xs font-semibold text-muted-foreground">Report View Format</label>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" role="group" aria-label="Report View Format">
             <Button
               variant={viewMode === "TERM_REPORT" ? "default" : "outline"}
@@ -338,28 +338,28 @@ export default function ReportCardTab({ classes = [] }) {
       {viewMode === "TERM_REPORT" && (
         <div>
           {loading ? (
-            <Card className="p-12 text-center text-slate-400 border-white/10">
-              <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-indigo-400" />
+            <Card className="p-12 text-center text-muted-foreground border-border">
+              <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-accent-blue" />
               Compiling student evaluation report and ranking calculations...
             </Card>
           ) : !reportCardData ? (
-            <Card className="p-12 text-center text-slate-400 border-white/10">
+            <Card className="p-12 text-center text-muted-foreground border-border">
               No examination marks found for the selected student and term.
             </Card>
           ) : (
-            <Card className="p-6 border-white/10 space-y-6">
+            <Card className="p-6 border-border space-y-6">
               {/* Student Bio & Rank Badge Row */}
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-white/10 pb-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-6">
                 <div>
-                  <div className="text-2xl font-bold font-heading text-white">
+                  <div className="text-2xl font-semibold font-heading text-foreground">
                     {reportCardData.studentName}
                   </div>
-                  <div className="text-xs text-indigo-300 mt-1 flex items-center gap-2">
-                    <span>Admission No: <code className="font-mono bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20">{reportCardData.admissionNumber}</code></span>
+                  <div className="text-xs text-accent-blue mt-1 flex items-center gap-2">
+                    <span>Admission No: <code className="font-mono bg-accent-blue-soft px-1.5 py-0.5 rounded border border-accent-blue/20">{reportCardData.admissionNumber}</code></span>
                     <span>&bull;</span>
-                    <span>Class: <strong className="text-white">{reportCardData.className}</strong></span>
+                    <span>Class: <strong className="text-foreground">{reportCardData.className}</strong></span>
                   </div>
-                  <div className="text-xs text-slate-400 mt-1">
+                  <div className="text-xs text-muted-foreground mt-1">
                     Exam: <strong>{reportCardData.examName}</strong> ({reportCardData.termDisplayName || reportCardData.term})
                   </div>
                 </div>
@@ -371,13 +371,13 @@ export default function ReportCardTab({ classes = [] }) {
                     <div
                       className={`rounded-2xl border p-4 text-center ${rBadge.bg} backdrop-blur-md shadow-lg`}
                     >
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-300">
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-foreground-2">
                         CLASS RANKING
                       </div>
                       <div className="text-2xl font-extrabold font-heading mt-0.5">
                         {rBadge.text}
                       </div>
-                      <div className="text-[11px] text-slate-300">
+                      <div className="text-[11px] text-foreground-2">
                         out of {reportCardData.totalStudentsInClass} students
                       </div>
                     </div>
@@ -387,26 +387,26 @@ export default function ReportCardTab({ classes = [] }) {
 
               {/* Performance Cards Grid */}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
-                  <div className="text-xs text-slate-400 font-semibold">Total Score</div>
-                  <div className="text-2xl font-normal text-white mt-1">
+                <div className="rounded-xl border border-border bg-surface-2 p-4">
+                  <div className="text-xs text-muted-foreground font-semibold">Total Score</div>
+                  <div className="text-2xl font-normal text-foreground mt-1">
                     {reportCardData.totalMarks}{" "}
-                    <span className="text-xs text-slate-400 font-normal">
+                    <span className="text-xs text-muted-foreground font-normal">
                       / {reportCardData.maxPossibleMarks}
                     </span>
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
-                  <div className="text-xs text-slate-400 font-semibold">Percentage Average</div>
-                  <div className="text-2xl font-bold font-heading text-emerald-400 mt-1">
+                <div className="rounded-xl border border-border bg-surface-2 p-4">
+                  <div className="text-xs text-muted-foreground font-semibold">Percentage Average</div>
+                  <div className="text-2xl font-semibold font-heading text-success mt-1">
                     {reportCardData.averageScore}%
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
-                  <div className="text-xs text-slate-400 font-semibold">Overall Result</div>
-                  <div className="text-xl font-bold font-heading mt-1">
+                <div className="rounded-xl border border-border bg-surface-2 p-4">
+                  <div className="text-xs text-muted-foreground font-semibold">Overall Result</div>
+                  <div className="text-xl font-semibold font-heading mt-1">
                     {reportCardData.passedOverall ? (
                       <Badge variant="success" className="text-xs">PASSED ✓</Badge>
                     ) : (
@@ -415,9 +415,9 @@ export default function ReportCardTab({ classes = [] }) {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
-                  <div className="text-xs text-slate-400 font-semibold">Distinction Grade</div>
-                  <div className="text-2xl font-bold font-heading text-amber-400 mt-1">
+                <div className="rounded-xl border border-border bg-surface-2 p-4">
+                  <div className="text-xs text-muted-foreground font-semibold">Distinction Grade</div>
+                  <div className="text-2xl font-semibold font-heading text-warning mt-1">
                     Grade {reportCardData.overallGrade}
                   </div>
                 </div>
@@ -425,10 +425,10 @@ export default function ReportCardTab({ classes = [] }) {
 
               {/* Subject Breakdown Table */}
               <div className="space-y-2">
-                <h3 className="text-base font-bold font-heading text-white">
+                <h3 className="text-base font-semibold font-heading text-foreground">
                   Subject Performance & Letter Grades
                 </h3>
-                <div className="rounded-xl border border-white/10 overflow-hidden">
+                <div className="rounded-xl border border-border overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -442,22 +442,22 @@ export default function ReportCardTab({ classes = [] }) {
                     </TableHeader>
                     <TableBody>
                       {reportCardData.subjectMarks.map((sub, idx) => (
-                        <TableRow key={sub.subjectId} className="hover:bg-slate-800/30">
-                          <TableCell className="text-xs text-slate-400 font-mono">
+                        <TableRow key={sub.subjectId} className="hover:bg-surface-2">
+                          <TableCell className="text-xs text-muted-foreground font-mono">
                             {idx + 1}
                           </TableCell>
-                          <TableCell className="font-semibold text-white">
+                          <TableCell className="font-semibold text-foreground">
                             {sub.subjectName}{" "}
-                            <span className="text-xs text-slate-400 font-normal">
+                            <span className="text-xs text-muted-foreground font-normal">
                               ({sub.subjectCode})
                             </span>
                           </TableCell>
-                          <TableCell className="text-center text-xs text-slate-400">
+                          <TableCell className="text-center text-xs text-muted-foreground">
                             100
                           </TableCell>
                           <TableCell
-                            className={`text-center font-bold ${
-                              sub.score >= 50 ? "text-white" : "text-rose-400"
+                            className={`text-center font-semibold ${
+                              sub.score >= 50 ? "text-foreground" : "text-danger"
                             }`}
                           >
                             {sub.score}
@@ -475,12 +475,12 @@ export default function ReportCardTab({ classes = [] }) {
                                   ? "purple"
                                   : "destructive"
                               }
-                              className="font-bold"
+                              className="font-semibold"
                             >
                               Grade {sub.grade}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-xs text-slate-300">
+                          <TableCell className="text-xs text-foreground-2">
                             {sub.remarks || "—"}
                           </TableCell>
                         </TableRow>
@@ -491,11 +491,11 @@ export default function ReportCardTab({ classes = [] }) {
               </div>
 
               {/* Principal Remarks Card */}
-              <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+              <div className="rounded-xl border border-border bg-surface-2 p-4">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
                   Principal Remarks:
                 </div>
-                <div className="text-sm italic text-slate-200 leading-relaxed">
+                <div className="text-sm italic text-foreground-2 leading-relaxed">
                   "{reportCardData.principalRemarks}"
                 </div>
               </div>
@@ -510,21 +510,21 @@ export default function ReportCardTab({ classes = [] }) {
       {viewMode === "ANNUAL_SUMMARY" && (
         <div>
           {loading ? (
-            <Card className="p-12 text-center text-slate-400 border-white/10">
-              <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-indigo-400" />
+            <Card className="p-12 text-center text-muted-foreground border-border">
+              <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-accent-blue" />
               Loading 3-term annual progression trajectories...
             </Card>
           ) : !annualData ? (
-            <Card className="p-12 text-center text-slate-400 border-white/10">
+            <Card className="p-12 text-center text-muted-foreground border-border">
               No annual evaluation records available for the selected student.
             </Card>
           ) : (
-            <Card className="p-6 border-white/10 space-y-6">
+            <Card className="p-6 border-border space-y-6">
               <div>
-                <div className="text-xl font-bold font-heading text-white">
+                <div className="text-xl font-semibold font-heading text-foreground">
                   Annual 3-Term Academic Progression ({annualData.academicYear})
                 </div>
-                <div className="text-xs text-indigo-300 mt-1">
+                <div className="text-xs text-accent-blue mt-1">
                   Student: <strong>{annualData.studentName}</strong> ({annualData.admissionNumber}) &bull; Class: <strong>{annualData.className}</strong>
                 </div>
               </div>
@@ -532,100 +532,100 @@ export default function ReportCardTab({ classes = [] }) {
               {/* Term Comparison Cards */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 {/* Term 1 */}
-                <div className="rounded-2xl border border-sky-500/30 bg-sky-950/20 p-5 backdrop-blur-md">
-                  <div className="text-xs font-bold text-sky-400 mb-2 flex items-center gap-1.5">
+                <div className="rounded-2xl border border-accent-blue/30 bg-sky-950/20 p-5 backdrop-blur-md">
+                  <div className="text-xs font-semibold text-accent-blue mb-2 flex items-center gap-1.5">
                     <Calendar className="h-4 w-4" /> Term 1 Examination
                   </div>
                   {annualData.term1 && annualData.term1.available ? (
                     <div className="space-y-2">
-                      <div className="text-3xl font-extrabold font-heading text-white">
+                      <div className="text-3xl font-extrabold font-heading text-foreground">
                         {annualData.term1.averageScore}%
                       </div>
-                      <div className="text-xs font-semibold text-amber-300 flex items-center gap-1">
+                      <div className="text-xs font-semibold text-warning flex items-center gap-1">
                         <Trophy className="h-3.5 w-3.5" /> Rank: {annualData.term1.classRank} of {annualData.term1.totalStudents}
                       </div>
-                      <div className="text-[11px] text-slate-400">
+                      <div className="text-[11px] text-muted-foreground">
                         Total Marks: {annualData.term1.totalMarks} &bull; Grade: {annualData.term1.overallGrade}
                       </div>
                     </div>
                   ) : (
-                    <div className="text-xs text-slate-500 italic py-4">Evaluation Pending</div>
+                    <div className="text-xs text-muted-foreground italic py-4">Evaluation Pending</div>
                   )}
                 </div>
 
                 {/* Term 2 */}
-                <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-5 backdrop-blur-md">
-                  <div className="text-xs font-bold text-emerald-400 mb-2 flex items-center gap-1.5">
+                <div className="rounded-2xl border border-success/30 bg-emerald-950/20 p-5 backdrop-blur-md">
+                  <div className="text-xs font-semibold text-success mb-2 flex items-center gap-1.5">
                     <Calendar className="h-4 w-4" /> Term 2 Examination
                   </div>
                   {annualData.term2 && annualData.term2.available ? (
                     <div className="space-y-2">
-                      <div className="text-3xl font-extrabold font-heading text-white">
+                      <div className="text-3xl font-extrabold font-heading text-foreground">
                         {annualData.term2.averageScore}%
                       </div>
-                      <div className="text-xs font-semibold text-amber-300 flex items-center gap-1">
+                      <div className="text-xs font-semibold text-warning flex items-center gap-1">
                         <Trophy className="h-3.5 w-3.5" /> Rank: {annualData.term2.classRank} of {annualData.term2.totalStudents}
                       </div>
-                      <div className="text-[11px] text-slate-400">
+                      <div className="text-[11px] text-muted-foreground">
                         Total Marks: {annualData.term2.totalMarks} &bull; Grade: {annualData.term2.overallGrade}
                       </div>
                     </div>
                   ) : (
-                    <div className="text-xs text-slate-500 italic py-4">Evaluation Pending</div>
+                    <div className="text-xs text-muted-foreground italic py-4">Evaluation Pending</div>
                   )}
                 </div>
 
                 {/* Term 3 */}
-                <div className="rounded-2xl border border-amber-500/30 bg-amber-950/20 p-5 backdrop-blur-md">
-                  <div className="text-xs font-bold text-amber-400 mb-2 flex items-center gap-1.5">
+                <div className="rounded-2xl border border-warning/30 bg-amber-950/20 p-5 backdrop-blur-md">
+                  <div className="text-xs font-semibold text-warning mb-2 flex items-center gap-1.5">
                     <Calendar className="h-4 w-4" /> Term 3 / Final Examination
                   </div>
                   {annualData.term3 && annualData.term3.available ? (
                     <div className="space-y-2">
-                      <div className="text-3xl font-extrabold font-heading text-white">
+                      <div className="text-3xl font-extrabold font-heading text-foreground">
                         {annualData.term3.averageScore}%
                       </div>
-                      <div className="text-xs font-semibold text-amber-300 flex items-center gap-1">
+                      <div className="text-xs font-semibold text-warning flex items-center gap-1">
                         <Trophy className="h-3.5 w-3.5" /> Rank: {annualData.term3.classRank} of {annualData.term3.totalStudents}
                       </div>
-                      <div className="text-[11px] text-slate-400">
+                      <div className="text-[11px] text-muted-foreground">
                         Total Marks: {annualData.term3.totalMarks} &bull; Grade: {annualData.term3.overallGrade}
                       </div>
                     </div>
                   ) : (
-                    <div className="text-xs text-slate-500 italic py-4">Evaluation Scheduled</div>
+                    <div className="text-xs text-muted-foreground italic py-4">Evaluation Scheduled</div>
                   )}
                 </div>
               </div>
 
               {/* Annual Cumulative Standing */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 rounded-2xl border border-white/10 bg-slate-950/60 p-6 text-center">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 rounded-2xl border border-border bg-surface-2 p-6 text-center">
                 <div>
-                  <div className="text-xs text-slate-400 uppercase font-semibold">
+                  <div className="text-xs text-muted-foreground uppercase font-semibold">
                     Annual Cumulative Average
                   </div>
-                  <div className="text-3xl font-bold font-heading text-emerald-400 mt-1">
+                  <div className="text-3xl font-semibold font-heading text-success mt-1">
                     {annualData.annualAverage}%
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-xs text-slate-400 uppercase font-semibold">
+                  <div className="text-xs text-muted-foreground uppercase font-semibold">
                     Annual Class Standing
                   </div>
-                  <div className="text-3xl font-bold font-heading text-amber-400 mt-1">
+                  <div className="text-3xl font-semibold font-heading text-warning mt-1">
                     Rank {annualData.annualRank}{" "}
-                    <span className="text-sm font-normal text-slate-400">
+                    <span className="text-sm font-normal text-muted-foreground">
                       / {annualData.totalStudentsInClass}
                     </span>
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-xs text-slate-400 uppercase font-semibold">
+                  <div className="text-xs text-muted-foreground uppercase font-semibold">
                     Promotion Status
                   </div>
-                  <div className="text-2xl font-bold font-heading mt-1">
+                  <div className="text-2xl font-semibold font-heading mt-1">
                     {annualData.annualStatus === "PROMOTED" ? (
                       <Badge variant="success" className="text-sm px-3 py-1">PROMOTED ✓</Badge>
                     ) : (
@@ -645,40 +645,40 @@ export default function ReportCardTab({ classes = [] }) {
       {viewMode === "CLASS_LEADERBOARD" && (
         <div>
           {loading ? (
-            <Card className="p-12 text-center text-slate-400 border-white/10">
-              <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-indigo-400" />
+            <Card className="p-12 text-center text-muted-foreground border-border">
+              <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-accent-blue" />
               Loading class rankings and leaderboard metrics...
             </Card>
           ) : !leaderboardData ? (
-            <Card className="p-12 text-center text-slate-400 border-white/10">
+            <Card className="p-12 text-center text-muted-foreground border-border">
               No examination marks found for this class and term.
             </Card>
           ) : (
-            <Card className="p-6 border-white/10 space-y-6">
+            <Card className="p-6 border-border space-y-6">
               {/* Leaderboard Summary Banner */}
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-white/10 pb-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
                 <div>
-                  <h3 className="text-lg font-bold font-heading text-white flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-amber-400" />
+                  <h3 className="text-lg font-semibold font-heading text-foreground flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-warning" />
                     Class Leaderboard & Standings — {leaderboardData.className}
                   </h3>
-                  <div className="text-xs text-slate-400 mt-0.5">
+                  <div className="text-xs text-muted-foreground mt-0.5">
                     {leaderboardData.examName} &bull; {leaderboardData.termDisplayName || leaderboardData.term} ({leaderboardData.academicYear})
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-3 py-1.5 text-xs">
-                    Class Avg: <strong className="text-indigo-300">{leaderboardData.classAverage}%</strong>
+                  <div className="rounded-xl border border-accent-blue/30 bg-accent-blue-soft px-3 py-1.5 text-xs">
+                    Class Avg: <strong className="text-accent-blue">{leaderboardData.classAverage}%</strong>
                   </div>
-                  <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs">
-                    Pass Rate: <strong className="text-emerald-300">{leaderboardData.passRate}%</strong>
+                  <div className="rounded-xl border border-success/30 bg-success-soft px-3 py-1.5 text-xs">
+                    Pass Rate: <strong className="text-success">{leaderboardData.passRate}%</strong>
                   </div>
                 </div>
               </div>
 
               {/* Leaderboard Table */}
-              <div className="rounded-xl border border-white/10 overflow-hidden">
+              <div className="rounded-xl border border-border overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -696,7 +696,7 @@ export default function ReportCardTab({ classes = [] }) {
                     {leaderboardData.rankings.map((item) => {
                       const rBadge = getRankBadge(item.rank)
                       return (
-                        <TableRow key={item.studentId} className="hover:bg-slate-800/30">
+                        <TableRow key={item.studentId} className="hover:bg-surface-2">
                           {/* Rank Badge */}
                           <TableCell>
                             <Badge variant={rBadge.variant} className="font-extrabold">
@@ -705,37 +705,37 @@ export default function ReportCardTab({ classes = [] }) {
                           </TableCell>
 
                           {/* Name */}
-                          <TableCell className="font-semibold text-white">
+                          <TableCell className="font-semibold text-foreground">
                             {item.studentName}
                           </TableCell>
 
                           {/* Admission */}
                           <TableCell>
-                            <code className="text-xs font-mono text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                            <code className="text-xs font-mono text-accent-blue bg-accent-blue-soft px-2 py-0.5 rounded border border-accent-blue/20">
                               {item.admissionNumber}
                             </code>
                           </TableCell>
 
                           {/* Total */}
-                          <TableCell className="text-center font-semibold text-white">
+                          <TableCell className="text-center font-semibold text-foreground">
                             {item.totalMarks}
                           </TableCell>
 
                           {/* Average */}
                           <TableCell
-                            className={`text-center font-bold ${
+                            className={`text-center font-semibold ${
                               item.averageScore >= 75
-                                ? "text-emerald-400"
+                                ? "text-success"
                                 : item.averageScore >= 50
-                                ? "text-sky-400"
-                                : "text-rose-400"
+                                ? "text-accent-blue"
+                                : "text-danger"
                             }`}
                           >
                             {item.averageScore}%
                           </TableCell>
 
                           {/* Grade */}
-                          <TableCell className="text-center font-bold">
+                          <TableCell className="text-center font-semibold">
                             {item.overallGrade}
                           </TableCell>
 
@@ -758,7 +758,7 @@ export default function ReportCardTab({ classes = [] }) {
                                 setSelectedStudentId(item.studentId)
                                 setViewMode("TERM_REPORT")
                               }}
-                              className="text-xs text-indigo-300 hover:text-white gap-1"
+                              className="text-xs text-accent-blue hover:text-foreground gap-1"
                             >
                               Report <ArrowRight className="h-3 w-3" />
                             </Button>

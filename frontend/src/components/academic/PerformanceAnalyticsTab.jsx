@@ -130,22 +130,22 @@ export default function PerformanceAnalyticsTab({ classes = [] }) {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-bold font-heading text-white flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-emerald-400" />
+        <h2 className="text-xl font-semibold font-heading text-foreground flex items-center gap-2">
+          <TrendingUp className="h-5 w-5 text-success" />
           Academic Performance & Trend Analytics
         </h2>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-muted-foreground">
           Analyze class-level subject performance, pass rates, score spreads, and individual 3-term student progression.
         </p>
       </div>
 
       {/* Control Panel */}
-      <Card className="p-4 border-white/10">
+      <Card className="p-4 border-border">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Class */}
           <div className="min-w-0 space-y-1.5">
             <div className="flex h-5 items-center justify-between gap-2">
-              <label className="text-xs font-semibold text-slate-400">Class / Grade</label>
+              <label className="text-xs font-semibold text-muted-foreground">Class / Grade</label>
               {assignedClass && String(assignedClass.id) === String(selectedClassId) && (
                 <Badge variant="default" className="shrink-0 text-[9px] py-0 px-1.5">
                   Your Class
@@ -155,7 +155,7 @@ export default function PerformanceAnalyticsTab({ classes = [] }) {
             <select
               value={selectedClassId}
               onChange={(e) => setSelectedClassId(e.target.value)}
-              className="h-10 w-full min-w-0 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="h-10 w-full min-w-0 rounded-xl border border-border bg-surface-2 px-3 text-xs text-foreground-2 focus:outline-none focus:ring-1 focus:ring-ring"
             >
               {classes.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -167,11 +167,11 @@ export default function PerformanceAnalyticsTab({ classes = [] }) {
 
           {/* Academic Year */}
           <div className="min-w-0 space-y-1.5">
-            <label className="flex h-5 items-center text-xs font-semibold text-slate-400">Academic Year</label>
+            <label className="flex h-5 items-center text-xs font-semibold text-muted-foreground">Academic Year</label>
             <select
               value={academicYear}
               onChange={(e) => setAcademicYear(e.target.value)}
-              className="h-10 w-full min-w-0 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="h-10 w-full min-w-0 rounded-xl border border-border bg-surface-2 px-3 text-xs text-foreground-2 focus:outline-none focus:ring-1 focus:ring-ring"
             >
               <option value="2026">2026</option>
               <option value="2025">2025</option>
@@ -182,13 +182,13 @@ export default function PerformanceAnalyticsTab({ classes = [] }) {
           {/* Exam Selector */}
           {analyticsMode === "CLASS_METRICS" && (
             <div className="min-w-0 space-y-1.5 sm:col-span-2 lg:col-span-2">
-              <label className="flex h-5 items-center text-xs font-semibold text-slate-400">
+              <label className="flex h-5 items-center text-xs font-semibold text-muted-foreground">
                 Target Examination
               </label>
               <select
                 value={selectedExamId}
                 onChange={(e) => setSelectedExamId(e.target.value)}
-                className="h-10 w-full min-w-0 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="h-10 w-full min-w-0 rounded-xl border border-border bg-surface-2 px-3 text-xs text-foreground-2 focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 {exams.map((ex) => (
                   <option key={ex.id} value={ex.id}>
@@ -202,11 +202,11 @@ export default function PerformanceAnalyticsTab({ classes = [] }) {
           {/* Student Selector */}
           {analyticsMode === "STUDENT_TRAJECTORY" && (
             <div className="min-w-0 space-y-1.5 sm:col-span-2 lg:col-span-2">
-              <label className="flex h-5 items-center text-xs font-semibold text-slate-400">Select Student</label>
+              <label className="flex h-5 items-center text-xs font-semibold text-muted-foreground">Select Student</label>
               <select
                 value={selectedStudentId}
                 onChange={(e) => setSelectedStudentId(e.target.value)}
-                className="h-10 w-full min-w-0 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="h-10 w-full min-w-0 rounded-xl border border-border bg-surface-2 px-3 text-xs text-foreground-2 focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 {students.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -219,8 +219,8 @@ export default function PerformanceAnalyticsTab({ classes = [] }) {
         </div>
 
         {/* Mode Switcher */}
-        <div className="mt-4 space-y-1.5 border-t border-white/10 pt-4">
-          <label className="flex h-5 items-center text-xs font-semibold text-slate-400">Analytics Mode</label>
+        <div className="mt-4 space-y-1.5 border-t border-border pt-4">
+          <label className="flex h-5 items-center text-xs font-semibold text-muted-foreground">Analytics Mode</label>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="group" aria-label="Analytics Mode">
             <Button
               variant={analyticsMode === "CLASS_METRICS" ? "default" : "outline"}
@@ -259,66 +259,66 @@ export default function PerformanceAnalyticsTab({ classes = [] }) {
       {analyticsMode === "CLASS_METRICS" && (
         <div>
           {loading ? (
-            <Card className="p-12 text-center text-slate-400 border-white/10">
-              <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-indigo-400" />
+            <Card className="p-12 text-center text-muted-foreground border-border">
+              <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-accent-blue" />
               Analyzing class cohort metrics and subject pass rates...
             </Card>
           ) : !classAnalytics ? (
-            <Card className="p-12 text-center text-slate-400 border-white/10">
+            <Card className="p-12 text-center text-muted-foreground border-border">
               No evaluation data found for the selected examination.
             </Card>
           ) : (
-            <Card className="p-6 border-white/10 space-y-6">
+            <Card className="p-6 border-border space-y-6">
               <div>
-                <div className="text-xl font-bold font-heading text-white">
+                <div className="text-xl font-semibold font-heading text-foreground">
                   Class Academic Performance — {classAnalytics.className}
                 </div>
-                <div className="text-xs text-slate-400 mt-0.5">
+                <div className="text-xs text-muted-foreground mt-0.5">
                   {classAnalytics.examName} &bull; {classAnalytics.termDisplayName || classAnalytics.term} ({classAnalytics.academicYear})
                 </div>
               </div>
 
               {/* Class Summary Metric Cards */}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
-                  <div className="text-xs text-slate-400 font-semibold">Class Average Score</div>
-                  <div className="text-2xl font-normal text-white mt-1">
+                <div className="rounded-xl border border-border bg-surface-2 p-4">
+                  <div className="text-xs text-muted-foreground font-semibold">Class Average Score</div>
+                  <div className="text-2xl font-normal text-foreground mt-1">
                     {classAnalytics.overallClassAverage}%
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
-                  <div className="text-xs text-slate-400 font-semibold">Overall Pass Rate</div>
-                  <div className="text-2xl font-normal text-white mt-1">
+                <div className="rounded-xl border border-border bg-surface-2 p-4">
+                  <div className="text-xs text-muted-foreground font-semibold">Overall Pass Rate</div>
+                  <div className="text-2xl font-normal text-foreground mt-1">
                     {classAnalytics.overallPassRate}%
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
-                  <div className="text-xs text-slate-400 font-semibold">Highest Average</div>
-                  <div className="text-2xl font-normal text-white mt-1">
+                <div className="rounded-xl border border-border bg-surface-2 p-4">
+                  <div className="text-xs text-muted-foreground font-semibold">Highest Average</div>
+                  <div className="text-2xl font-normal text-foreground mt-1">
                     {classAnalytics.highestAverage}%
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
-                  <div className="text-xs text-slate-400 font-semibold">Lowest Average</div>
-                  <div className="text-2xl font-normal text-white mt-1">
+                <div className="rounded-xl border border-border bg-surface-2 p-4">
+                  <div className="text-xs text-muted-foreground font-semibold">Lowest Average</div>
+                  <div className="text-2xl font-normal text-foreground mt-1">
                     {classAnalytics.lowestAverage}%
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
-                  <div className="text-xs text-slate-400 font-semibold">Cohort Size</div>
-                  <div className="text-2xl font-normal text-white mt-1">
+                <div className="rounded-xl border border-border bg-surface-2 p-4">
+                  <div className="text-xs text-muted-foreground font-semibold">Cohort Size</div>
+                  <div className="text-2xl font-normal text-foreground mt-1">
                     {classAnalytics.totalStudents} Students
                   </div>
                 </div>
               </div>
 
               {/* Overall Grade Distribution Bar */}
-              <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-5">
-                <h4 className="text-sm font-bold font-heading text-white mb-4">
+              <div className="rounded-2xl border border-border bg-surface-2 p-5">
+                <h4 className="text-sm font-semibold font-heading text-foreground mb-4">
                   Overall Class Grade Distribution
                 </h4>
 
@@ -334,35 +334,35 @@ export default function PerformanceAnalyticsTab({ classes = [] }) {
                         key={g}
                         className={`rounded-xl border p-3.5 backdrop-blur-md ${
                           g === "A"
-                            ? "bg-emerald-500/10 border-emerald-500/30"
+                            ? "bg-success-soft border-success/30"
                             : g === "B"
-                            ? "bg-sky-500/10 border-sky-500/30"
+                            ? "bg-accent-blue-soft border-accent-blue/30"
                             : g === "C"
-                            ? "bg-amber-500/10 border-amber-500/30"
+                            ? "bg-warning-soft border-warning/30"
                             : g === "S"
                             ? "bg-purple-500/10 border-purple-500/30"
-                            : "bg-rose-500/10 border-rose-500/30"
+                            : "bg-danger-soft border-danger/30"
                         }`}
                       >
                         <div
-                          className={`text-sm font-bold ${
+                          className={`text-sm font-semibold ${
                             g === "A"
-                              ? "text-emerald-400"
+                              ? "text-success"
                               : g === "B"
-                              ? "text-sky-400"
+                              ? "text-accent-blue"
                               : g === "C"
-                              ? "text-amber-400"
+                              ? "text-warning"
                               : g === "S"
                               ? "text-purple-400"
-                              : "text-rose-400"
+                              : "text-danger"
                           }`}
                         >
                           Grade {g}
                         </div>
-                        <div className="text-2xl font-extrabold font-heading text-white my-1">
+                        <div className="text-2xl font-extrabold font-heading text-foreground my-1">
                           {count}
                         </div>
-                        <div className="text-[11px] text-slate-400">{pct}% cohort</div>
+                        <div className="text-[11px] text-muted-foreground">{pct}% cohort</div>
                       </div>
                     )
                   })}
@@ -371,10 +371,10 @@ export default function PerformanceAnalyticsTab({ classes = [] }) {
 
               {/* Curriculum Subject Metrics Table */}
               <div className="space-y-2">
-                <h4 className="text-sm font-bold font-heading text-white">
+                <h4 className="text-sm font-semibold font-heading text-foreground">
                   Curriculum Subject Performance Metrics
                 </h4>
-                <div className="rounded-xl border border-white/10 overflow-hidden">
+                <div className="rounded-xl border border-border overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -391,41 +391,41 @@ export default function PerformanceAnalyticsTab({ classes = [] }) {
                     </TableHeader>
                     <TableBody>
                       {classAnalytics.subjectPerformances.map((sp) => (
-                        <TableRow key={sp.subjectId} className="hover:bg-slate-800/30">
-                          <TableCell className="font-semibold text-white">
+                        <TableRow key={sp.subjectId} className="hover:bg-surface-2">
+                          <TableCell className="font-semibold text-foreground">
                             {sp.subjectName}{" "}
-                            <span className="text-xs text-slate-400 font-normal">
+                            <span className="text-xs text-muted-foreground font-normal">
                               ({sp.subjectCode})
                             </span>
                           </TableCell>
-                          <TableCell className="text-center font-bold text-indigo-300">
+                          <TableCell className="text-center font-semibold text-accent-blue">
                             {sp.averageScore}%
                           </TableCell>
                           <TableCell className="text-center">
                             <Badge
                               variant={sp.passRate >= 80 ? "success" : "warning"}
-                              className="text-xs font-bold"
+                              className="text-xs font-semibold"
                             >
                               {sp.passRate}%
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-center text-xs text-slate-300">
-                            <span className="text-emerald-400 font-bold">{sp.highestScore}</span> /{" "}
-                            <span className="text-rose-400 font-bold">{sp.lowestScore}</span>
+                          <TableCell className="text-center text-xs text-foreground-2">
+                            <span className="text-success font-semibold">{sp.highestScore}</span> /{" "}
+                            <span className="text-danger font-semibold">{sp.lowestScore}</span>
                           </TableCell>
-                          <TableCell className="text-center font-bold text-emerald-400">
+                          <TableCell className="text-center font-semibold text-success">
                             {sp.gradeDistribution?.A || 0}
                           </TableCell>
-                          <TableCell className="text-center font-bold text-sky-400">
+                          <TableCell className="text-center font-semibold text-accent-blue">
                             {sp.gradeDistribution?.B || 0}
                           </TableCell>
-                          <TableCell className="text-center font-bold text-amber-400">
+                          <TableCell className="text-center font-semibold text-warning">
                             {sp.gradeDistribution?.C || 0}
                           </TableCell>
-                          <TableCell className="text-center font-bold text-purple-400">
+                          <TableCell className="text-center font-semibold text-purple-400">
                             {sp.gradeDistribution?.S || 0}
                           </TableCell>
-                          <TableCell className="text-center font-bold text-rose-400">
+                          <TableCell className="text-center font-semibold text-danger">
                             {sp.gradeDistribution?.F || 0}
                           </TableCell>
                         </TableRow>
@@ -445,22 +445,22 @@ export default function PerformanceAnalyticsTab({ classes = [] }) {
       {analyticsMode === "STUDENT_TRAJECTORY" && (
         <div>
           {loading ? (
-            <Card className="p-12 text-center text-slate-400 border-white/10">
-              <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-indigo-400" />
+            <Card className="p-12 text-center text-muted-foreground border-border">
+              <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-accent-blue" />
               Loading student progression trends...
             </Card>
           ) : !studentTrend ? (
-            <Card className="p-12 text-center text-slate-400 border-white/10">
+            <Card className="p-12 text-center text-muted-foreground border-border">
               No historical evaluation records found for the selected student.
             </Card>
           ) : (
-            <Card className="p-6 border-white/10 space-y-6">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-white/10 pb-4">
+            <Card className="p-6 border-border space-y-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
                 <div>
-                  <div className="text-xl font-bold font-heading text-white">
+                  <div className="text-xl font-semibold font-heading text-foreground">
                     Student Progress Trajectory: {studentTrend.studentName}
                   </div>
-                  <div className="text-xs text-indigo-300 mt-1">
+                  <div className="text-xs text-accent-blue mt-1">
                     Admission No: <code>{studentTrend.admissionNumber}</code> &bull; Class: <strong>{studentTrend.currentClassName}</strong>
                   </div>
                 </div>
@@ -473,7 +473,7 @@ export default function PerformanceAnalyticsTab({ classes = [] }) {
                       ? "destructive"
                       : "info"
                   }
-                  className="text-xs font-bold px-3 py-1 self-start sm:self-auto"
+                  className="text-xs font-semibold px-3 py-1 self-start sm:self-auto"
                 >
                   {studentTrend.progressTrajectory === "IMPROVING"
                     ? "📈 Improving Trend"
@@ -485,20 +485,20 @@ export default function PerformanceAnalyticsTab({ classes = [] }) {
 
               {/* Strengths & Focus Areas */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-4">
-                  <div className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 mb-1">
+                <div className="rounded-2xl border border-success/30 bg-emerald-950/20 p-4">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-success flex items-center gap-1.5 mb-1">
                     <Star className="h-4 w-4" /> Strongest Subject
                   </div>
-                  <div className="text-lg font-bold text-white font-heading">
+                  <div className="text-lg font-semibold text-foreground font-heading">
                     {studentTrend.strongestSubject}
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-amber-500/30 bg-amber-950/20 p-4">
-                  <div className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5 mb-1">
+                <div className="rounded-2xl border border-warning/30 bg-amber-950/20 p-4">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-warning flex items-center gap-1.5 mb-1">
                     <AlertTriangle className="h-4 w-4" /> Focus Recommended Subject
                   </div>
-                  <div className="text-lg font-bold text-white font-heading">
+                  <div className="text-lg font-semibold text-foreground font-heading">
                     {studentTrend.weakestSubject}
                   </div>
                 </div>
@@ -506,7 +506,7 @@ export default function PerformanceAnalyticsTab({ classes = [] }) {
 
               {/* Term-by-Term Score & Rank History */}
               <div className="space-y-3">
-                <h4 className="text-sm font-bold font-heading text-white">
+                <h4 className="text-sm font-semibold font-heading text-foreground">
                   Term-by-Term Score & Rank Trajectory
                 </h4>
 
@@ -514,18 +514,18 @@ export default function PerformanceAnalyticsTab({ classes = [] }) {
                   {studentTrend.termTrends.map((tt) => (
                     <div
                       key={tt.examId}
-                      className="rounded-2xl border border-white/10 bg-slate-950/60 p-5 backdrop-blur-md"
+                      className="rounded-2xl border border-border bg-surface-2 p-5 backdrop-blur-md"
                     >
-                      <div className="text-xs font-bold text-indigo-300 mb-2">
+                      <div className="text-xs font-semibold text-accent-blue mb-2">
                         {tt.termDisplayName || tt.term} ({tt.academicYear})
                       </div>
-                      <div className="text-3xl font-extrabold font-heading text-white">
+                      <div className="text-3xl font-extrabold font-heading text-foreground">
                         {tt.averageScore}%
                       </div>
-                      <div className="text-xs font-semibold text-amber-400 mt-2 flex items-center gap-1">
+                      <div className="text-xs font-semibold text-warning mt-2 flex items-center gap-1">
                         <Trophy className="h-3.5 w-3.5" /> Rank {tt.classRank} of {tt.totalStudentsInClass}
                       </div>
-                      <div className="text-[11px] text-slate-400 mt-1">
+                      <div className="text-[11px] text-muted-foreground mt-1">
                         Total: {tt.totalMarks} &bull; Grade: {tt.overallGrade}
                       </div>
                     </div>

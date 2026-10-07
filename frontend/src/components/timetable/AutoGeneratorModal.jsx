@@ -72,7 +72,7 @@ export function AutoGeneratorModal({
           </div>
 
           {result && (
-            <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-700 dark:text-emerald-300">
+            <div className="flex items-center gap-2 rounded-lg bg-success-soft border border-success/20 p-3 text-xs text-emerald-700 dark:text-emerald-300">
               <CheckCircle2 className="h-5 w-5 shrink-0" />
               <div>
                 <div className="font-semibold">Successfully Generated!</div>
