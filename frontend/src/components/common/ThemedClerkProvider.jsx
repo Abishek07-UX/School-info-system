@@ -4,13 +4,13 @@ import { useTheme } from '@/context/ThemeContext'
 // Clerk renders its own sign-in modal, so give it the same palette as the active theme.
 const clerkVariables = {
   light: {
-    colorPrimary: '#16181d',
-    colorBackground: '#ffffff',
-    colorText: '#111318',
-    colorTextSecondary: '#646973',
-    colorInputBackground: '#ffffff',
-    colorInputText: '#111318',
-    colorNeutral: '#111318',
+    colorPrimary: '#1b1f27',
+    colorBackground: '#f8f9fb',
+    colorText: '#14171d',
+    colorTextSecondary: '#5c6370',
+    colorInputBackground: '#f8f9fb',
+    colorInputText: '#14171d',
+    colorNeutral: '#14171d',
     colorDanger: '#dc2626',
     colorSuccess: '#15803d',
     colorWarning: '#b45309',

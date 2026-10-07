@@ -24,14 +24,14 @@ export const PERIODS = [
 
 // Light/dark pairs so subject colours stay readable in both themes
 const SUBJECT_COLORS = [
-  'bg-sky-50 border-sky-200 text-sky-950 dark:bg-sky-400/10 dark:border-sky-400/25 dark:text-sky-100',
-  'bg-emerald-50 border-emerald-200 text-emerald-950 dark:bg-emerald-400/10 dark:border-emerald-400/25 dark:text-emerald-100',
-  'bg-amber-50 border-amber-200 text-amber-950 dark:bg-amber-400/10 dark:border-amber-400/25 dark:text-amber-100',
-  'bg-violet-50 border-violet-200 text-violet-950 dark:bg-violet-400/10 dark:border-violet-400/25 dark:text-violet-100',
-  'bg-rose-50 border-rose-200 text-rose-950 dark:bg-rose-400/10 dark:border-rose-400/25 dark:text-rose-100',
-  'bg-cyan-50 border-cyan-200 text-cyan-950 dark:bg-cyan-400/10 dark:border-cyan-400/25 dark:text-cyan-100',
-  'bg-indigo-50 border-indigo-200 text-indigo-950 dark:bg-indigo-400/10 dark:border-indigo-400/25 dark:text-indigo-100',
-  'bg-orange-50 border-orange-200 text-orange-950 dark:bg-orange-400/10 dark:border-orange-400/25 dark:text-orange-100',
+  'bg-sky-100/70 border-sky-200/90 text-sky-950 dark:bg-sky-400/10 dark:border-sky-400/25 dark:text-sky-100',
+  'bg-emerald-100/70 border-emerald-200/90 text-emerald-950 dark:bg-emerald-400/10 dark:border-emerald-400/25 dark:text-emerald-100',
+  'bg-amber-100/70 border-amber-200/90 text-amber-950 dark:bg-amber-400/10 dark:border-amber-400/25 dark:text-amber-100',
+  'bg-violet-100/70 border-violet-200/90 text-violet-950 dark:bg-violet-400/10 dark:border-violet-400/25 dark:text-violet-100',
+  'bg-rose-100/70 border-rose-200/90 text-rose-950 dark:bg-rose-400/10 dark:border-rose-400/25 dark:text-rose-100',
+  'bg-cyan-100/70 border-cyan-200/90 text-cyan-950 dark:bg-cyan-400/10 dark:border-cyan-400/25 dark:text-cyan-100',
+  'bg-indigo-100/70 border-indigo-200/90 text-indigo-950 dark:bg-indigo-400/10 dark:border-indigo-400/25 dark:text-indigo-100',
+  'bg-orange-100/70 border-orange-200/90 text-orange-950 dark:bg-orange-400/10 dark:border-orange-400/25 dark:text-orange-100',
 ]
 
 export function getSubjectColor(subjectName = '') {
