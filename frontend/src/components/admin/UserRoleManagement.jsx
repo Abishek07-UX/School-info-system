@@ -396,7 +396,7 @@ export default function UserRoleManagement() {
                         >
                           <span
                             className={cn(
-                              "absolute left-0 top-0.5 h-3 w-3 rounded-full bg-white shadow-sm transition-transform duration-200 ease-out",
+                              "absolute left-0 top-0.5 h-3 w-3 rounded-full bg-switch-knob shadow-sm transition-transform duration-200 ease-out",
                               isActive ? "translate-x-3.5" : "translate-x-0.5"
                             )}
                           />

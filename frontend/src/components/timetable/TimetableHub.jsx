@@ -1001,8 +1001,8 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                     onClick={() => setOnlyMyDuties(!onlyMyDuties)}
                     className={`h-8 text-xs gap-1.5 font-medium transition-all shadow-card ${
                       onlyMyDuties
-                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white font-semibold ring-2 ring-emerald-500/50'
-                        : 'border border-success/40 text-emerald-600 dark:text-emerald-400 bg-success-soft hover:bg-success-soft'
+                        ? 'bg-success hover:bg-success/90 text-on-accent font-semibold ring-2 ring-success/50'
+                        : 'border border-success/40 text-success bg-success-soft hover:bg-success-soft'
                     }`}
                   >
                     <CalendarCheck className="h-3.5 w-3.5" />
@@ -1011,8 +1011,8 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                       variant="secondary"
                       className={`ml-0.5 text-[10px] px-1.5 py-0 h-4 ${
                         onlyMyDuties
-                          ? 'bg-white text-emerald-800 font-semibold'
-                          : 'bg-success-soft text-emerald-700 dark:text-emerald-300 font-semibold'
+                          ? 'bg-surface text-success font-semibold'
+                          : 'bg-success-soft text-success font-semibold'
                       }`}
                     >
                       {teacherDuties.length}
@@ -1147,12 +1147,12 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
 
                   {/* Scope Summary Badge */}
                   {examGradeFilter === 'SCHOOL_WIDE' ? (
-                    <Badge variant="outline" className="border-warning/40 bg-warning-soft text-amber-600 dark:text-amber-400 text-[11px] gap-1 py-1 font-medium">
+                    <Badge variant="outline" className="border-warning/40 bg-warning-soft text-warning text-[11px] gap-1 py-1 font-medium">
                       <Sparkles className="h-3 w-3" />
                       School-Wide Date Sheets ({displayedExamSchedules.length} papers)
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="border-accent-blue/30 bg-accent-blue-soft text-blue-600 dark:text-blue-400 text-[11px] gap-1 py-1 font-medium">
+                    <Badge variant="outline" className="border-accent-blue/30 bg-accent-blue-soft text-accent-blue text-[11px] gap-1 py-1 font-medium">
                       <GraduationCap className="h-3 w-3" />
                       {examGradeFilter === 'ALL' ? 'All Grades' : `Grade ${examGradeFilter}`}
                       {examTermFilter !== 'ALL' ? ` • ${examTermFilter.replace('TERM_', 'Term ')}` : ''}
@@ -1167,7 +1167,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                   {isTeacher && myDutiesInCurrentExam.length > 0 && (
                     <Badge
                       variant="outline"
-                      className="border-success/40 bg-success-soft text-emerald-600 dark:text-emerald-400 text-xs gap-1.5 py-1 font-medium"
+                      className="border-success/40 bg-success-soft text-success text-xs gap-1.5 py-1 font-medium"
                     >
                       <CalendarCheck className="h-3.5 w-3.5" />
                       You have {myDutiesInCurrentExam.length} assigned dut{myDutiesInCurrentExam.length === 1 ? 'y' : 'ies'} in this date sheet
@@ -1196,7 +1196,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
               /* When in onlyMyDuties mode: Title & Back toggle */
               <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-border">
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-success-soft text-emerald-600 dark:text-emerald-400 border border-success/30 text-xs py-0.5 px-2 font-medium flex items-center gap-1.5">
+                  <Badge className="bg-success-soft text-success border border-success/30 text-xs py-0.5 px-2 font-medium flex items-center gap-1.5">
                     <CalendarCheck className="h-3.5 w-3.5" />
                     Personal Invigilation View: {teacherDuties.length} session{teacherDuties.length === 1 ? '' : 's'} assigned
                   </Badge>
@@ -1272,7 +1272,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                       <CardContent className="p-4 space-y-2.5">
                         <div className="flex items-center justify-between gap-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <Badge className={isChief ? "bg-emerald-600 text-white text-xs font-semibold" : "bg-blue-600 text-white text-xs"}>
+                            <Badge className={isChief ? "bg-success text-on-accent text-xs font-semibold" : "bg-accent-blue text-on-accent text-xs"}>
                               {isChief ? "Chief Invigilator" : "Assistant Invigilator"}
                             </Badge>
                             <Badge variant="outline" className="text-[10px]">
@@ -1284,7 +1284,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                               </Badge>
                             )}
                           </div>
-                          <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                          <span className="text-xs font-semibold text-success flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
                             {formatDate(duty.examDate, { weekday: "short", day: "numeric", month: "short" })}
                           </span>
@@ -1307,7 +1307,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                         <div className="rounded-md bg-muted/40 p-2.5 text-xs space-y-1.5 border border-border">
                           <div className="flex items-center justify-between text-muted-foreground">
                             <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                              <Clock className="h-3 w-3 text-success" />
                               Time:
                             </span>
                             <strong className="text-foreground">{formatTime(duty.startTime)}–{formatTime(duty.endTime)}</strong>

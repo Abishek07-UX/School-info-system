@@ -15,7 +15,7 @@ export function RegistrationSteps({ current = 0, className }) {
             <span
               className={cn(
                 "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold transition-colors",
-                done && "border-success bg-success text-white dark:text-background",
+                done && "border-success bg-success text-on-accent",
                 active && "border-accent-blue bg-accent-blue-soft text-accent-blue",
                 !done && !active && "border-border-strong text-muted-foreground"
               )}

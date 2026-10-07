@@ -31,7 +31,7 @@ function MobileDrawer({ open, onOpenChange }) {
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] data-[state=open]:animate-fade-in md:hidden" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-overlay backdrop-blur-[2px] data-[state=open]:animate-fade-in md:hidden" />
         <DialogPrimitive.Content
           ref={panelRef}
           className="fixed inset-y-0 left-0 z-50 w-[280px] max-w-[85vw] border-r border-border bg-background shadow-pop focus:outline-none md:hidden"

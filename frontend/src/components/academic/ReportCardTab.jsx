@@ -177,11 +177,11 @@ export default function ReportCardTab({ classes = [] }) {
   // Medal colours only for the podium; everyone else gets a plain rank
   const rankStyle = (rank) =>
     rank === 1
-      ? "bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-400/15 dark:text-amber-200 dark:border-amber-400/30"
+      ? "bg-medal-gold-soft text-medal-gold border-medal-gold-border"
       : rank === 2
-        ? "bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-400/15 dark:text-slate-200 dark:border-slate-400/30"
+        ? "bg-medal-silver-soft text-medal-silver border-medal-silver-border"
         : rank === 3
-          ? "bg-orange-100 text-orange-900 border-orange-300 dark:bg-orange-400/15 dark:text-orange-200 dark:border-orange-400/30"
+          ? "bg-medal-bronze-soft text-medal-bronze border-medal-bronze-border"
           : "bg-surface-2 text-foreground-2 border-border"
   const ordinal = (n) => {
     const s = ["th", "st", "nd", "rd"]

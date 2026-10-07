@@ -588,7 +588,7 @@ export default function ExamTimetableModal({
             )}
 
             {/* Room Allocation Info Banner */}
-            <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-success-soft border border-success/20 text-emerald-600 dark:text-emerald-400 text-xs">
+            <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-success-soft border border-success/20 text-success text-xs">
               <Building2 className="h-4 w-4 shrink-0 mt-0.5" />
               <div>
                 <strong className="font-semibold">Respective Classroom Allocation:</strong> Exams will be held simultaneously in each class&apos;s assigned classroom:{" "}
@@ -631,9 +631,9 @@ export default function ExamTimetableModal({
                   size="sm"
                   onClick={handleAutoDistributeDates}
                   disabled={!startDate || !endDate}
-                  className="h-7 text-xs gap-1.5 text-indigo-600 dark:text-indigo-400 border border-accent-blue/30 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+                  className="h-7 text-xs gap-1.5 text-accent-blue border border-accent-blue/30 hover:bg-accent-blue-soft"
                 >
-                  <Sparkles className="h-3.5 w-3.5 text-indigo-500 animate-pulse" />
+                  <Sparkles className="h-3.5 w-3.5 text-accent-blue animate-pulse" />
                   Auto-Distribute Dates
                 </Button>
               </div>
@@ -770,7 +770,7 @@ export default function ExamTimetableModal({
                                     variant="outline"
                                     className={`text-[10px] px-1.5 py-0 h-5 font-medium shrink-0 ${
                                       isWeekend
-                                        ? "border-warning/40 bg-warning-soft text-amber-600 dark:text-amber-400 font-semibold"
+                                        ? "border-warning/40 bg-warning-soft text-warning font-semibold"
                                         : "text-muted-foreground border-border"
                                     }`}
                                   >

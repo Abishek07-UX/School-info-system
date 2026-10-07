@@ -45,14 +45,14 @@ export function PrintableTimetable({ timetableData, isTeacherView = false, onClo
       </div>
 
       {/* Printable Sheet */}
-      <div className="print-surface max-w-5xl mx-auto rounded-xl border border-border bg-white text-black p-8 shadow-md print:border-none print:shadow-none print:p-0">
+      <div className="print-surface max-w-5xl mx-auto rounded-xl border border-border bg-print-paper text-print-ink p-8 shadow-md print:border-none print:shadow-none print:p-0">
         {/* Header */}
-        <div className="text-center pb-4 border-b-2 border-black/80 mb-6">
+        <div className="text-center pb-4 border-b-2 border-print-rule/80 mb-6">
           <h1 className="text-2xl font-bold uppercase tracking-wider">{SCHOOL_NAME}</h1>
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-600 mt-0.5">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-print-ink-2 mt-0.5">
             ACADEMIC YEAR {timetableData?.academicYear || 2026} • OFFICIAL MASTER TIMETABLE
           </h2>
-          <div className="mt-2 flex justify-center items-center gap-6 text-xs text-neutral-700 font-medium">
+          <div className="mt-2 flex justify-center items-center gap-6 text-xs text-print-ink-2 font-medium">
             {isTeacherView ? (
               <>
                 <span>FACULTY MEMBER: <strong>{timetableData?.teacherName}</strong></span>
@@ -70,23 +70,23 @@ export function PrintableTimetable({ timetableData, isTeacherView = false, onClo
         </div>
 
         {/* Timetable Table */}
-        <table className="w-full border-collapse border border-black text-center text-xs">
+        <table className="w-full border-collapse border border-print-rule text-center text-xs">
           <thead>
-            <tr className="bg-neutral-100">
-              <th className="border border-black p-2 text-left font-bold w-24">Day</th>
+            <tr className="bg-print-fill-2">
+              <th className="border border-print-rule p-2 text-left font-bold w-24">Day</th>
               {PERIODS.slice(0, 4).map((p) => (
-                <th key={p.number} className="border border-black p-1.5 font-bold">
+                <th key={p.number} className="border border-print-rule p-1.5 font-bold">
                   <div>{p.label}</div>
-                  <div className="text-[9px] font-normal text-neutral-500">{p.time}</div>
+                  <div className="text-[9px] font-normal text-print-muted">{p.time}</div>
                 </th>
               ))}
-              <th className="border border-black p-1 font-bold bg-neutral-200 w-16 text-[10px]">
+              <th className="border border-print-rule p-1 font-bold bg-print-fill-3 w-16 text-[10px]">
                 INTERVAL<br /><span className="text-[8px] font-normal">10:30-10:50</span>
               </th>
               {PERIODS.slice(4).map((p) => (
-                <th key={p.number} className="border border-black p-1.5 font-bold">
+                <th key={p.number} className="border border-print-rule p-1.5 font-bold">
                   <div>{p.label}</div>
-                  <div className="text-[9px] font-normal text-neutral-500">{p.time}</div>
+                  <div className="text-[9px] font-normal text-print-muted">{p.time}</div>
                 </th>
               ))}
             </tr>
@@ -97,7 +97,7 @@ export function PrintableTimetable({ timetableData, isTeacherView = false, onClo
 
               return (
                 <tr key={day.key} className="h-16">
-                  <td className="border border-black p-2 text-left font-bold bg-neutral-50">
+                  <td className="border border-print-rule p-2 text-left font-bold bg-print-fill">
                     {day.label}
                   </td>
 
@@ -105,30 +105,30 @@ export function PrintableTimetable({ timetableData, isTeacherView = false, onClo
                   {PERIODS.slice(0, 4).map((p) => {
                     const slot = daySlots[p.number]
                     return (
-                      <td key={p.number} className="border border-black p-1 align-middle">
+                      <td key={p.number} className="border border-print-rule p-1 align-middle">
                         {slot ? (
                           <div>
                             <div className="font-bold text-[11px] leading-tight">
                               {isTeacherView ? slot.className : slot.subjectName}
                             </div>
-                            <div className="text-[9px] text-neutral-600 mt-0.5">
+                            <div className="text-[9px] text-print-ink-2 mt-0.5">
                               {isTeacherView ? slot.subjectName : slot.teacherName}
                             </div>
                             {isTeacherView && slot.roomCode && (
-                              <div className="text-[8px] font-mono text-neutral-500">
+                              <div className="text-[8px] font-mono text-print-muted">
                                 {slot.roomCode}
                               </div>
                             )}
                           </div>
                         ) : (
-                          <span className="text-neutral-400 text-[10px]">—</span>
+                          <span className="text-print-faint text-[10px]">—</span>
                         )}
                       </td>
                     )
                   })}
 
                   {/* Interval */}
-                  <td className="border border-black p-0 bg-neutral-100 text-[9px] font-bold text-neutral-500">
+                  <td className="border border-print-rule p-0 bg-print-fill-2 text-[9px] font-bold text-print-muted">
                     RECESS
                   </td>
 
@@ -136,23 +136,23 @@ export function PrintableTimetable({ timetableData, isTeacherView = false, onClo
                   {PERIODS.slice(4).map((p) => {
                     const slot = daySlots[p.number]
                     return (
-                      <td key={p.number} className="border border-black p-1 align-middle">
+                      <td key={p.number} className="border border-print-rule p-1 align-middle">
                         {slot ? (
                           <div>
                             <div className="font-bold text-[11px] leading-tight">
                               {isTeacherView ? slot.className : slot.subjectName}
                             </div>
-                            <div className="text-[9px] text-neutral-600 mt-0.5">
+                            <div className="text-[9px] text-print-ink-2 mt-0.5">
                               {isTeacherView ? slot.subjectName : slot.teacherName}
                             </div>
                             {isTeacherView && slot.roomCode && (
-                              <div className="text-[8px] font-mono text-neutral-500">
+                              <div className="text-[8px] font-mono text-print-muted">
                                 {slot.roomCode}
                               </div>
                             )}
                           </div>
                         ) : (
-                          <span className="text-neutral-400 text-[10px]">—</span>
+                          <span className="text-print-faint text-[10px]">—</span>
                         )}
                       </td>
                     )
@@ -164,7 +164,7 @@ export function PrintableTimetable({ timetableData, isTeacherView = false, onClo
         </table>
 
         {/* Footer */}
-        <div className="mt-8 pt-4 border-t border-neutral-300 flex justify-between items-center text-[10px] text-neutral-500">
+        <div className="mt-8 pt-4 border-t border-print-rule-mid flex justify-between items-center text-[10px] text-print-muted">
           <div>Generated by {PORTAL_NAME}</div>
           <div className="flex gap-12">
             <div>Principal's Signature: __________________</div>

@@ -70,7 +70,7 @@ export function ConfirmProvider({ children }) {
             <Button
               autoFocus
               onClick={() => settle(true)}
-              className={cn(danger && "bg-danger text-white hover:bg-danger/90 dark:text-background")}
+              className={cn(danger && "bg-danger text-on-accent hover:bg-danger/90")}
             >
               {request?.confirmLabel}
             </Button>

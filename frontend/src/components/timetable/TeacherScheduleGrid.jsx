@@ -76,7 +76,7 @@ function TeacherSlotCell({ slot }) {
     >
       <div className="min-w-0">
         <div className="flex items-center justify-between gap-1">
-          <span className="truncate rounded-[5px] bg-surface/70 px-1.5 text-[10px] font-semibold dark:bg-black/25">
+          <span className="truncate rounded-[5px] bg-surface/70 px-1.5 text-[10px] font-semibold dark:bg-background/40">
             {slot.className}
           </span>
           <span className="shrink-0 text-[10px] opacity-70">{slot.subjectCode}</span>
