@@ -10,6 +10,8 @@ import com.schoolsystem.backend.timetable.model.CampusFacility;
 import com.schoolsystem.backend.timetable.model.ExamSchedule;
 import com.schoolsystem.backend.timetable.repository.ExamScheduleRepository;
 import com.schoolsystem.backend.user.model.User;
+import com.schoolsystem.backend.user.model.UserRole;
+import com.schoolsystem.backend.user.model.UserStatus;
 import com.schoolsystem.backend.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -101,11 +103,42 @@ public class ExamConflictService {
         return response;
     }
 
+    /** Rejects exam sessions whose end time is not after their start time. */
+    public static void requireValidTimes(LocalTime startTime, LocalTime endTime) {
+        if (startTime == null || endTime == null || !startTime.isBefore(endTime)) {
+            throw new IllegalArgumentException("Exam end time must be after the start time");
+        }
+    }
+
+    /** Only active teachers may invigilate. */
+    public static boolean canInvigilate(User user) {
+        return user != null && user.getRole() == UserRole.TEACHER && user.getStatus() != UserStatus.INACTIVE;
+    }
+
+    /** Loads a requested (co-)invigilator and rejects anyone who isn't an active teacher. */
+    public static User requireInvigilator(UserRepository users, Long userId, String label) {
+        User user = users.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException(label + " not found: " + userId));
+        if (!canInvigilate(user)) {
+            throw new IllegalArgumentException(label + " must be an active teacher (" + user.getFullName() + " is not)");
+        }
+        return user;
+    }
+
+    /** True when the teacher has no overlapping invigilation duty on that date. */
+    public static boolean isInvigilatorFree(ExamScheduleRepository schedules, Long teacherId,
+                                            LocalDate examDate, LocalTime startTime, LocalTime endTime) {
+        return schedules.findByExamDate(examDate).stream()
+                .filter(other -> isTimeOverlapping(startTime, endTime, other.getStartTime(), other.getEndTime()))
+                .noneMatch(other -> other.getInvigilator().getId().equals(teacherId)
+                        || (other.getCoInvigilator() != null && other.getCoInvigilator().getId().equals(teacherId)));
+    }
+
     public boolean isSubjectTeacher(Long teacherId, Long classId, Long subjectId) {
         return teacherSubjectRepository.findByTeacherIdAndSubjectIdAndSchoolClassId(teacherId, subjectId, classId).isPresent();
     }
 
-    private boolean isTimeOverlapping(LocalTime start1, LocalTime end1, LocalTime start2, LocalTime end2) {
+    private static boolean isTimeOverlapping(LocalTime start1, LocalTime end1, LocalTime start2, LocalTime end2) {
         return start1.isBefore(end2) && end1.isAfter(start2);
     }
 

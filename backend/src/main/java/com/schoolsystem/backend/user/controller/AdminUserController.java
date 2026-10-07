@@ -1,6 +1,8 @@
 package com.schoolsystem.backend.user.controller;
 
 import com.schoolsystem.backend.common.dto.response.ApiResponse;
+import com.schoolsystem.backend.security.CurrentUser;
+import com.schoolsystem.backend.security.UserPrincipal;
 import com.schoolsystem.backend.user.dto.request.UpdateRoleRequest;
 import com.schoolsystem.backend.user.dto.request.UpdateStatusRequest;
 import com.schoolsystem.backend.user.dto.response.UserDTO;
@@ -39,9 +41,10 @@ public class AdminUserController {
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<UserDTO> updateUserRole(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateRoleRequest request
+            @Valid @RequestBody UpdateRoleRequest request,
+            @CurrentUser UserPrincipal currentUser
     ) {
-        UserDTO updated = userService.updateUserRole(id, request.getRole());
+        UserDTO updated = userService.updateUserRole(id, request.getRole(), actingUserId(currentUser));
         return ApiResponse.success(updated, "Role updated to " + updated.getRole() + " successfully");
     }
 
@@ -49,16 +52,21 @@ public class AdminUserController {
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<UserDTO> updateUserStatus(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateStatusRequest request
+            @Valid @RequestBody UpdateStatusRequest request,
+            @CurrentUser UserPrincipal currentUser
     ) {
-        UserDTO updated = userService.updateUserStatus(id, request.getStatus());
+        UserDTO updated = userService.updateUserStatus(id, request.getStatus(), actingUserId(currentUser));
         return ApiResponse.success(updated, "Status updated to " + updated.getStatus() + " successfully");
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<Void> deleteUser(@PathVariable Long id) {
-        userService.deleteUser(id);
+    public ApiResponse<Void> deleteUser(@PathVariable Long id, @CurrentUser UserPrincipal currentUser) {
+        userService.deleteUser(id, actingUserId(currentUser));
         return ApiResponse.message("User account deleted successfully");
+    }
+
+    private static Long actingUserId(UserPrincipal currentUser) {
+        return currentUser != null ? currentUser.getId() : null;
     }
 }

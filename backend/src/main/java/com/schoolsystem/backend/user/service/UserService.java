@@ -16,9 +16,9 @@ public interface UserService {
 
     UserDTO getUserById(Long id);
 
-    UserDTO updateUserRole(Long id, String rawRole);
+    UserDTO updateUserRole(Long id, String rawRole, Long actingUserId);
 
-    UserDTO updateUserStatus(Long id, String rawStatus);
+    UserDTO updateUserStatus(Long id, String rawStatus, Long actingUserId);
 
-    void deleteUser(Long id);
+    void deleteUser(Long id, Long actingUserId);
 }

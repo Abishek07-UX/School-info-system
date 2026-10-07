@@ -57,7 +57,7 @@ public class ExamController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<ExamResponseDTO>> createExam(@Valid @RequestBody CreateExamRequest request) {
         ExamResponseDTO created = examService.createExam(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -65,7 +65,7 @@ public class ExamController {
     }
 
     @PostMapping("/with-timetable")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<ExamWithTimetableResponseDTO>> createExamWithTimetable(
             @Valid @RequestBody CreateExamWithTimetableRequest request
     ) {
@@ -75,7 +75,7 @@ public class ExamController {
     }
 
     @PutMapping("/{id}/with-timetable")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<ExamWithTimetableResponseDTO>> updateExamWithTimetable(
             @PathVariable Long id,
             @Valid @RequestBody CreateExamWithTimetableRequest request
@@ -85,7 +85,7 @@ public class ExamController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<ExamResponseDTO> updateExam(
             @PathVariable Long id,
             @Valid @RequestBody UpdateExamRequest request

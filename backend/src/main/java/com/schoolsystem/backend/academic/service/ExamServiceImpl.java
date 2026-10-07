@@ -7,6 +7,7 @@ import com.schoolsystem.backend.academic.model.Exam;
 import com.schoolsystem.backend.academic.model.ExamStatus;
 import com.schoolsystem.backend.academic.model.ExamTerm;
 import com.schoolsystem.backend.academic.repository.ExamRepository;
+import com.schoolsystem.backend.academic.repository.MarkRepository;
 import com.schoolsystem.backend.administration.model.SchoolClass;
 import com.schoolsystem.backend.administration.repository.SchoolClassRepository;
 import com.schoolsystem.backend.academic.dto.request.CreateExamWithTimetableRequest;
@@ -21,7 +22,6 @@ import com.schoolsystem.backend.timetable.model.ExamSchedule;
 import com.schoolsystem.backend.timetable.repository.ExamScheduleRepository;
 import com.schoolsystem.backend.timetable.service.ExamConflictService;
 import com.schoolsystem.backend.user.model.User;
-import com.schoolsystem.backend.user.model.UserRole;
 import com.schoolsystem.backend.user.repository.UserRepository;
 import com.schoolsystem.backend.common.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
@@ -45,19 +45,22 @@ public class ExamServiceImpl implements ExamService {
     private final SubjectRepository subjectRepository;
     private final UserRepository userRepository;
     private final ExamConflictService conflictService;
+    private final MarkRepository markRepository;
 
     public ExamServiceImpl(ExamRepository examRepository,
                            SchoolClassRepository schoolClassRepository,
                            ExamScheduleRepository examScheduleRepository,
                            SubjectRepository subjectRepository,
                            UserRepository userRepository,
-                           ExamConflictService conflictService) {
+                           ExamConflictService conflictService,
+                           MarkRepository markRepository) {
         this.examRepository = examRepository;
         this.schoolClassRepository = schoolClassRepository;
         this.examScheduleRepository = examScheduleRepository;
         this.subjectRepository = subjectRepository;
         this.userRepository = userRepository;
         this.conflictService = conflictService;
+        this.markRepository = markRepository;
     }
 
     @Override
@@ -148,8 +151,15 @@ public class ExamServiceImpl implements ExamService {
     @Override
     public void deleteExam(Long id) {
         if (!examRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Exam not found with id: " + id, "EXAM_NOT_FOUND");
+            throw new ResourceNotFoundException("EXAM_NOT_FOUND", "Exam not found with id: " + id);
         }
+        // Never silently discard students' results: an exam with recorded marks must be cleared first.
+        long recordedMarks = markRepository.countMarksByExamId(id);
+        if (recordedMarks > 0) {
+            throw new IllegalArgumentException("This exam has " + recordedMarks
+                    + " recorded marks and cannot be deleted. Remove its marks first.");
+        }
+        examScheduleRepository.deleteAll(examScheduleRepository.findByExamId(id));
         examRepository.deleteById(id);
     }
 
@@ -242,26 +252,9 @@ public class ExamServiceImpl implements ExamService {
                 Subject subject = subjectRepository.findById(slotReq.getSubjectId())
                         .orElseThrow(() -> new ResourceNotFoundException("Subject not found with id: " + slotReq.getSubjectId(), "SUBJECT_NOT_FOUND"));
 
-                // Resolve Invigilator: slot-specified -> class teacher -> any active teacher
-                User invigilator = null;
-                if (slotReq.getInvigilatorId() != null) {
-                    invigilator = userRepository.findById(slotReq.getInvigilatorId()).orElse(null);
-                }
-                if (invigilator == null && schoolClass.getClassTeacher() != null) {
-                    invigilator = schoolClass.getClassTeacher();
-                }
-                if (invigilator == null) {
-                    invigilator = allStaff.stream()
-                            .filter(u -> u.getRole() == UserRole.TEACHER)
-                            .findFirst()
-                            .orElse(allStaff.isEmpty() ? null : allStaff.get(0));
-                }
-                if (invigilator == null) {
-                    throw new IllegalStateException("No staff found in system to assign as invigilator");
-                }
-
+                User invigilator = resolveInvigilator(slotReq, schoolClass, allStaff, subject);
                 User coInvigilator = slotReq.getCoInvigilatorId() != null
-                        ? userRepository.findById(slotReq.getCoInvigilatorId()).orElse(null)
+                        ? ExamConflictService.requireInvigilator(userRepository, slotReq.getCoInvigilatorId(), "Co-invigilator")
                         : null;
 
                 // Check conflict
@@ -387,25 +380,9 @@ public class ExamServiceImpl implements ExamService {
             Subject subject = subjectRepository.findById(slotReq.getSubjectId())
                     .orElseThrow(() -> new ResourceNotFoundException("Subject not found with id: " + slotReq.getSubjectId(), "SUBJECT_NOT_FOUND"));
 
-            User invigilator = null;
-            if (slotReq.getInvigilatorId() != null) {
-                invigilator = userRepository.findById(slotReq.getInvigilatorId()).orElse(null);
-            }
-            if (invigilator == null && targetClass != null && targetClass.getClassTeacher() != null) {
-                invigilator = targetClass.getClassTeacher();
-            }
-            if (invigilator == null) {
-                invigilator = allStaff.stream()
-                        .filter(u -> u.getRole() == UserRole.TEACHER)
-                        .findFirst()
-                        .orElse(allStaff.isEmpty() ? null : allStaff.get(0));
-            }
-            if (invigilator == null) {
-                throw new IllegalStateException("No staff found in system to assign as invigilator");
-            }
-
+            User invigilator = resolveInvigilator(slotReq, targetClass, allStaff, subject);
             User coInvigilator = slotReq.getCoInvigilatorId() != null
-                    ? userRepository.findById(slotReq.getCoInvigilatorId()).orElse(null)
+                    ? ExamConflictService.requireInvigilator(userRepository, slotReq.getCoInvigilatorId(), "Co-invigilator")
                     : null;
 
             if (targetClass != null) {
@@ -445,6 +422,28 @@ public class ExamServiceImpl implements ExamService {
                 updatedSchedules.size());
 
         return new ExamWithTimetableResponseDTO(List.of(ExamResponseDTO.fromEntity(savedExam)), updatedSchedules, summary);
+    }
+
+    // Picks the first available invigilator: the requested teacher, then the class teacher, then any
+    // active teacher. Each candidate must be an active teacher who is free for the whole session.
+    private User resolveInvigilator(ExamSlotItemRequest slotReq, SchoolClass schoolClass, List<User> allStaff, Subject subject) {
+        ExamConflictService.requireValidTimes(slotReq.getStartTime(), slotReq.getEndTime());
+        List<User> candidates = new ArrayList<>();
+        if (slotReq.getInvigilatorId() != null) {
+            candidates.add(ExamConflictService.requireInvigilator(userRepository, slotReq.getInvigilatorId(), "Invigilator"));
+        }
+        if (schoolClass != null && schoolClass.getClassTeacher() != null) {
+            candidates.add(schoolClass.getClassTeacher());
+        }
+        candidates.addAll(allStaff);
+        return candidates.stream()
+                .filter(ExamConflictService::canInvigilate)
+                .filter(teacher -> ExamConflictService.isInvigilatorFree(examScheduleRepository, teacher.getId(),
+                        slotReq.getExamDate(), slotReq.getStartTime(), slotReq.getEndTime()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("No teacher is free to invigilate "
+                        + (schoolClass != null ? schoolClass.getName() + " " : "") + "(" + subject.getName() + ") on "
+                        + slotReq.getExamDate() + " from " + slotReq.getStartTime() + " to " + slotReq.getEndTime()));
     }
 
     private static final Pattern GRADE_IN_NAME = Pattern.compile("(?i)\\bgrade\\s*(\\d{1,2})\\b");

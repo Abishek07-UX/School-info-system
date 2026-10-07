@@ -6,6 +6,7 @@ import com.schoolsystem.backend.administration.model.SchoolClass;
 import com.schoolsystem.backend.administration.model.Subject;
 import com.schoolsystem.backend.administration.repository.SchoolClassRepository;
 import com.schoolsystem.backend.administration.repository.SubjectRepository;
+import com.schoolsystem.backend.common.exception.ResourceNotFoundException;
 import com.schoolsystem.backend.timetable.dto.request.ExamScheduleRequest;
 import com.schoolsystem.backend.timetable.dto.response.ExamConflictCheckResponse;
 import com.schoolsystem.backend.timetable.dto.response.ExamScheduleResponse;
@@ -79,6 +80,8 @@ public class ExamScheduleServiceImpl implements ExamScheduleService {
 
     @Override
     public ExamScheduleResponse createExamSchedule(ExamScheduleRequest req) {
+        ExamConflictService.requireValidTimes(req.getStartTime(), req.getEndTime());
+
         // Enforce conflict check
         ExamConflictCheckResponse clash = conflictService.checkConflict(
                 req.getClassId(),
@@ -111,10 +114,9 @@ public class ExamScheduleServiceImpl implements ExamScheduleService {
             sub = subjectRepository.findById(req.getSubjectId())
                     .orElseThrow(() -> new IllegalArgumentException("Subject not found: " + req.getSubjectId()));
         }
-        User invigilator = userRepository.findById(req.getInvigilatorId())
-                .orElseThrow(() -> new IllegalArgumentException("Invigilator not found: " + req.getInvigilatorId()));
+        User invigilator = ExamConflictService.requireInvigilator(userRepository, req.getInvigilatorId(), "Invigilator");
         User coInvigilator = req.getCoInvigilatorId() != null
-                ? userRepository.findById(req.getCoInvigilatorId()).orElse(null)
+                ? ExamConflictService.requireInvigilator(userRepository, req.getCoInvigilatorId(), "Co-invigilator")
                 : null;
 
         ExamSchedule schedule = new ExamSchedule(
@@ -132,7 +134,8 @@ public class ExamScheduleServiceImpl implements ExamScheduleService {
     @Override
     public ExamScheduleResponse updateExamSchedule(Long scheduleId, ExamScheduleRequest req) {
         ExamSchedule schedule = examScheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new IllegalArgumentException("Exam schedule not found with ID: " + scheduleId));
+                .orElseThrow(() -> new ResourceNotFoundException("EXAM_SCHEDULE_NOT_FOUND", "Exam schedule not found with ID: " + scheduleId));
+        ExamConflictService.requireValidTimes(req.getStartTime(), req.getEndTime());
 
         ExamConflictCheckResponse clash = conflictService.checkConflict(
                 req.getClassId(),
@@ -161,10 +164,9 @@ public class ExamScheduleServiceImpl implements ExamScheduleService {
             sub = subjectRepository.findById(req.getSubjectId())
                     .orElseThrow(() -> new IllegalArgumentException("Subject not found: " + req.getSubjectId()));
         }
-        User invigilator = userRepository.findById(req.getInvigilatorId())
-                .orElseThrow(() -> new IllegalArgumentException("Invigilator not found: " + req.getInvigilatorId()));
+        User invigilator = ExamConflictService.requireInvigilator(userRepository, req.getInvigilatorId(), "Invigilator");
         User coInvigilator = req.getCoInvigilatorId() != null
-                ? userRepository.findById(req.getCoInvigilatorId()).orElse(null)
+                ? ExamConflictService.requireInvigilator(userRepository, req.getCoInvigilatorId(), "Co-invigilator")
                 : null;
 
         schedule.setExam(exam);
@@ -190,6 +192,9 @@ public class ExamScheduleServiceImpl implements ExamScheduleService {
 
     @Override
     public void deleteExamSchedule(Long scheduleId) {
+        if (!examScheduleRepository.existsById(scheduleId)) {
+            throw new ResourceNotFoundException("EXAM_SCHEDULE_NOT_FOUND", "Exam schedule not found with ID: " + scheduleId);
+        }
         examScheduleRepository.deleteById(scheduleId);
     }
 }

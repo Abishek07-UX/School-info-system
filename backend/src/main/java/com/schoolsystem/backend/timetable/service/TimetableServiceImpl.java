@@ -1,5 +1,6 @@
 package com.schoolsystem.backend.timetable.service;
 
+import com.schoolsystem.backend.common.exception.ResourceNotFoundException;
 import com.schoolsystem.backend.administration.model.SchoolClass;
 import com.schoolsystem.backend.administration.model.Subject;
 import com.schoolsystem.backend.administration.repository.SchoolClassRepository;
@@ -195,6 +196,9 @@ public class TimetableServiceImpl implements TimetableService {
 
     @Override
     public void deleteSlot(Long slotId) {
+        if (!timetableRepository.existsById(slotId)) {
+            throw new ResourceNotFoundException("SLOT_NOT_FOUND", "Timetable slot not found with ID: " + slotId);
+        }
         timetableRepository.deleteById(slotId);
     }
 

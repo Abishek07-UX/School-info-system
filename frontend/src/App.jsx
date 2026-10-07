@@ -4,6 +4,7 @@ import { AuthUserProvider, useAuthUser } from "./context/AuthUserContext"
 import Navbar from "./components/common/Navbar"
 import OnboardingView from "./components/OnboardingView"
 import PendingApprovalView from "./components/PendingApprovalView"
+import DeactivatedAccountView from "./components/DeactivatedAccountView"
 import UserRoleManagement from "./components/admin/UserRoleManagement"
 import StaffProfileModal from "./components/StaffProfileModal"
 import AcademicDashboard from "./components/academic/AcademicDashboard"
@@ -107,6 +108,7 @@ function DashboardView() {
   ]
 
   const allowedModules = allModules.filter((mod) => mod.roles.includes(role))
+  const canOpen = (moduleId) => allowedModules.some((mod) => mod.id === moduleId)
 
   const displayName = userProfile?.firstName
     ? `${userProfile.firstName} ${userProfile.lastName || ""}`.trim()
@@ -148,25 +150,29 @@ function DashboardView() {
             Overview
           </Button>
 
-          <Button
-            variant={activeTab === "timetable" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setActiveTab("timetable")}
-            className="gap-1.5 text-xs"
-          >
-            <Calendar className="h-3.5 w-3.5 text-[#3b82f6]" />
-            Timetable
-          </Button>
+          {canOpen("timetable") && (
+            <Button
+              variant={activeTab === "timetable" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveTab("timetable")}
+              className="gap-1.5 text-xs"
+            >
+              <Calendar className="h-3.5 w-3.5 text-[#3b82f6]" />
+              Timetable
+            </Button>
+          )}
 
-          <Button
-            variant={activeTab === "academics" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setActiveTab("academics")}
-            className="gap-1.5 text-xs"
-          >
-            <BookOpen className="h-3.5 w-3.5" />
-            Academics
-          </Button>
+          {canOpen("academics") && (
+            <Button
+              variant={activeTab === "academics" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveTab("academics")}
+              className="gap-1.5 text-xs"
+            >
+              <BookOpen className="h-3.5 w-3.5" />
+              Academics
+            </Button>
+          )}
 
           {(isAdmin || isPrincipal) && (
             <Button
@@ -183,7 +189,7 @@ function DashboardView() {
       </div>
 
       {/* Render Active View */}
-      {activeTab === "timetable" ? (
+      {activeTab === "timetable" && canOpen("timetable") ? (
         <div className="space-y-4">
           <Button
             variant="outline"
@@ -195,7 +201,7 @@ function DashboardView() {
           </Button>
           <TimetableHub userRole={role} userProfile={userProfile} getToken={getToken} />
         </div>
-      ) : activeTab === "academics" ? (
+      ) : activeTab === "academics" && canOpen("academics") ? (
         <AcademicDashboard onBack={() => setActiveTab("overview")} />
       ) : activeTab === "admin" && (isAdmin || isPrincipal) ? (
         <div className="space-y-4">
@@ -345,7 +351,7 @@ function DashboardView() {
 }
 
 function AuthenticatedPortal({ onOpenProfile }) {
-  const { isProfileComplete, isPending, loading } = useAuthUser()
+  const { userProfile, isProfileComplete, isPending, loading } = useAuthUser()
 
   if (loading) {
     return (
@@ -354,6 +360,11 @@ function AuthenticatedPortal({ onOpenProfile }) {
         <div className="text-xs font-normal">Loading staff account permissions...</div>
       </div>
     )
+  }
+
+  // A deactivated account keeps its login but can't use any module
+  if (userProfile?.status === "INACTIVE") {
+    return <DeactivatedAccountView />
   }
 
   // Step 1: Complete mandatory profile details

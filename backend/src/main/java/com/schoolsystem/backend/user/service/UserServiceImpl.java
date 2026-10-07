@@ -151,8 +151,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserDTO updateUserRole(Long id, String rawRole) {
+    public UserDTO updateUserRole(Long id, String rawRole, Long actingUserId) {
         UserRole targetRole = UserRole.fromString(rawRole);
+        rejectSelfChange(id, actingUserId, "change your own role");
 
         if (!userRepository.existsById(id)) {
             throw new ResourceNotFoundException("USER_NOT_FOUND", "User not found with id: " + id);
@@ -172,8 +173,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserDTO updateUserStatus(Long id, String rawStatus) {
+    public UserDTO updateUserStatus(Long id, String rawStatus, Long actingUserId) {
         UserStatus targetStatus = UserStatus.fromString(rawStatus);
+        rejectSelfChange(id, actingUserId, "change your own account status");
 
         if (!userRepository.existsById(id)) {
             throw new ResourceNotFoundException("USER_NOT_FOUND", "User not found with id: " + id);
@@ -189,11 +191,19 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void deleteUser(Long id) {
+    public void deleteUser(Long id, Long actingUserId) {
+        rejectSelfChange(id, actingUserId, "delete your own account");
         if (!userRepository.existsById(id)) {
             throw new ResourceNotFoundException("USER_NOT_FOUND", "User not found with id: " + id);
         }
         userRepository.deleteById(id);
+    }
+
+    // Admins must not lock themselves out; another administrator has to make these changes.
+    private void rejectSelfChange(Long targetUserId, Long actingUserId, String action) {
+        if (actingUserId != null && actingUserId.equals(targetUserId)) {
+            throw new IllegalArgumentException("You cannot " + action + ". Ask another administrator.");
+        }
     }
 
     private String extractEmail(Jwt jwt) {
