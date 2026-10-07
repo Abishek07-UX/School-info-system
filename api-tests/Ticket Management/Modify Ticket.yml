@@ -1,0 +1,27 @@
+info:
+  name: Modify Ticket
+  type: http
+  seq: 4
+
+http:
+  method: PUT
+  url: http://localhost:8080/api/tickets/1
+  auth: inherit
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |
+      {
+        "title": "Classroom 10-A Projector HDMI fault (Escalated)",
+        "description": "Projector display flickering intermittently during morning lectures. Requires urgent cable replacement.",
+        "category": "TECHNICAL",
+        "priority": "URGENT"
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

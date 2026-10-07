@@ -41,11 +41,11 @@ public class Student {
     @Column(name = "guardian_contact")
     private String guardianContact;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "class_id")
     private SchoolClass schoolClass;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "section_id")
     private Section section;
 

@@ -1,0 +1,34 @@
+info:
+  name: Update Student
+  type: http
+  seq: 4
+
+http:
+  method: PUT
+  url: http://localhost:8080/api/students/1
+  auth: inherit
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |
+      {
+        "firstName": "Kasun",
+        "lastName": "Perera",
+        "dob": "2010-05-14",
+        "gender": "Male",
+        "address": "124 Galle Road, Colombo 03",
+        "contactNumber": "0771234567",
+        "guardianName": "Sunil Perera",
+        "guardianContact": "0779876543",
+        "classId": 1,
+        "sectionId": 1,
+        "status": "ACTIVE"
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,27 @@
+info:
+  name: Register Ticket
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8080/api/tickets
+  auth: inherit
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |
+      {
+        "title": "Student Emergency Contact Update - Kasun Perera",
+        "description": "Parent requested updating primary emergency mobile to 0779876543.",
+        "category": "DATA_CORRECTION",
+        "priority": "HIGH"
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
