@@ -45,7 +45,7 @@ export function AutoGeneratorModal({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
-            <Wand2 className="h-5 w-5 text-primary" />
+            <Wand2 className="h-5 w-5 text-accent-blue" />
             Auto-Generate Conflict-Free Timetable
           </DialogTitle>
           <p className="text-xs text-muted-foreground">
@@ -61,7 +61,7 @@ export function AutoGeneratorModal({
               <span>Backtracking Constraint Engine</span>
             </div>
             <p className="text-muted-foreground leading-relaxed">
-              This engine analyzes existing teacher allocations in <code className="text-primary">teacher_subjects</code>, 
+              This engine analyzes existing teacher allocations in <code className="text-accent-blue">teacher_subjects</code>, 
               checks teacher availability across all classes in the school, and constructs a balanced 40-period schedule (8 periods × 5 days) with:
             </p>
             <ul className="list-disc pl-4 space-y-1 text-muted-foreground">

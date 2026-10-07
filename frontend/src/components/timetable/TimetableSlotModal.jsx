@@ -148,7 +148,7 @@ export function TimetableSlotModal({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
-            <Sparkles className="h-5 w-5 text-primary" />
+            <Sparkles className="h-5 w-5 text-accent-blue" />
             {slotToEdit ? 'Edit Timetable Slot' : 'Assign Timetable Slot'}
           </DialogTitle>
           <p className="text-xs text-muted-foreground">
@@ -165,7 +165,7 @@ export function TimetableSlotModal({
                 id="daySelect"
                 value={dayOfWeek}
                 onChange={(e) => setDayOfWeek(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-full rounded-md border border-input bg-surface px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 {DAYS.map((d) => (
                   <option key={d.key} value={d.key}>{d.label}</option>
@@ -179,7 +179,7 @@ export function TimetableSlotModal({
                 id="periodSelect"
                 value={periodNumber}
                 onChange={(e) => setPeriodNumber(Number(e.target.value))}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-full rounded-md border border-input bg-surface px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 {PERIODS.map((p) => (
                   <option key={p.number} value={p.number}>{p.label}</option>
@@ -195,7 +195,7 @@ export function TimetableSlotModal({
               id="subjectSelect"
               value={subjectId}
               onChange={(e) => setSubjectId(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              className="w-full rounded-md border border-input bg-surface px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
             >
               <option value="" disabled>-- Select Subject --</option>
               {subjects.map((s) => (
@@ -224,7 +224,7 @@ export function TimetableSlotModal({
                 placeholder="Search teacher by name or email..."
                 value={teacherSearch}
                 onChange={(e) => setTeacherSearch(e.target.value)}
-                className="h-8 pl-8 pr-7 text-xs bg-background mb-1"
+                className="h-8 pl-8 pr-7 text-xs bg-surface mb-1"
               />
               {teacherSearch && (
                 <button
@@ -242,7 +242,7 @@ export function TimetableSlotModal({
               id="teacherSelect"
               value={teacherId}
               onChange={(e) => setTeacherId(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              className="w-full rounded-md border border-input bg-surface px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
             >
               <option value="" disabled>-- Select Teacher --</option>
               {teachers

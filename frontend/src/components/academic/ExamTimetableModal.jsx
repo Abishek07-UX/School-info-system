@@ -428,13 +428,13 @@ export default function ExamTimetableModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden flex flex-col p-0 border-border/70 bg-card text-card-foreground shadow-2xl">
+      <DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden flex flex-col p-0 border-border bg-surface text-card-foreground shadow-2xl">
         {/* Header */}
-        <div className="p-6 pb-4 border-b border-border/70 bg-muted/20">
+        <div className="p-6 pb-4 border-b border-border bg-muted/20">
           <DialogHeader className="space-y-1">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                <div className="p-2 rounded-lg bg-accent-blue-soft text-accent-blue">
                   <Calendar className="h-5 w-5" />
                 </div>
                 <DialogTitle className="text-xl font-semibold tracking-tight">
@@ -442,7 +442,7 @@ export default function ExamTimetableModal({
                 </DialogTitle>
               </div>
               {examToEdit && (
-                <Badge variant="outline" className="text-xs px-2.5 py-0.5 border-primary/40 text-primary">
+                <Badge variant="outline" className="text-xs px-2.5 py-0.5 border-accent-blue/40 text-accent-blue">
                   Editing Timetable
                 </Badge>
               )}
@@ -458,14 +458,14 @@ export default function ExamTimetableModal({
         {/* Scrollable Form Body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Section 1: Basic Information */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-xl border border-border/60 bg-muted/10">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-xl border border-border bg-muted/10">
             {/* Term */}
             <div className="space-y-1.5 md:col-span-1">
               <Label className="text-xs font-semibold text-foreground">Evaluation Term *</Label>
               <select
                 value={term}
                 onChange={(e) => setTerm(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-full rounded-md border border-input bg-surface px-3 py-2 text-xs shadow-card focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 {TERMS.map((t) => (
                   <option key={t.value} value={t.value}>
@@ -484,7 +484,7 @@ export default function ExamTimetableModal({
                 onChange={(e) => setAcademicYear(e.target.value)}
                 min="2020"
                 max="2035"
-                className="h-8 text-xs bg-background"
+                className="h-8 text-xs bg-surface"
                 required
               />
             </div>
@@ -502,7 +502,7 @@ export default function ExamTimetableModal({
                   setLoadingData(true)
                   setIsNameCustomized(false)
                 }}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-semibold text-primary shadow-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-full rounded-md border border-input bg-surface px-3 py-2 text-xs font-semibold text-accent-blue shadow-card focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 {Array.from({ length: 13 }, (_, i) => i + 1).map((g) => (
                   <option key={g} value={g}>
@@ -523,17 +523,17 @@ export default function ExamTimetableModal({
                   setIsNameCustomized(true)
                 }}
                 placeholder="e.g. Grade 10 First Term Examination"
-                className="h-8 text-xs bg-background"
+                className="h-8 text-xs bg-surface"
                 required
               />
             </div>
           </div>
 
           {/* Section 2: Multi-Class Selection & Classroom Allocation Info */}
-          <div className="space-y-3 p-4 rounded-xl border border-border/60 bg-muted/10">
+          <div className="space-y-3 p-4 rounded-xl border border-border bg-muted/10">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-primary" />
+                <Users className="h-4 w-4 text-accent-blue" />
                 <span className="text-xs font-semibold text-foreground">
                   Select Classes for Grade {gradeLevel} ({selectedClassIds.length} of {availableClasses.length} selected)
                 </span>
@@ -544,7 +544,7 @@ export default function ExamTimetableModal({
                 size="sm"
                 onClick={handleToggleAllClasses}
                 disabled={loadingData || availableClasses.length === 0}
-                className="h-7 text-xs text-primary hover:text-primary"
+                className="h-7 text-xs text-accent-blue hover:text-accent-blue"
               >
                 {selectedClassIds.length === availableClasses.length ? "Deselect All" : "Select All Classes"}
               </Button>
@@ -552,7 +552,7 @@ export default function ExamTimetableModal({
 
             {loadingData ? (
               <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-accent-blue" />
                 Loading classes for Grade {gradeLevel}...
               </div>
             ) : availableClasses.length === 0 ? (
@@ -570,12 +570,12 @@ export default function ExamTimetableModal({
                       onClick={() => handleToggleClass(sc.id)}
                       className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
                         isChecked
-                          ? "border-primary bg-primary/10 text-primary shadow-xs ring-1 ring-primary/40"
-                          : "border-border/70 bg-background text-muted-foreground hover:border-foreground/30"
+                          ? "border-accent-blue bg-accent-blue-soft text-accent-blue shadow-card ring-1 ring-ring/40"
+                          : "border-border bg-surface text-muted-foreground hover:border-foreground/30"
                       }`}
                     >
                       {isChecked ? (
-                        <CheckSquare className="h-3.5 w-3.5 text-primary" />
+                        <CheckSquare className="h-3.5 w-3.5 text-accent-blue" />
                       ) : (
                         <Square className="h-3.5 w-3.5 text-muted-foreground" />
                       )}
@@ -605,14 +605,14 @@ export default function ExamTimetableModal({
           </div>
 
           {/* Section 3: Exam Date Range & Auto-Distribute Toolbar */}
-          <div className="p-4 rounded-xl border border-border/60 bg-muted/10 space-y-3">
+          <div className="p-4 rounded-xl border border-border bg-muted/10 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-primary" />
+                <Calendar className="h-4 w-4 text-accent-blue" />
                 <span className="text-xs font-semibold text-foreground">Examination Date Range</span>
               </div>
               <div className="flex flex-wrap items-center gap-3">
-                <label className="flex items-center gap-1.5 text-xs text-foreground cursor-pointer select-none bg-background border border-border/60 px-2.5 py-1 rounded-md">
+                <label className="flex items-center gap-1.5 text-xs text-foreground cursor-pointer select-none bg-surface border border-border px-2.5 py-1 rounded-md">
                   <input
                     type="checkbox"
                     checked={includeWeekends}
@@ -620,7 +620,7 @@ export default function ExamTimetableModal({
                       setIncludeWeekends(e.target.checked)
                       setErrorMsg(null)
                     }}
-                    className="rounded border-input text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer"
+                    className="rounded border-input text-accent-blue focus:ring-primary h-3.5 w-3.5 cursor-pointer"
                   />
                   <span className="text-[11px] text-foreground font-medium">Include Weekends (Sat &amp; Sun)</span>
                 </label>
@@ -649,7 +649,7 @@ export default function ExamTimetableModal({
                     setStartDate(e.target.value)
                     setErrorMsg(null)
                   }}
-                  className="h-8 text-xs bg-background"
+                  className="h-8 text-xs bg-surface"
                   required
                 />
               </div>
@@ -663,7 +663,7 @@ export default function ExamTimetableModal({
                     setErrorMsg(null)
                   }}
                   min={startDate}
-                  className="h-8 text-xs bg-background"
+                  className="h-8 text-xs bg-surface"
                   required
                 />
               </div>
@@ -686,7 +686,7 @@ export default function ExamTimetableModal({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4 text-primary" />
+                <BookOpen className="h-4 w-4 text-accent-blue" />
                 <h3 className="text-sm font-semibold text-foreground">
                   Grade {gradeLevel} Curriculum Subjects ({includedCount} included)
                 </h3>
@@ -698,7 +698,7 @@ export default function ExamTimetableModal({
 
             {loadingData ? (
               <div className="p-8 text-center text-xs text-muted-foreground">
-                <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary mb-2" />
+                <Loader2 className="h-6 w-6 animate-spin mx-auto text-accent-blue mb-2" />
                 Loading curriculum subjects for Grade {gradeLevel}...
               </div>
             ) : slots.length === 0 ? (
@@ -706,10 +706,10 @@ export default function ExamTimetableModal({
                 No curriculum subjects found for Grade {gradeLevel}.
               </div>
             ) : (
-              <div className="rounded-xl border border-border/70 overflow-hidden shadow-xs">
+              <div className="rounded-xl border border-border overflow-hidden shadow-card">
                 <div className="overflow-x-auto max-h-[380px]">
                   <table className="w-full text-xs text-left">
-                    <thead className="bg-muted/60 text-muted-foreground font-semibold sticky top-0 z-10 border-b border-border/70">
+                    <thead className="bg-muted/60 text-muted-foreground font-semibold sticky top-0 z-10 border-b border-border">
                       <tr>
                         <th className="p-2.5 w-10 text-center">Inc.</th>
                         <th className="p-2.5 min-w-[160px]">Subject</th>
@@ -726,7 +726,7 @@ export default function ExamTimetableModal({
                         <tr
                           key={slot.subjectId}
                           className={`transition-colors ${
-                            slot.included ? "hover:bg-muted/30 bg-card" : "bg-muted/15 opacity-55"
+                            slot.included ? "hover:bg-muted/30 bg-surface" : "bg-muted/15 opacity-55"
                           }`}
                         >
                           {/* Included checkbox */}
@@ -735,7 +735,7 @@ export default function ExamTimetableModal({
                               type="checkbox"
                               checked={slot.included}
                               onChange={(e) => handleSlotChange(idx, "included", e.target.checked)}
-                              className="rounded border-input text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                              className="rounded border-input text-accent-blue focus:ring-primary h-4 w-4 cursor-pointer"
                             />
                           </td>
 
@@ -757,7 +757,7 @@ export default function ExamTimetableModal({
                                 disabled={!slot.included}
                                 min={startDate}
                                 max={endDate}
-                                className="h-7 text-xs bg-background py-0.5 px-2 min-w-[125px]"
+                                className="h-7 text-xs bg-surface py-0.5 px-2 min-w-[125px]"
                                 required={slot.included}
                               />
                               {slot.examDate && (() => {
@@ -771,7 +771,7 @@ export default function ExamTimetableModal({
                                     className={`text-[10px] px-1.5 py-0 h-5 font-medium shrink-0 ${
                                       isWeekend
                                         ? "border-warning/40 bg-warning-soft text-amber-600 dark:text-amber-400 font-semibold"
-                                        : "text-muted-foreground border-border/50"
+                                        : "text-muted-foreground border-border"
                                     }`}
                                   >
                                     {dayName}
@@ -788,7 +788,7 @@ export default function ExamTimetableModal({
                               value={slot.startTime}
                               onChange={(e) => handleSlotChange(idx, "startTime", e.target.value)}
                               disabled={!slot.included}
-                              className="h-7 text-xs bg-background py-0.5 px-2"
+                              className="h-7 text-xs bg-surface py-0.5 px-2"
                               required={slot.included}
                             />
                           </td>
@@ -800,7 +800,7 @@ export default function ExamTimetableModal({
                               value={slot.endTime}
                               onChange={(e) => handleSlotChange(idx, "endTime", e.target.value)}
                               disabled={!slot.included}
-                              className="h-7 text-xs bg-background py-0.5 px-2"
+                              className="h-7 text-xs bg-surface py-0.5 px-2"
                               required={slot.included}
                             />
                           </td>
@@ -814,7 +814,7 @@ export default function ExamTimetableModal({
                               min="10"
                               max="200"
                               disabled={!slot.included}
-                              className="h-7 text-xs bg-background py-0.5 px-1.5 w-16"
+                              className="h-7 text-xs bg-surface py-0.5 px-1.5 w-16"
                             />
                           </td>
 
@@ -824,7 +824,7 @@ export default function ExamTimetableModal({
                               value={slot.invigilatorId}
                               onChange={(e) => handleSlotChange(idx, "invigilatorId", e.target.value)}
                               disabled={!slot.included}
-                              className="w-full rounded border border-input bg-background px-2 py-1 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                              className="w-full rounded border border-input bg-surface px-2 py-1 text-xs shadow-card focus:outline-none focus:ring-1 focus:ring-ring"
                             >
                               <option value="">Default (Class Teacher)</option>
                               {teachers.map((t) => (
@@ -855,7 +855,7 @@ export default function ExamTimetableModal({
         </form>
 
         {/* Footer Actions */}
-        <div className="p-4 border-t border-border/70 bg-muted/20 flex flex-wrap items-center justify-between gap-3">
+        <div className="p-4 border-t border-border bg-muted/20 flex flex-wrap items-center justify-between gap-3">
           <div className="text-xs text-muted-foreground">
             {examToEdit ? (
               <>
