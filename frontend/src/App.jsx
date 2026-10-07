@@ -101,7 +101,8 @@ function PortalLoading() {
 function AuthenticatedPortal({ onOpenProfile }) {
   const { userProfile, isProfileComplete, isPending, loading } = useAuthUser()
 
-  if (loading) return <PortalLoading />
+  // Only the first load blocks the screen; later refreshes keep the current view
+  if (loading && !userProfile) return <PortalLoading />
 
   // A deactivated account keeps its login but can't use any module
   if (userProfile?.status === "INACTIVE") {
