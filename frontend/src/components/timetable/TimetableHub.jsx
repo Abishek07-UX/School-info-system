@@ -34,6 +34,8 @@ import { ExamScheduleModal } from './ExamScheduleModal'
 import { AutoGeneratorModal } from './AutoGeneratorModal'
 import { PrintableTimetable } from './PrintableTimetable'
 import ExamTimetableModal from '../academic/ExamTimetableModal'
+import { useNavigate, useParams } from '@/lib/router'
+import { TIMETABLE_TABS } from '@/lib/navigation'
 
 const EXAM_TERM_LABELS = {
   TERM_1: 'Term 1',
@@ -102,7 +104,11 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
   const isAdmin = role === 'ADMIN'
   const isTeacher = role === 'TEACHER' || authCtx?.isTeacher
 
-  const [activeTab, setActiveTab] = useState(isTeacher ? 'teachers' : 'classes')
+  // The open tab lives in the URL (/timetable/:tab) so refresh and back/forward keep it
+  const { tab: tabParam } = useParams()
+  const navigate = useNavigate()
+  const activeTab = TIMETABLE_TABS.includes(tabParam) ? tabParam : (isTeacher ? 'teachers' : 'classes')
+  const setActiveTab = useCallback((tab) => navigate(`/timetable/${tab}`), [navigate])
   const [academicYear] = useState(2026)
 
   // Lookups
