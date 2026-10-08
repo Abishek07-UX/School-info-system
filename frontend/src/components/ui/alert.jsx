@@ -3,19 +3,15 @@ import { cva } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const alertVariants = cva(
-  "relative w-full rounded-[10px] border-[0.5px] p-4 text-xs [&>svg+div]:translate-y-[-2px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-[#ffffff] [&>svg~*]:pl-7 transition-all",
+  "relative w-full rounded-[12px] border p-4 text-[13px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:h-4 [&>svg]:w-4 [&>svg~*]:pl-7",
   {
     variants: {
       variant: {
-        default: "bg-[#131416] border-white/10 text-[#cececf]",
-        destructive:
-          "border-[#f87171]/30 bg-[#f87171]/10 text-[#f87171] [&>svg]:text-[#f87171]",
-        success:
-          "border-[#4ade80]/30 bg-[#4ade80]/10 text-[#4ade80] [&>svg]:text-[#4ade80]",
-        warning:
-          "border-[#ea580c]/30 bg-[#ea580c]/10 text-[#ea580c] [&>svg]:text-[#ea580c]",
-        info:
-          "border-[#3b82f6]/30 bg-[#3b82f6]/10 text-[#60a5fa] [&>svg]:text-[#3b82f6]",
+        default: "border-border bg-surface text-foreground-2 [&>svg]:text-muted-foreground",
+        destructive: "border-danger/25 bg-danger-soft text-danger [&>svg]:text-danger",
+        success: "border-success/25 bg-success-soft text-success [&>svg]:text-success",
+        warning: "border-warning/25 bg-warning-soft text-warning [&>svg]:text-warning",
+        info: "border-accent-blue/25 bg-accent-blue-soft text-accent-blue [&>svg]:text-accent-blue",
       },
     },
     defaultVariants: {
@@ -25,28 +21,19 @@ const alertVariants = cva(
 )
 
 const Alert = React.forwardRef(({ className, variant, ...props }, ref) => (
-  <div
-    ref={ref}
-    role="alert"
-    className={cn(alertVariants({ variant }), className)}
-    {...props}
-  />
+  <div ref={ref} role="alert" className={cn(alertVariants({ variant }), className)} {...props} />
 ))
 Alert.displayName = "Alert"
 
 const AlertTitle = React.forwardRef(({ className, ...props }, ref) => (
-  <h5
-    ref={ref}
-    className={cn("mb-1 font-medium leading-none tracking-tight text-[#ffffff]", className)}
-    {...props}
-  />
+  <h5 ref={ref} className={cn("mb-1 font-semibold leading-tight", className)} {...props} />
 ))
 AlertTitle.displayName = "AlertTitle"
 
 const AlertDescription = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("text-xs text-[#858687] [&_p]:leading-relaxed", className)}
+    className={cn("text-[13px] text-foreground-2 [&_p]:leading-relaxed", className)}
     {...props}
   />
 ))

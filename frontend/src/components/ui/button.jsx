@@ -1,34 +1,38 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva } from "class-variance-authority"
+import { Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[10px] text-sm font-normal ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#3b82f6] disabled:pointer-events-none disabled:opacity-40 active:scale-[0.99] cursor-pointer",
+  "relative inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[10px] text-sm font-medium select-none cursor-pointer transition-[background-color,border-color,color,box-shadow,transform] duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-45 active:scale-[0.97] [&_svg]:shrink-0",
   {
     variants: {
       variant: {
         default:
-          "bg-[#f2f2f2] text-[#333333] hover:bg-white shadow-[0_1px_4px_rgba(0,0,0,0.1),0_0_1px_rgba(0,0,0,0.1)] border-none",
+          "bg-primary text-primary-foreground shadow-card hover:bg-primary/88",
         secondary:
-          "bg-white/[0.05] text-[#ffffff] hover:bg-white/[0.08] border-none",
+          "bg-surface-2 text-foreground hover:bg-surface-hover",
         outline:
-          "border-[0.5px] border-white/10 bg-[#131416] text-[#cececf] hover:text-white hover:border-white/20 hover:bg-[#1a1b1e]",
+          "border border-border-strong bg-surface text-foreground-2 hover:text-foreground hover:bg-surface-hover",
         ghost:
-          "bg-transparent text-[#858687] hover:text-white hover:bg-white/[0.04] border-none",
+          "bg-transparent text-muted-foreground hover:text-foreground hover:bg-surface-hover",
         destructive:
-          "bg-[#f87171]/10 text-[#f87171] border-[0.5px] border-[#f87171]/30 hover:bg-[#f87171]/20",
+          "bg-danger-soft text-danger border border-danger/30 hover:bg-danger/15",
         link:
-          "text-[#3b82f6] underline-offset-4 hover:underline hover:text-[#60a5fa] p-0 h-auto bg-transparent border-none",
+          "h-auto p-0 bg-transparent text-accent-blue underline-offset-4 hover:underline active:scale-100",
         subtle:
-          "bg-[#1f1f21] text-[#cececf] hover:text-white border-[0.5px] border-white/10 hover:border-white/15",
+          "bg-surface-2 text-foreground-2 border border-border hover:text-foreground hover:border-border-strong",
+        accent:
+          "bg-accent-blue-soft text-accent-blue hover:bg-accent-blue/15",
       },
       size: {
-        default: "h-9 px-4 py-2",
-        sm: "h-8 rounded-[8px] px-3 text-xs",
-        lg: "h-11 rounded-[10px] px-6 text-sm",
-        icon: "h-8 w-8 rounded-[8px]",
-        xs: "h-7 rounded-[6px] px-2.5 text-xs",
+        default: "h-9 px-4",
+        sm: "h-8 rounded-[8px] px-3 text-[13px]",
+        lg: "h-11 px-6 text-[15px]",
+        icon: "h-9 w-9 rounded-[9px]",
+        "icon-sm": "h-8 w-8 rounded-[8px]",
+        xs: "h-7 rounded-[7px] px-2.5 text-xs",
       },
     },
     defaultVariants: {
@@ -38,16 +42,38 @@ const buttonVariants = cva(
   }
 )
 
-const Button = React.forwardRef(({ className, variant, size, asChild = false, ...props }, ref) => {
-  const Comp = asChild ? Slot : "button"
-  return (
-    <Comp
-      className={cn(buttonVariants({ variant, size, className }))}
-      ref={ref}
-      {...props}
-    />
-  )
-})
+/**
+ * `loading` keeps the button's width, swaps the icon for a spinner and blocks clicks.
+ */
+const Button = React.forwardRef(
+  ({ className, variant, size, asChild = false, loading = false, disabled, children, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button"
+    if (asChild) {
+      return (
+        <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props}>
+          {children}
+        </Comp>
+      )
+    }
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        disabled={disabled || loading}
+        aria-busy={loading || undefined}
+        {...props}
+      >
+        {loading && (
+          <span className="absolute inset-0 flex items-center justify-center">
+            <Loader2 className="h-4 w-4 animate-spin" />
+          </span>
+        )}
+        <span className={cn("contents", loading && "[&>*]:invisible invisible")}>{children}</span>
+      </Comp>
+    )
+  }
+)
 Button.displayName = "Button"
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { Button, buttonVariants }

@@ -1,28 +1,21 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { academicService } from "@/services/academicService"
 import { useAuthUser } from "@/context/AuthUserContext"
-import { Card } from "@/components/ui/card"
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "@/components/ui/table"
+import { useToast } from "@/context/ToastContext"
+import { useConfirm } from "@/context/ConfirmContext"
+import { useBlocker } from "@/lib/router"
+import { calculateGrade } from "@/lib/grades"
+import { shake, flash } from "@/lib/motion"
+import { cn } from "@/lib/utils"
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
-import { Progress } from "@/components/ui/progress"
-import {
-  Edit3,
-  Save,
-  Users,
-  CheckCircle2,
-  AlertTriangle,
-  RefreshCw,
-} from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { FilterBar, FilterField } from "@/components/ui/filter-bar"
+import { TableEmptyRow } from "@/components/ui/empty-state"
+import { GradeBadge } from "./GradeBadge"
+import { Eye, Save, Users, CheckCircle2, Undo2, Keyboard, CalendarX } from "lucide-react"
 
 const TERM_LABELS = {
   TERM_1: "Term 1 Examination",
@@ -30,8 +23,14 @@ const TERM_LABELS = {
   TERM_3: "Term 3 Examination",
 }
 
+const EMPTY_ENTRY = { score: "", remarks: "", grade: null }
+
+const isOutOfRange = (score) => score !== "" && score !== undefined && (parseFloat(score) < 0 || parseFloat(score) > 100)
+
 export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
   const { getToken, userProfile, role, isAdmin, isPrincipal } = useAuthUser()
+  const toast = useToast()
+  const confirm = useConfirm()
 
   // Find if teacher has an assigned class
   const assignedClass = userProfile?.id
@@ -56,13 +55,14 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
   const [selectedSubjectId, setSelectedSubjectId] = useState("")
   const [students, setStudents] = useState([])
   const [studentMarks, setStudentMarks] = useState({}) // studentId -> { score, remarks, grade }
+  const [savedMarks, setSavedMarks] = useState({}) // last loaded/saved values, for change tracking
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [feedback, setFeedback] = useState(null)
   const [filterYear, setFilterYear] = useState(
     String(preselectedExam?.academicYear || new Date().getFullYear())
   )
   const manuallySelectedClass = useRef(false)
+  const gridRef = useRef(null)
   const selectedClass = classes.find((c) => String(c.id) === String(selectedClassId))
   const isAssignedClass = Boolean(role === "TEACHER" && userProfile?.id &&
     String(selectedClass?.classTeacherId) === String(userProfile.id))
@@ -75,16 +75,6 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
     const defaultClassId = String((preferredClass || classes[0]).id)
     setSelectedClassId((current) => current === defaultClassId ? current : defaultClassId)
   }, [classes, assignedClass, role, preselectedExam?.classId])
-
-  const calculateGrade = (scoreNum) => {
-    if (scoreNum === "" || isNaN(scoreNum) || scoreNum === null) return null
-    const s = parseFloat(scoreNum)
-    if (s >= 75.0) return "A"
-    if (s >= 65.0) return "B"
-    if (s >= 50.0) return "C"
-    if (s >= 35.0) return "S"
-    return "F"
-  }
 
   // Load all exams for the selected year
   useEffect(() => {
@@ -149,21 +139,19 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
           setSelectedSubjectId("")
         }
       } catch (err) {
-        setFeedback({
-          type: "error",
-          message: err.message || "Failed to load class curriculum and students.",
-        })
+        toast.error(err.message || "Failed to load class curriculum and students.")
       } finally {
         setLoading(false)
       }
     }
     loadClassData()
-  }, [selectedClassId, getToken])
+  }, [selectedClassId, getToken, toast])
 
   // Load existing marks for the selected term exam and subject.
   const loadExistingMarks = useCallback(async () => {
     if (!activeExamId || !selectedSubjectId) {
       setStudentMarks({})
+      setSavedMarks({})
       return
     }
     try {
@@ -184,6 +172,7 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
         })
       }
       setStudentMarks(markMap)
+      setSavedMarks(markMap)
     } catch (err) {
       console.error("Failed to load marks:", err)
     } finally {
@@ -195,21 +184,49 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
     loadExistingMarks()
   }, [loadExistingMarks])
 
-  const getGradeBadge = (grade) => {
-    switch (grade) {
-      case "A":
-        return <Badge variant="success" className="font-bold">A (Distinction)</Badge>
-      case "B":
-        return <Badge variant="info" className="font-bold">B (Very Good)</Badge>
-      case "C":
-        return <Badge variant="warning" className="font-bold">C (Good)</Badge>
-      case "S":
-        return <Badge variant="purple" className="font-bold">S (Pass)</Badge>
-      case "F":
-        return <Badge variant="destructive" className="font-bold">F (Fail)</Badge>
-      default:
-        return <span className="text-slate-500 font-mono">—</span>
+  // ---- change tracking
+  const changedIds = useMemo(() => {
+    const ids = new Set()
+    for (const student of students) {
+      const now = studentMarks[student.id] || EMPTY_ENTRY
+      const before = savedMarks[student.id] || EMPTY_ENTRY
+      if ((now.score ?? "") !== (before.score ?? "") || (now.remarks ?? "") !== (before.remarks ?? "")) {
+        ids.add(student.id)
+      }
     }
+    return ids
+  }, [students, studentMarks, savedMarks])
+  const hasChanges = canEditMarks && changedIds.size > 0
+
+  useBlocker(hasChanges, () =>
+    confirm({
+      title: "Leave without saving?",
+      description: `You have ${changedIds.size} unsaved ${changedIds.size === 1 ? "mark" : "marks"}. They'll be lost if you leave this page.`,
+      confirmLabel: "Discard changes",
+      cancelLabel: "Keep editing",
+      tone: "danger",
+    })
+  )
+
+  // Changing class / exam / subject reloads the roster, so check before throwing edits away
+  const guardedChange = async (event, apply) => {
+    const value = event.target.value
+    if (hasChanges) {
+      const ok = await confirm({
+        title: "Discard unsaved marks?",
+        description: "Switching the class, exam or subject reloads the roster and drops your unsaved edits.",
+        confirmLabel: "Discard and switch",
+        cancelLabel: "Keep editing",
+        tone: "danger",
+      })
+      if (!ok) return
+    }
+    apply(value)
+  }
+
+  const selectClass = (value) => {
+    manuallySelectedClass.current = true
+    setSelectedClassId(value)
   }
 
   const handleScoreChange = (studentId, rawValue) => {
@@ -218,6 +235,7 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
     setStudentMarks((prev) => ({
       ...prev,
       [studentId]: {
+        ...EMPTY_ENTRY,
         ...prev[studentId],
         score: rawValue,
         grade,
@@ -230,22 +248,49 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
     setStudentMarks((prev) => ({
       ...prev,
       [studentId]: {
+        ...EMPTY_ENTRY,
         ...prev[studentId],
         remarks: rawValue,
       },
     }))
   }
 
+  const discardChanges = () => setStudentMarks(savedMarks)
+
+  // Spreadsheet-style movement: Enter / ↓ next student, ↑ previous student, same column
+  const handleGridKeyDown = (event) => {
+    const input = event.target
+    const row = Number(input.dataset.row)
+    const col = input.dataset.col
+    if (Number.isNaN(row) || !col) return
+    let target = null
+    if (event.key === "Enter" || event.key === "ArrowDown") target = row + 1
+    else if (event.key === "ArrowUp") target = row - 1
+    if (target === null) return
+    event.preventDefault()
+    const next = gridRef.current?.querySelector(`input[data-row="${target}"][data-col="${col}"]`)
+    if (next) {
+      next.focus()
+      next.select?.()
+    }
+  }
+
   const handleSaveAll = async () => {
     if (!canEditMarks) {
-      setFeedback({ type: "error", message: "Only the assigned class teacher can edit these marks." })
+      toast.error("Only the assigned class teacher can edit these marks.")
       return
     }
     if (!activeExamId || !selectedSubjectId) {
-      setFeedback({
-        type: "error",
-        message: "Please choose an examination and curriculum subject.",
-      })
+      toast.error("Please choose an examination and curriculum subject.")
+      return
+    }
+
+    const invalidStudent = students.find((s) => isOutOfRange(studentMarks[s.id]?.score))
+    if (invalidStudent) {
+      const inputs = gridRef.current?.querySelectorAll('input[aria-invalid="true"]') || []
+      inputs.forEach((el) => shake(el))
+      inputs[0]?.focus()
+      toast.error(`Invalid score for ${invalidStudent.fullName}. Marks must be between 0 and 100.`)
       return
     }
 
@@ -253,30 +298,22 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
     for (const student of students) {
       const entry = studentMarks[student.id]
       if (entry && entry.score !== "" && !isNaN(entry.score)) {
-        const scoreVal = parseFloat(entry.score)
-        if (scoreVal < 0 || scoreVal > 100) {
-          setFeedback({
-            type: "error",
-            message: `Invalid score for ${student.fullName}. Marks must be between 0 and 100.`,
-          })
-          return
-        }
         items.push({
           studentId: student.id,
-          score: scoreVal,
+          score: parseFloat(entry.score),
           remarks: entry.remarks || "",
         })
       }
     }
 
     if (items.length === 0) {
-      setFeedback({ type: "error", message: "No valid student marks entered to save." })
+      toast.error("No valid student marks entered to save.")
       return
     }
 
+    const savedIds = [...changedIds]
     try {
       setSaving(true)
-      setFeedback(null)
       const res = await academicService.enterBatchMarks(
         {
           examId: parseInt(activeExamId, 10),
@@ -286,16 +323,16 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
         getToken
       )
 
-      setFeedback({
-        type: "success",
-        message: `Successfully recorded evaluation marks for ${res.savedCount || items.length} students!`,
+      toast.success(`Successfully recorded evaluation marks for ${res.savedCount || items.length} students!`)
+      setSavedMarks(studentMarks)
+      // Confirm visually which rows were written
+      savedIds.forEach((id) => {
+        const rowEl = gridRef.current?.querySelector(`tr[data-student-id="${id}"]`)
+        if (rowEl) flash(rowEl)
       })
       loadExistingMarks()
     } catch (err) {
-      setFeedback({
-        type: "error",
-        message: err.message || "Failed to save batch marks.",
-      })
+      toast.error(err.message || "Failed to save batch marks.")
     } finally {
       setSaving(false)
     }
@@ -306,40 +343,16 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
       studentMarks[s.id]?.score !== "" &&
       studentMarks[s.id]?.score !== undefined
   ).length
+  const invalidCount = students.filter((s) => isOutOfRange(studentMarks[s.id]?.score)).length
   const progressPercent =
     students.length > 0 ? Math.round((enteredCount / students.length) * 100) : 0
+  const allEntered = students.length > 0 && enteredCount === students.length
 
   return (
-    <div className="space-y-6">
-      {/* Header & Batch Action */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-xl font-bold font-heading text-white flex items-center gap-2">
-            <Edit3 className="h-5 w-5 text-purple-400" />
-            {canEditMarks ? "Batch Subject Mark Entry" : "Student Marks"}
-          </h2>
-          <p className="text-xs text-slate-400">
-            {canEditMarks
-              ? "Enter numerical scores (0–100) per subject. Scores convert to letter grades automatically."
-              : "View the scores, grades, and remarks for this class."}
-          </p>
-        </div>
-
-        {canEditMarks && (
-          <Button
-            onClick={handleSaveAll}
-            disabled={saving || loading || students.length === 0 || !activeExamId}
-            size="sm"
-            className="gap-2 shadow-lg shadow-indigo-500/25"
-          >
-            <Save className={`h-4 w-4 ${saving ? "animate-spin" : ""}`} />
-            {saving ? "Saving Marks..." : "Save All Marks"}
-          </Button>
-        )}
-      </div>
-
+    <div className="space-y-5">
       {(role === "TEACHER" || isPrincipal) && selectedClassId && !canEditMarks && (
-        <Alert>
+        <Alert variant="info">
+          <Eye />
           <AlertTitle>View only</AlertTitle>
           <AlertDescription>
             {isPrincipal
@@ -349,240 +362,222 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
         </Alert>
       )}
 
-      {/* Feedback Toast */}
-      {feedback && (
-        <Alert
-          variant={feedback.type === "error" ? "destructive" : "success"}
-          className="animate-in fade-in-0 zoom-in-95"
+      {/* Selection */}
+      <FilterBar>
+        <FilterField label="Academic Year" htmlFor="marks-year" className="sm:w-28">
+          <select
+            id="marks-year"
+            value={filterYear}
+            onChange={(e) => guardedChange(e, setFilterYear)}
+            className="h-9 w-full px-3 text-sm"
+          >
+            {Array.from(new Set([filterYear, "2026", "2025", "2024"]))
+              .sort((a, b) => Number(b) - Number(a))
+              .map((year) => <option key={year} value={year}>{year}</option>)}
+          </select>
+        </FilterField>
+
+        <FilterField
+          label={
+            <span className="flex items-center gap-1.5">
+              Class Cohort
+              {isAssignedClass && <Badge className="px-1.5 py-0 text-[10px]">Your class</Badge>}
+            </span>
+          }
+          htmlFor="marks-class"
+          className="sm:w-52"
         >
-          {feedback.type === "error" ? (
-            <AlertTriangle className="h-4 w-4" />
-          ) : (
-            <CheckCircle2 className="h-4 w-4" />
-          )}
-          <AlertTitle>{feedback.type === "error" ? "Error" : "Success"}</AlertTitle>
-          <AlertDescription className="flex items-center justify-between">
-            <span>{feedback.message}</span>
-            <Button
-              variant="ghost"
-              size="xs"
-              onClick={() => setFeedback(null)}
-              className="h-6 px-2 text-xs"
-            >
-              ✕
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
+          <select
+            id="marks-class"
+            value={selectedClassId}
+            onChange={(e) => guardedChange(e, selectClass)}
+            className="h-9 w-full px-3 text-sm"
+          >
+            {classes.map((cls) => (
+              <option key={cls.id} value={cls.id}>
+                {cls.name} {role === "TEACHER" && String(cls.classTeacherId) === String(userProfile?.id) ? "★ (Your Assigned Class)" : ""}
+              </option>
+            ))}
+          </select>
+        </FilterField>
 
-      {/* Selection Control Panel */}
-      <Card className="p-4 border-white/10">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 items-end">
-          {/* Year */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-400">
-              Academic Year
-            </label>
-            <select
-              value={filterYear}
-              onChange={(e) => setFilterYear(e.target.value)}
-              className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            >
-              {Array.from(new Set([filterYear, "2026", "2025", "2024"]))
-                .sort((a, b) => Number(b) - Number(a))
-                .map((year) => <option key={year} value={year}>{year}</option>)}
-            </select>
-          </div>
+        <FilterField label="Target Examination" htmlFor="marks-exam" className="sm:w-60">
+          <select
+            id="marks-exam"
+            value={activeExamId}
+            onChange={(e) => guardedChange(e, setSelectedExamId)}
+            disabled={relevantExams.length === 0}
+            className="h-9 w-full px-3 text-sm"
+          >
+            {relevantExams.length === 0 && <option value="">No term examinations scheduled</option>}
+            {relevantExams.map((ex) => (
+              <option key={ex.id} value={ex.id}>
+                Grade {selectedClass?.gradeLevel} {TERM_LABELS[ex.term]}
+              </option>
+            ))}
+          </select>
+        </FilterField>
 
-          {/* Class Cohort Selector */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-slate-400">
-                Class Cohort *
-              </label>
-              {isAssignedClass && (
-                <Badge variant="default" className="text-[9px] py-0 px-1.5">
-                  Your Class
-                </Badge>
+        <FilterField label="Curriculum Subject" htmlFor="marks-subject" className="sm:w-60">
+          <select
+            id="marks-subject"
+            value={selectedSubjectId}
+            onChange={(e) => guardedChange(e, setSelectedSubjectId)}
+            disabled={subjects.length === 0}
+            className="h-9 w-full px-3 text-sm"
+          >
+            {subjects.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name} ({s.code})
+              </option>
+            ))}
+          </select>
+        </FilterField>
+      </FilterBar>
+
+      {/* Progress */}
+      <div className="flex flex-col gap-3 rounded-[12px] border border-border bg-surface px-4 py-3.5 shadow-card sm:flex-row sm:items-center sm:gap-6">
+        <div className="flex items-center gap-2 text-[13px] text-foreground-2">
+          <Users className="h-4 w-4 text-muted-foreground" />
+          <span className="tabular font-semibold text-foreground">{students.length}</span> students
+        </div>
+        <div className="flex flex-1 items-center gap-3">
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2">
+            <div
+              className={cn(
+                "h-full rounded-full transition-[width] duration-500 ease-out",
+                allEntered ? "bg-success" : "bg-accent-blue"
               )}
-            </div>
-            <select
-              value={selectedClassId}
-              onChange={(e) => {
-                manuallySelectedClass.current = true
-                setSelectedClassId(e.target.value)
-              }}
-              className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            >
-              {classes.map((cls) => (
-                <option key={cls.id} value={cls.id}>
-                  {cls.name} {role === "TEACHER" && String(cls.classTeacherId) === String(userProfile?.id) ? "★ (Your Assigned Class)" : ""}
-                </option>
-              ))}
-            </select>
+              style={{ width: `${progressPercent}%` }}
+            />
           </div>
-
-          {/* Exam Selector */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-400">
-              Target Examination *
-            </label>
-            <select
-              value={activeExamId}
-              onChange={(e) => setSelectedExamId(e.target.value)}
-              className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            >
-              {relevantExams.length === 0 && <option value="">No term examinations scheduled</option>}
-              {relevantExams.map((ex) => (
-                <option key={ex.id} value={ex.id}>
-                  Grade {selectedClass?.gradeLevel} {TERM_LABELS[ex.term]}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Subject Selector */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-400">
-              Curriculum Subject *
-            </label>
-            <select
-              value={selectedSubjectId}
-              onChange={(e) => setSelectedSubjectId(e.target.value)}
-              className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            >
-              {subjects.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} ({s.code})
-                </option>
-              ))}
-            </select>
-          </div>
+          <span className="tabular shrink-0 text-[13px] text-muted-foreground">
+            <span className="font-semibold text-foreground">{enteredCount}</span> / {students.length} entered
+          </span>
+          {allEntered && <CheckCircle2 className="h-4 w-4 shrink-0 text-success" aria-label="All marks entered" />}
         </div>
-      </Card>
+        {invalidCount > 0 && (
+          <Badge variant="destructive" dot>
+            {invalidCount} out of range
+          </Badge>
+        )}
+      </div>
 
-      {/* Roster Progress Summary Bar */}
-      <Card className="p-4 border-white/10 bg-slate-950/40">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-2 text-xs">
-          <div className="flex items-center gap-2 text-slate-300">
-            <Users className="h-4 w-4 text-indigo-400" />
-            <span>Enrolled Students in Class:</span>
-            <span className="font-bold text-white">{students.length}</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-slate-400">Marks Completion:</span>
-            <Badge
-              variant={
-                enteredCount === students.length && students.length > 0
-                  ? "success"
-                  : "warning"
-              }
-              className="font-bold"
-            >
-              {enteredCount} / {students.length} ({progressPercent}%)
-            </Badge>
-          </div>
-        </div>
-        <Progress value={progressPercent} />
-      </Card>
-
-      {/* Spreadsheet Mark Entry Grid */}
-      <Card className="border-white/10 overflow-hidden">
-        <Table>
+      {/* Grid */}
+      <div ref={gridRef} onKeyDown={canEditMarks ? handleGridKeyDown : undefined}>
+        <Table containerClassName="max-h-[min(70vh,780px)]">
           <TableHeader>
             <TableRow>
               <TableHead className="w-12">#</TableHead>
-              <TableHead className="w-36">Admission No</TableHead>
-              <TableHead>Student Full Name</TableHead>
-              <TableHead className="w-36">Score (0–100)</TableHead>
-              <TableHead className="w-36 text-center">Letter Grade</TableHead>
-              <TableHead>Teacher Remarks</TableHead>
+              <TableHead className="w-32">Admission No</TableHead>
+              <TableHead>Student</TableHead>
+              <TableHead className="w-32">Score / 100</TableHead>
+              <TableHead className="w-40">Grade</TableHead>
+              <TableHead className="min-w-[220px]">Remarks</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-12 text-slate-400">
-                  <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-indigo-400" />
-                  Loading class roster and existing marks...
-                </TableCell>
-              </TableRow>
+              Array.from({ length: 6 }, (_, i) => (
+                <TableRow key={i} className="hover:bg-transparent">
+                  <TableCell><Skeleton className="h-4 w-5" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                  <TableCell><Skeleton className="h-9 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-9 w-full" /></TableCell>
+                </TableRow>
+              ))
+            ) : !activeExamId ? (
+              <TableEmptyRow
+                colSpan={6}
+                icon={CalendarX}
+                title="No term exams for this class yet"
+                description="Marks are recorded against a scheduled term exam. Pick another year or ask an administrator to schedule one."
+              />
             ) : students.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-12 text-slate-400">
-                  No students found in this class.
-                </TableCell>
-              </TableRow>
+              <TableEmptyRow colSpan={6} icon={Users} title="No students found in this class." />
             ) : (
               students.map((student, idx) => {
-                const markEntry = studentMarks[student.id] || {
-                  score: "",
-                  remarks: "",
-                  grade: null,
-                }
-                const isInvalid =
-                  markEntry.score !== "" &&
-                  (parseFloat(markEntry.score) < 0 || parseFloat(markEntry.score) > 100)
+                const markEntry = studentMarks[student.id] || EMPTY_ENTRY
+                const isInvalid = isOutOfRange(markEntry.score)
+                const isChanged = canEditMarks && changedIds.has(student.id)
 
                 return (
-                  <TableRow key={student.id} className="hover:bg-slate-800/30">
-                    {/* Index */}
-                    <TableCell className="text-xs text-slate-400 font-mono">
-                      {idx + 1}
+                  <TableRow key={student.id} data-student-id={student.id}>
+                    <TableCell className="tabular text-xs text-muted-foreground">
+                      <span className="relative">
+                        {isChanged && (
+                          <span
+                            aria-label="Unsaved"
+                            className="absolute -left-3 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-accent-blue"
+                          />
+                        )}
+                        {idx + 1}
+                      </span>
                     </TableCell>
 
-                    {/* Admission */}
                     <TableCell>
-                      <code className="text-xs font-mono font-semibold text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                      <code className="tabular rounded-[6px] bg-surface-2 px-1.5 py-0.5 text-xs font-medium text-foreground-2">
                         {student.admissionNumber}
                       </code>
                     </TableCell>
 
-                    {/* Full Name */}
-                    <TableCell className="font-semibold text-white">
-                      {student.fullName}
-                    </TableCell>
+                    <TableCell className="whitespace-nowrap font-medium text-foreground">{student.fullName}</TableCell>
 
-                    {/* Numeric Score Input */}
                     <TableCell>
                       {canEditMarks ? (
-                        <Input
+                        <input
                           type="number"
+                          inputMode="decimal"
                           min="0"
                           max="100"
                           step="0.1"
-                          placeholder="0–100"
-                          value={markEntry.score}
+                          placeholder="—"
+                          aria-label={`Score for ${student.fullName}`}
+                          aria-invalid={isInvalid || undefined}
+                          data-row={idx}
+                          data-col="score"
+                          value={markEntry.score ?? ""}
                           onChange={(e) => handleScoreChange(student.id, e.target.value)}
-                          className={`h-9 w-28 text-center font-bold text-sm ${
+                          onBlur={(e) => isInvalid && shake(e.currentTarget)}
+                          onWheel={(e) => e.currentTarget.blur()}
+                          className={cn(
+                            "tabular h-9 w-24 rounded-[9px] border bg-surface px-2 text-center text-sm font-semibold text-foreground transition-[border-color,box-shadow] focus-visible:outline-none focus-visible:ring-[3px] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
                             isInvalid
-                              ? "border-rose-500 focus-visible:ring-rose-500 bg-rose-950/20 text-rose-300"
-                              : "bg-slate-950/80 text-white"
-                          }`}
+                              ? "border-danger bg-danger-soft text-danger focus-visible:ring-danger/20"
+                              : "border-border-strong hover:border-accent-blue/40 focus-visible:border-ring focus-visible:ring-ring/20"
+                          )}
                         />
                       ) : (
-                        <span className="text-sm text-white">{markEntry.score === "" ? "—" : markEntry.score}</span>
+                        <span className="tabular text-sm font-medium text-foreground">
+                          {markEntry.score === "" ? "—" : markEntry.score}
+                        </span>
                       )}
                     </TableCell>
 
-                    {/* Live Grade Preview */}
-                    <TableCell className="text-center">
-                      {getGradeBadge(markEntry.grade)}
+                    <TableCell>
+                      {isInvalid ? (
+                        <span className="text-xs font-medium text-danger">0–100 only</span>
+                      ) : (
+                        <GradeBadge grade={markEntry.grade} />
+                      )}
                     </TableCell>
 
-                    {/* Remarks Input */}
                     <TableCell>
                       {canEditMarks ? (
-                        <Input
+                        <input
                           type="text"
-                          placeholder="e.g. Good comprehension, consistent effort"
-                          value={markEntry.remarks}
+                          placeholder="Optional remark"
+                          aria-label={`Remarks for ${student.fullName}`}
+                          data-row={idx}
+                          data-col="remarks"
+                          value={markEntry.remarks ?? ""}
                           onChange={(e) => handleRemarksChange(student.id, e.target.value)}
-                          className="h-9 text-xs bg-slate-950/60"
+                          className="h-9 w-full rounded-[9px] border border-transparent bg-transparent px-2.5 text-[13px] text-foreground placeholder:text-muted-foreground/70 transition-colors hover:border-border focus-visible:border-ring focus-visible:bg-surface focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/20"
                         />
                       ) : (
-                        <span className="text-xs text-slate-300">{markEntry.remarks || "—"}</span>
+                        <span className="text-[13px] text-foreground-2">{markEntry.remarks || "—"}</span>
                       )}
                     </TableCell>
                   </TableRow>
@@ -591,7 +586,57 @@ export default function BatchMarkEntryTab({ classes = [], preselectedExam }) {
             )}
           </TableBody>
         </Table>
-      </Card>
+      </div>
+
+      {/* Sticky save bar */}
+      {canEditMarks && activeExamId && students.length > 0 && (
+        <div className="sticky bottom-4 z-10">
+          <div
+            className={cn(
+              "flex flex-col gap-3 rounded-[14px] border bg-surface/95 px-4 py-3 shadow-pop backdrop-blur-md transition-colors sm:flex-row sm:items-center",
+              hasChanges ? "border-accent-blue/40" : "border-border"
+            )}
+          >
+            <div className="flex flex-1 items-center gap-2 text-[13px]">
+              {hasChanges ? (
+                <>
+                  <span className="h-2 w-2 rounded-full bg-accent-blue" />
+                  <span className="font-medium text-foreground">
+                    {changedIds.size} unsaved {changedIds.size === 1 ? "change" : "changes"}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4 text-success" />
+                  <span className="text-muted-foreground">All changes saved</span>
+                </>
+              )}
+              <span className="ml-3 hidden items-center gap-1.5 text-xs text-muted-foreground lg:flex">
+                <Keyboard className="h-3.5 w-3.5" />
+                Enter or ↑ ↓ moves between students
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {hasChanges && (
+                <Button variant="ghost" size="sm" onClick={discardChanges} disabled={saving} className="gap-1.5">
+                  <Undo2 className="h-4 w-4" />
+                  Discard
+                </Button>
+              )}
+              <Button
+                onClick={handleSaveAll}
+                loading={saving}
+                disabled={!hasChanges || loading || students.length === 0 || !activeExamId}
+                size="sm"
+                className="gap-2"
+              >
+                <Save className="h-4 w-4" />
+                Save All Marks
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

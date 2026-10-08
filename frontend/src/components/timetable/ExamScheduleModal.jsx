@@ -175,7 +175,7 @@ export function ExamScheduleModal({
       <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
-            <Calendar className="h-5 w-5 text-primary" />
+            <Calendar className="h-5 w-5 text-accent-blue" />
             {scheduleToEdit ? 'Edit Exam Session' : 'Schedule Examination Slot'}
           </DialogTitle>
           <p className="text-xs text-muted-foreground">
@@ -191,7 +191,7 @@ export function ExamScheduleModal({
               <select
                 value={classId}
                 onChange={(e) => setClassId(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-full rounded-md border border-input bg-surface px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 <option value="">Open / School-wide (No class)</option>
                 {classes.map((c) => (
@@ -214,7 +214,7 @@ export function ExamScheduleModal({
                       setSubjectId(subjects[0]?.id ? String(subjects[0].id) : '')
                     }
                   }}
-                  className="text-[11px] text-primary hover:underline cursor-pointer font-medium"
+                  className="text-[11px] text-accent-blue hover:underline cursor-pointer font-medium"
                 >
                   {isCustomSubject ? 'Select from list' : '+ Enter custom subject'}
                 </button>
@@ -231,7 +231,7 @@ export function ExamScheduleModal({
                       setSubjectId(e.target.value)
                     }
                   }}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  className="w-full rounded-md border border-input bg-surface px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                 >
                   {subjects.map((s) => (
                     <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
@@ -290,7 +290,7 @@ export function ExamScheduleModal({
             <select
               value={room}
               onChange={(e) => setRoom(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              className="w-full rounded-md border border-input bg-surface px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
             >
               <option value="Home Classroom">Designated Classroom</option>
               <option value="Main Examination Auditorium (G-AUD)">Main Examination Auditorium (G-AUD - 250 seats)</option>
@@ -320,7 +320,7 @@ export function ExamScheduleModal({
               <select
                 value={invigilatorId}
                 onChange={(e) => setInvigilatorId(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-full rounded-md border border-input bg-surface px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 {teachers.map((t) => (
                   <option key={t.id} value={t.id}>
@@ -335,7 +335,7 @@ export function ExamScheduleModal({
               <select
                 value={coInvigilatorId}
                 onChange={(e) => setCoInvigilatorId(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-full rounded-md border border-input bg-surface px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 <option value="">-- None --</option>
                 {teachers.map((t) => (
@@ -369,7 +369,7 @@ export function ExamScheduleModal({
                   <AlertDescription className="text-xs mt-0.5">{conflictState.message}</AlertDescription>
                 </Alert>
               ) : (
-                <div className="flex items-center gap-2 rounded-md bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-300">
+                <div className="flex items-center gap-2 rounded-md bg-success-soft border border-success/20 px-3 py-2 text-xs text-success">
                   <CheckCircle2 className="h-4 w-4 shrink-0" />
                   <span>No exam clashes. Venue and invigilators are completely available.</span>
                 </div>

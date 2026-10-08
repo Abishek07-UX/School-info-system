@@ -45,7 +45,7 @@ export function AutoGeneratorModal({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
-            <Wand2 className="h-5 w-5 text-primary" />
+            <Wand2 className="h-5 w-5 text-accent-blue" />
             Auto-Generate Conflict-Free Timetable
           </DialogTitle>
           <p className="text-xs text-muted-foreground">
@@ -57,11 +57,11 @@ export function AutoGeneratorModal({
           {/* Information box */}
           <div className="rounded-lg border border-border bg-muted/30 p-3.5 space-y-2 text-xs">
             <div className="flex items-center gap-2 font-semibold text-foreground">
-              <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <ShieldCheck className="h-4 w-4 text-success" />
               <span>Backtracking Constraint Engine</span>
             </div>
             <p className="text-muted-foreground leading-relaxed">
-              This engine analyzes existing teacher allocations in <code className="text-primary">teacher_subjects</code>, 
+              This engine analyzes existing teacher allocations in <code className="text-accent-blue">teacher_subjects</code>, 
               checks teacher availability across all classes in the school, and constructs a balanced 40-period schedule (8 periods × 5 days) with:
             </p>
             <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
@@ -72,7 +72,7 @@ export function AutoGeneratorModal({
           </div>
 
           {result && (
-            <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-700 dark:text-emerald-300">
+            <div className="flex items-center gap-2 rounded-lg bg-success-soft border border-success/20 p-3 text-xs text-success">
               <CheckCircle2 className="h-5 w-5 shrink-0" />
               <div>
                 <div className="font-semibold">Successfully Generated!</div>

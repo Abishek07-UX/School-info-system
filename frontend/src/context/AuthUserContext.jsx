@@ -44,6 +44,7 @@ export function AuthUserProvider({ children }) {
       const resData = await response.json();
       if (resData.success) {
         setUserProfile(resData.data || null);
+        return resData.data || null;
       } else {
         throw new Error(
           resData?.error?.message || "Failed to load user profile"

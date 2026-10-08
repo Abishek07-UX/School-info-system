@@ -148,7 +148,7 @@ export function TimetableSlotModal({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
-            <Sparkles className="h-5 w-5 text-primary" />
+            <Sparkles className="h-5 w-5 text-accent-blue" />
             {slotToEdit ? 'Edit Timetable Slot' : 'Assign Timetable Slot'}
           </DialogTitle>
           <p className="text-xs text-muted-foreground">
@@ -165,7 +165,7 @@ export function TimetableSlotModal({
                 id="daySelect"
                 value={dayOfWeek}
                 onChange={(e) => setDayOfWeek(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-full rounded-md border border-input bg-surface px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 {DAYS.map((d) => (
                   <option key={d.key} value={d.key}>{d.label}</option>
@@ -179,7 +179,7 @@ export function TimetableSlotModal({
                 id="periodSelect"
                 value={periodNumber}
                 onChange={(e) => setPeriodNumber(Number(e.target.value))}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-full rounded-md border border-input bg-surface px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 {PERIODS.map((p) => (
                   <option key={p.number} value={p.number}>{p.label}</option>
@@ -195,7 +195,7 @@ export function TimetableSlotModal({
               id="subjectSelect"
               value={subjectId}
               onChange={(e) => setSubjectId(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              className="w-full rounded-md border border-input bg-surface px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
             >
               <option value="" disabled>-- Select Subject --</option>
               {subjects.map((s) => (
@@ -224,7 +224,7 @@ export function TimetableSlotModal({
                 placeholder="Search teacher by name or email..."
                 value={teacherSearch}
                 onChange={(e) => setTeacherSearch(e.target.value)}
-                className="h-8 pl-8 pr-7 text-xs bg-background mb-1"
+                className="h-8 pl-8 pr-7 text-xs bg-surface mb-1"
               />
               {teacherSearch && (
                 <button
@@ -242,7 +242,7 @@ export function TimetableSlotModal({
               id="teacherSelect"
               value={teacherId}
               onChange={(e) => setTeacherId(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              className="w-full rounded-md border border-input bg-surface px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
             >
               <option value="" disabled>-- Select Teacher --</option>
               {teachers
@@ -271,7 +271,7 @@ export function TimetableSlotModal({
                   <AlertDescription className="text-xs mt-0.5">{conflictState.message}</AlertDescription>
                 </Alert>
               ) : (
-                <div className="flex items-center gap-2 rounded-md bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-300">
+                <div className="flex items-center gap-2 rounded-md bg-success-soft border border-success/20 px-3 py-2 text-xs text-success">
                   <CheckCircle2 className="h-4 w-4 shrink-0" />
                   <span>No clashes found. Teacher and class slot are completely free!</span>
                 </div>

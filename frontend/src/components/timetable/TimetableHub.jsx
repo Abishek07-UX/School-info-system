@@ -4,7 +4,6 @@ import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs'
 import { Badge } from '../ui/badge'
-import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
 import {
   Calendar,
   Users,
@@ -22,6 +21,8 @@ import {
   Filter,
   CalendarCheck,
   Clock,
+  MapPin,
+  UserCheck,
 } from 'lucide-react'
 import { timetableService } from '../../services/timetableService'
 import { examScheduleService } from '../../services/examScheduleService'
@@ -34,6 +35,12 @@ import { ExamScheduleModal } from './ExamScheduleModal'
 import { AutoGeneratorModal } from './AutoGeneratorModal'
 import { PrintableTimetable } from './PrintableTimetable'
 import ExamTimetableModal from '../academic/ExamTimetableModal'
+import { useNavigate, useParams } from '@/lib/router'
+import { useToast } from '@/context/ToastContext'
+import { useConfirm } from '@/context/ConfirmContext'
+import { PageHeader } from '../ui/page-header'
+import { formatDate } from '@/lib/format'
+import { TIMETABLE_TABS } from '@/lib/navigation'
 
 const EXAM_TERM_LABELS = {
   TERM_1: 'Term 1',
@@ -43,6 +50,20 @@ const EXAM_TERM_LABELS = {
 }
 
 const getExamTermLabel = (term) => EXAM_TERM_LABELS[term] || term
+
+// "09:00:00" -> "09:00"
+const formatTime = (time) => (time ? String(time).slice(0, 5) : '')
+
+/** Papers grouped by exam date, keeping the incoming (date, time) order. */
+function groupByDate(items) {
+  const groups = new Map()
+  for (const item of items) {
+    const key = item.examDate || ''
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key).push(item)
+  }
+  return [...groups.entries()]
+}
 
 function filterExams(exams, classes, { examGradeFilter, examYearFilter, examTermFilter, examSectionFilter }) {
   return exams.filter((exam) => {
@@ -102,8 +123,14 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
   const isAdmin = role === 'ADMIN'
   const isTeacher = role === 'TEACHER' || authCtx?.isTeacher
 
-  const [activeTab, setActiveTab] = useState(isTeacher ? 'teachers' : 'classes')
+  // The open tab lives in the URL (/timetable/:tab) so refresh and back/forward keep it
+  const { tab: tabParam } = useParams()
+  const navigate = useNavigate()
+  const activeTab = TIMETABLE_TABS.includes(tabParam) ? tabParam : (isTeacher ? 'teachers' : 'classes')
+  const setActiveTab = useCallback((tab) => navigate(`/timetable/${tab}`), [navigate])
   const [academicYear] = useState(2026)
+  const toast = useToast()
+  const confirm = useConfirm()
 
   // Lookups
   const [classes, setClasses] = useState([])
@@ -455,8 +482,22 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
     }
   }, [isTeacher, activeTab, fetchTeacherDuties])
 
+  useEffect(() => {
+    if (!errorMsg) return
+    toast.error(errorMsg)
+    setErrorMsg(null)
+  }, [errorMsg, toast])
+
+  const selectedClass = classes.find((c) => String(c.id) === String(selectedClassId))
+
   const handleClearClass = async () => {
-    if (!window.confirm('Are you sure you want to clear this entire weekly timetable?')) return
+    const ok = await confirm({
+      title: `Clear ${selectedClass?.name || 'this class'}'s timetable?`,
+      description: 'Every period for the week will be removed. Teachers lose these slots from their schedules too.',
+      confirmLabel: 'Clear timetable',
+      tone: 'danger',
+    })
+    if (!ok) return
     try {
       await timetableService.clearClassTimetable(selectedClassId, academicYear, getToken)
       classCache.current.clear()
@@ -468,7 +509,13 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
   }
 
   const handleDeleteSlot = async (slotId) => {
-    if (!window.confirm('Are you sure you want to remove this period slot?')) return
+    const ok = await confirm({
+      title: 'Remove this period?',
+      description: 'The slot is removed from the class timetable and the teacher\'s schedule.',
+      confirmLabel: 'Remove period',
+      tone: 'danger',
+    })
+    if (!ok) return
     try {
       await timetableService.deleteSlot(slotId, getToken)
       classCache.current.clear()
@@ -479,7 +526,6 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
     }
   }
 
-  const selectedClass = classes.find((c) => String(c.id) === String(selectedClassId))
 
   // Available academic years discovered in exams
   const availableExamYears = useMemo(() => {
@@ -511,7 +557,13 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
   )
 
   const handleDeleteExamSlot = async (scheduleId) => {
-    if (!window.confirm('Are you sure you want to delete this exam schedule?')) return
+    const ok = await confirm({
+      title: 'Delete this exam paper?',
+      description: 'It will be removed from the date sheet and from invigilators\' duties.',
+      confirmLabel: 'Delete paper',
+      tone: 'danger',
+    })
+    if (!ok) return
     try {
       await examScheduleService.deleteExamSchedule(scheduleId, getToken)
       examCache.current.clear()
@@ -562,60 +614,39 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
 
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/60 pb-5">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Calendar className="h-6 w-6 text-primary" />
-            Timetable & Scheduling System
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Conflict-free scheduling engine for classes, teachers, and examinations with 40-minute periods and automatic classroom routing.
-          </p>
-        </div>
+      <PageHeader
+        icon={Calendar}
+        title="Timetable"
+        description="Weekly class timetables, teacher schedules and exam date sheets — 40-minute periods from 07:50, conflict-checked."
+        actions={<Badge variant="outline">Academic year {academicYear}</Badge>}
+      />
 
-        {/* Global Year Selector */}
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-xs py-1 px-3 bg-muted/40 font-mono">
-            Academic Year {academicYear}
-          </Badge>
-        </div>
-      </div>
-
-      {errorMsg && (
-        <Alert variant="destructive" className="py-2.5 text-xs">
-          <AlertTitle className="text-xs font-semibold">Error</AlertTitle>
-          <AlertDescription className="text-xs">{errorMsg}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Main Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
-        <TabsList className="grid w-full grid-cols-3 max-w-lg">
-          <TabsTrigger value="teachers" className="flex items-center gap-1.5 text-xs">
-            <Users className="h-3.5 w-3.5" />
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList variant="underline" aria-label="Timetable sections">
+          <TabsTrigger value="teachers">
+            <Users />
             {isTeacher ? "My Schedule" : "Teacher Schedules"}
           </TabsTrigger>
-          <TabsTrigger value="classes" className="flex items-center gap-1.5 text-xs">
-            <GraduationCap className="h-3.5 w-3.5" />
+          <TabsTrigger value="classes">
+            <GraduationCap />
             Class Timetables
           </TabsTrigger>
-          <TabsTrigger value="exams" className="flex items-center gap-1.5 text-xs">
-            <BookOpen className="h-3.5 w-3.5" />
+          <TabsTrigger value="exams">
+            <BookOpen />
             Exam Date Sheets
           </TabsTrigger>
         </TabsList>
 
         {/* TAB 1: CLASS TIMETABLES */}
-        <TabsContent value="classes" forceMount className="space-y-4 data-[state=inactive]:hidden">
+        <TabsContent value="classes" forceMount className="mt-6 space-y-4 data-[state=inactive]:hidden">
           {/* Action Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/70 bg-card p-3 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-border bg-surface p-3 shadow-card">
             <div className="flex items-center gap-3">
               <div className="w-48">
                 <select
                   value={selectedClassId}
                   onChange={(e) => setSelectedClassId(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  className="w-full rounded-md border border-input bg-surface px-3 py-1.5 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                 >
                   {classes.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -692,9 +723,9 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
           </div>
 
           {loadingClass && !classTimetable ? (
-            <div className="flex min-h-[300px] items-center justify-center rounded-xl border border-border bg-card">
+            <div className="flex min-h-[300px] items-center justify-center rounded-xl border border-border bg-surface">
               <div className="flex flex-col items-center gap-2 text-muted-foreground text-xs">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <Loader2 className="h-6 w-6 animate-spin text-accent-blue" />
                 <span>Loading class timetable...</span>
               </div>
             </div>
@@ -718,11 +749,11 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
         </TabsContent>
 
         {/* TAB 2: TEACHER SCHEDULES & ROUTING */}
-        <TabsContent value="teachers" forceMount className="space-y-4 data-[state=inactive]:hidden">
+        <TabsContent value="teachers" forceMount className="mt-6 space-y-4 data-[state=inactive]:hidden">
           {isTeacher ? (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/70 bg-card p-3 shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-border bg-surface p-3 shadow-card">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent-blue-soft text-accent-blue">
                   <Users className="h-5 w-5" />
                 </div>
                 <div>
@@ -763,7 +794,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
               </div>
             </div>
           ) : (
-            <div className="flex flex-col gap-3 rounded-lg border border-border/70 bg-card p-3 shadow-xs">
+            <div className="flex flex-col gap-3 rounded-[12px] border border-border bg-surface p-3 shadow-card">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-2.5">
                   {/* Search Input for Teacher Name */}
@@ -774,7 +805,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                       placeholder="Search teacher by name or email..."
                       value={teacherSearchTerm}
                       onChange={(e) => setTeacherSearchTerm(e.target.value)}
-                      className="h-8 pl-8 pr-7 text-xs bg-background"
+                      className="h-8 pl-8 pr-7 text-xs bg-surface"
                     />
                     {teacherSearchTerm && (
                       <button
@@ -794,7 +825,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                       value={selectedTeacherId}
                       onChange={(e) => setSelectedTeacherId(e.target.value)}
                       disabled={filteredTeachers.length === 0}
-                      className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
+                      className="w-full rounded-md border border-input bg-surface px-3 py-1.5 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
                     >
                       {filteredTeachers.length === 0 ? (
                         <option value="" disabled>No matching teachers</option>
@@ -812,7 +843,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                   {teacherSearchTerm.trim() && (
                     <Badge
                       variant="outline"
-                      className="text-[11px] h-7 px-2.5 bg-primary/5 text-primary border-primary/20 flex items-center gap-1 font-medium"
+                      className="text-[11px] h-7 px-2.5 bg-accent-blue-soft text-accent-blue border-accent-blue/20 flex items-center gap-1 font-medium"
                     >
                       <Filter className="h-3 w-3" />
                       {filteredTeachers.length} of {teachers.length} teachers
@@ -848,7 +879,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
 
               {/* Quick-Select pills when search filter matches multiple teachers */}
               {teacherSearchTerm.trim() && filteredTeachers.length > 1 && filteredTeachers.length <= 8 && (
-                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/40 text-xs">
+                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border text-xs">
                   <span className="text-muted-foreground text-[11px] font-medium mr-1 flex items-center gap-1">
                     Matching Teachers:
                   </span>
@@ -861,8 +892,8 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                         onClick={() => setSelectedTeacherId(t.id)}
                         className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                           isSelected
-                            ? 'bg-primary text-primary-foreground shadow-xs'
-                            : 'bg-muted/60 text-foreground hover:bg-muted border border-border/50'
+                            ? 'bg-primary text-primary-foreground shadow-card'
+                            : 'bg-muted/60 text-foreground hover:bg-muted border border-border'
                         }`}
                       >
                         {t.firstName} {t.lastName}
@@ -876,9 +907,9 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
 
           {isTeacher ? (
             loadingTeacher && !teacherSchedule ? (
-              <div className="flex min-h-[300px] items-center justify-center rounded-xl border border-border bg-card">
+              <div className="flex min-h-[300px] items-center justify-center rounded-xl border border-border bg-surface">
                 <div className="flex flex-col items-center gap-2 text-muted-foreground text-xs">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <Loader2 className="h-6 w-6 animate-spin text-accent-blue" />
                   <span>Loading your teaching timetable...</span>
                 </div>
               </div>
@@ -932,9 +963,9 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                 </Button>
               </Card>
             ) : loadingTeacher && !teacherSchedule ? (
-              <div className="flex min-h-[300px] items-center justify-center rounded-xl border border-border bg-card">
+              <div className="flex min-h-[300px] items-center justify-center rounded-xl border border-border bg-surface">
                 <div className="flex flex-col items-center gap-2 text-muted-foreground text-xs">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <Loader2 className="h-6 w-6 animate-spin text-accent-blue" />
                   <span>Loading faculty timetable...</span>
                 </div>
               </div>
@@ -945,12 +976,12 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
         </TabsContent>
 
         {/* TAB 3: EXAM TIMETABLES & INVIGILATION */}
-        <TabsContent value="exams" forceMount className="space-y-4 data-[state=inactive]:hidden">
-          <div className="flex flex-col gap-3.5 rounded-lg border border-border/70 bg-card p-3.5 shadow-xs">
+        <TabsContent value="exams" forceMount className="mt-6 space-y-4 data-[state=inactive]:hidden">
+          <div className="flex flex-col gap-3.5 rounded-lg border border-border bg-surface p-3.5 shadow-card">
             {/* Top row: Title and Action Buttons */}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                <div className="p-2 rounded-lg bg-accent-blue-soft text-accent-blue">
                   <BookOpen className="h-4 w-4" />
                 </div>
                 <div>
@@ -968,10 +999,10 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                     type="button"
                     size="sm"
                     onClick={() => setOnlyMyDuties(!onlyMyDuties)}
-                    className={`h-8 text-xs gap-1.5 font-medium transition-all shadow-xs ${
+                    className={`h-8 text-xs gap-1.5 font-medium transition-all shadow-card ${
                       onlyMyDuties
-                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white font-semibold ring-2 ring-emerald-500/50'
-                        : 'border border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20'
+                        ? 'bg-success hover:bg-success/90 text-on-accent font-semibold ring-2 ring-success/50'
+                        : 'border border-success/40 text-success bg-success-soft hover:bg-success-soft'
                     }`}
                   >
                     <CalendarCheck className="h-3.5 w-3.5" />
@@ -980,8 +1011,8 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                       variant="secondary"
                       className={`ml-0.5 text-[10px] px-1.5 py-0 h-4 ${
                         onlyMyDuties
-                          ? 'bg-white text-emerald-800 font-bold'
-                          : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-semibold'
+                          ? 'bg-surface text-success font-semibold'
+                          : 'bg-success-soft text-success font-semibold'
                       }`}
                     >
                       {teacherDuties.length}
@@ -994,7 +1025,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                     <Button
                       size="sm"
                       onClick={() => setIsUnifiedExamModalOpen(true)}
-                      className="h-8 text-xs gap-1.5 bg-primary text-primary-foreground shadow-xs hover:bg-primary/90"
+                      className="h-8 text-xs gap-1.5 bg-primary text-primary-foreground shadow-card hover:bg-primary/90"
                     >
                       <Calendar className="h-3.5 w-3.5" />
                       Create Exam Timetable
@@ -1021,12 +1052,12 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
             {/* Bottom row */}
             {!onlyMyDuties ? (
               /* When in standard date sheets mode */
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-border/40">
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-border">
                 <div className="flex flex-wrap items-center gap-2.5">
                   {/* Grade Filter Dropdown */}
                   <div className="flex items-center gap-1.5">
                     <span className="text-muted-foreground text-[11px] font-medium flex items-center gap-1 whitespace-nowrap">
-                      <GraduationCap className="h-3.5 w-3.5 text-primary" /> Grade:
+                      <GraduationCap className="h-3.5 w-3.5 text-accent-blue" /> Grade:
                     </span>
                     <select
                       value={examGradeFilter}
@@ -1034,7 +1065,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                         const val = e.target.value
                         setExamGradeFilter(val)
                       }}
-                      className="rounded-md border border-input bg-background px-2.5 py-1.5 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-ring font-medium"
+                      className="rounded-md border border-input bg-surface px-2.5 py-1.5 text-xs shadow-card focus:outline-none focus:ring-1 focus:ring-ring font-medium"
                     >
                       <option value="ALL">All Grades (1–13)</option>
                       {Array.from({ length: 13 }, (_, i) => i + 1).map((g) => (
@@ -1052,12 +1083,12 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                       {/* Term Filter Dropdown */}
                       <div className="flex items-center gap-1.5">
                         <span className="text-muted-foreground text-[11px] font-medium flex items-center gap-1 whitespace-nowrap">
-                          <Clock className="h-3.5 w-3.5 text-primary" /> Term:
+                          <Clock className="h-3.5 w-3.5 text-accent-blue" /> Term:
                         </span>
                         <select
                           value={examTermFilter}
                           onChange={(e) => setExamTermFilter(e.target.value)}
-                          className="rounded-md border border-input bg-background px-2.5 py-1.5 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-ring font-medium"
+                          className="rounded-md border border-input bg-surface px-2.5 py-1.5 text-xs shadow-card focus:outline-none focus:ring-1 focus:ring-ring font-medium"
                         >
                           <option value="ALL">All Terms</option>
                           <option value="TERM_1">Term 1</option>
@@ -1070,13 +1101,13 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                       {/* Section Filter Dropdown */}
                       <div className="flex items-center gap-1.5">
                         <span className="text-muted-foreground text-[11px] font-medium flex items-center gap-1 whitespace-nowrap">
-                          <Users className="h-3.5 w-3.5 text-primary" /> Section:
+                          <Users className="h-3.5 w-3.5 text-accent-blue" /> Section:
                         </span>
                         <select
                           value={examSectionFilter}
                           onChange={(e) => setExamSectionFilter(e.target.value)}
                           disabled={examGradeFilter === 'ALL' || availableSections.length === 0}
-                          className="rounded-md border border-input bg-background px-2.5 py-1.5 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-ring font-medium disabled:opacity-60"
+                          className="rounded-md border border-input bg-surface px-2.5 py-1.5 text-xs shadow-card focus:outline-none focus:ring-1 focus:ring-ring font-medium disabled:opacity-60"
                         >
                           <option value="ALL">
                             {examGradeFilter === 'ALL'
@@ -1098,12 +1129,12 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                   {/* Year Filter Dropdown */}
                   <div className="flex items-center gap-1.5">
                     <span className="text-muted-foreground text-[11px] font-medium flex items-center gap-1 whitespace-nowrap">
-                      <Calendar className="h-3.5 w-3.5 text-primary" /> Year:
+                      <Calendar className="h-3.5 w-3.5 text-accent-blue" /> Year:
                     </span>
                     <select
                       value={examYearFilter}
                       onChange={(e) => setExamYearFilter(e.target.value)}
-                      className="rounded-md border border-input bg-background px-2 py-1.5 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-ring font-medium"
+                      className="rounded-md border border-input bg-surface px-2 py-1.5 text-xs shadow-card focus:outline-none focus:ring-1 focus:ring-ring font-medium"
                     >
                       <option value="ALL">All Years</option>
                       {availableExamYears.map((yr) => (
@@ -1116,12 +1147,12 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
 
                   {/* Scope Summary Badge */}
                   {examGradeFilter === 'SCHOOL_WIDE' ? (
-                    <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[11px] gap-1 py-1 font-medium">
+                    <Badge variant="outline" className="border-warning/40 bg-warning-soft text-warning text-[11px] gap-1 py-1 font-medium">
                       <Sparkles className="h-3 w-3" />
                       School-Wide Date Sheets ({displayedExamSchedules.length} papers)
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[11px] gap-1 py-1 font-medium">
+                    <Badge variant="outline" className="border-accent-blue/30 bg-accent-blue-soft text-accent-blue text-[11px] gap-1 py-1 font-medium">
                       <GraduationCap className="h-3 w-3" />
                       {examGradeFilter === 'ALL' ? 'All Grades' : `Grade ${examGradeFilter}`}
                       {examTermFilter !== 'ALL' ? ` • ${examTermFilter.replace('TERM_', 'Term ')}` : ''}
@@ -1136,7 +1167,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                   {isTeacher && myDutiesInCurrentExam.length > 0 && (
                     <Badge
                       variant="outline"
-                      className="border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs gap-1.5 py-1 font-medium"
+                      className="border-success/40 bg-success-soft text-success text-xs gap-1.5 py-1 font-medium"
                     >
                       <CalendarCheck className="h-3.5 w-3.5" />
                       You have {myDutiesInCurrentExam.length} assigned dut{myDutiesInCurrentExam.length === 1 ? 'y' : 'ies'} in this date sheet
@@ -1163,9 +1194,9 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
               </div>
             ) : (
               /* When in onlyMyDuties mode: Title & Back toggle */
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-border/40">
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-border">
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs py-0.5 px-2 font-medium flex items-center gap-1.5">
+                  <Badge className="bg-success-soft text-success border border-success/30 text-xs py-0.5 px-2 font-medium flex items-center gap-1.5">
                     <CalendarCheck className="h-3.5 w-3.5" />
                     Personal Invigilation View: {teacherDuties.length} session{teacherDuties.length === 1 ? '' : 's'} assigned
                   </Badge>
@@ -1188,7 +1219,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                     variant="ghost"
                     size="sm"
                     onClick={() => setOnlyMyDuties(false)}
-                    className="h-8 text-xs gap-1 text-primary hover:bg-primary/10"
+                    className="h-8 text-xs gap-1 text-accent-blue hover:bg-accent-blue-soft"
                   >
                     <BookOpen className="h-3.5 w-3.5" />
                     Browse All Exam Date Sheets
@@ -1202,15 +1233,15 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
           {onlyMyDuties ? (
             /* TEACHER PERSONAL DUTIES LIST */
             loadingTeacherDuties ? (
-              <div className="flex min-h-[250px] items-center justify-center rounded-xl border border-border bg-card">
+              <div className="flex min-h-[250px] items-center justify-center rounded-xl border border-border bg-surface">
                 <div className="flex flex-col items-center gap-2 text-xs text-muted-foreground">
-                  <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
+                  <Loader2 className="h-6 w-6 animate-spin text-success" />
                   <span>Loading your assigned exam duties...</span>
                 </div>
               </div>
             ) : teacherDuties.length === 0 ? (
               <Card className="border-dashed p-10 text-center space-y-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 mx-auto text-emerald-600">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success-soft mx-auto text-success">
                   <CalendarCheck className="h-6 w-6" />
                 </div>
                 <div>
@@ -1237,11 +1268,11 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                     (userProfile?.firstName && duty.invigilatorName?.toLowerCase().includes(userProfile.firstName.toLowerCase()))
 
                   return (
-                    <Card key={duty.id} className="border-emerald-500/30 shadow-xs hover:shadow-md transition-shadow bg-card">
+                    <Card key={duty.id} className="border-success/30 shadow-card hover:shadow-md transition-shadow bg-surface">
                       <CardContent className="p-4 space-y-2.5">
                         <div className="flex items-center justify-between gap-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <Badge className={isChief ? "bg-emerald-600 text-white text-xs font-semibold" : "bg-blue-600 text-white text-xs"}>
+                            <Badge className={isChief ? "bg-success text-on-accent text-xs font-semibold" : "bg-accent-blue text-on-accent text-xs"}>
                               {isChief ? "Chief Invigilator" : "Assistant Invigilator"}
                             </Badge>
                             <Badge variant="outline" className="text-[10px]">
@@ -1253,9 +1284,9 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                               </Badge>
                             )}
                           </div>
-                          <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                          <span className="text-xs font-semibold text-success flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            {duty.examDate}
+                            {formatDate(duty.examDate, { weekday: "short", day: "numeric", month: "short" })}
                           </span>
                         </div>
 
@@ -1273,13 +1304,13 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                           </h4>
                         </div>
 
-                        <div className="rounded-md bg-muted/40 p-2.5 text-xs space-y-1.5 border border-border/40">
+                        <div className="rounded-md bg-muted/40 p-2.5 text-xs space-y-1.5 border border-border">
                           <div className="flex items-center justify-between text-muted-foreground">
                             <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                              <Clock className="h-3 w-3 text-success" />
                               Time:
                             </span>
-                            <strong className="text-foreground">{duty.startTime} – {duty.endTime}</strong>
+                            <strong className="text-foreground">{formatTime(duty.startTime)}–{formatTime(duty.endTime)}</strong>
                           </div>
                           <div className="flex items-center justify-between text-muted-foreground">
                             <span>Venue / Room:</span>
@@ -1298,7 +1329,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                         </div>
 
                         {duty.instructions && (
-                          <p className="text-[11px] text-muted-foreground italic border-l-2 border-emerald-500/40 pl-2">
+                          <p className="text-[11px] text-muted-foreground italic border-l-2 border-success/40 pl-2">
                             {duty.instructions}
                           </p>
                         )}
@@ -1311,8 +1342,8 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
           ) : (
             /* STANDARD EXAM SCHEDULES LIST */
             loadingExams && displayedExamSchedules.length === 0 ? (
-              <div className="flex min-h-[250px] items-center justify-center rounded-xl border border-border bg-card">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <div className="flex min-h-[250px] items-center justify-center rounded-xl border border-border bg-surface">
+                <Loader2 className="h-6 w-6 animate-spin text-accent-blue" />
               </div>
             ) : filteredExams.length === 0 ? (
               <Card className="border-dashed p-10 text-center space-y-3">
@@ -1355,7 +1386,7 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
               </Card>
             ) : displayedExamSchedules.length === 0 ? (
               <Card className="border-dashed p-10 text-center space-y-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10 mx-auto text-amber-600">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-warning-soft mx-auto text-warning">
                   <Calendar className="h-6 w-6" />
                 </div>
                 <div>
@@ -1394,107 +1425,128 @@ export function TimetableHub({ userRole = 'ADMIN', userProfile: propUserProfile,
                 )}
               </Card>
             ) : (
-              <div className="space-y-4">
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {displayedExamSchedules.slice(0, visibleExamCount).map((item) => {
-                  const isMyDuty = isTeacher && userProfile && (
-                    (item.invigilatorId && String(item.invigilatorId) === String(userProfile.id)) ||
-                    (item.coInvigilatorId && String(item.coInvigilatorId) === String(userProfile.id)) ||
-                    (userProfile.firstName && item.invigilatorName && item.invigilatorName.toLowerCase().includes(userProfile.firstName.toLowerCase()))
-                  )
-
+              <div className="space-y-6">
+                {groupByDate(displayedExamSchedules.slice(0, visibleExamCount)).map(([date, items]) => {
+                  const parsed = date ? new Date(`${date}T00:00:00`) : null
                   return (
-                    <Card key={item.id} className={`border-border/70 shadow-xs hover:shadow-md transition-shadow ${isMyDuty ? "ring-1 ring-emerald-500/40" : ""}`}>
-                      <CardContent className="p-4 space-y-2.5">
-                        <div className="flex items-center justify-between gap-1">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <Badge
-                              variant={item.classId ? "secondary" : "outline"}
-                              className={`font-bold text-xs ${!item.classId ? "border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-400" : ""}`}
-                            >
-                              {item.className || 'School-wide'}
-                            </Badge>
-                            {item.term && (
-                              <Badge variant="outline" className="text-[10px] font-medium">
-                                {getExamTermLabel(item.term)}{item.academicYear ? ` (${item.academicYear})` : ''}
-                              </Badge>
-                            )}
-                            {isMyDuty && (
-                              <Badge className="bg-emerald-600 text-white text-[10px] py-0 px-1.5 font-medium">
-                                Your Duty
-                              </Badge>
-                            )}
-                          </div>
-                          <span className="text-xs font-semibold text-primary">{item.examDate}</span>
+                    <section key={date || 'undated'} aria-label={date ? formatDate(date, { weekday: 'long', day: 'numeric', month: 'long' }) : 'Undated'}>
+                      <div className="sticky top-14 z-[5] -mx-1 mb-3 flex items-center gap-3 bg-background/90 px-1 py-2 backdrop-blur-md">
+                        <div className="flex h-11 w-11 flex-col items-center justify-center rounded-[10px] bg-accent-blue-soft leading-none text-accent-blue">
+                          <span className="text-[10px] font-semibold uppercase">
+                            {parsed ? parsed.toLocaleDateString(undefined, { month: 'short' }) : '—'}
+                          </span>
+                          <span className="text-base font-semibold">{parsed ? parsed.getDate() : ''}</span>
                         </div>
-
                         <div>
-                          <h4 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                            <span>{item.subjectName || item.customSubjectName || 'Assessment'}</span>
-                            {(!item.subjectId || item.customSubjectName) && (
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-indigo-500/30 text-indigo-400 bg-indigo-500/10 font-normal">
-                                Custom
-                              </Badge>
-                            )}
-                          </h4>
-                          <p className="text-xs text-muted-foreground">{item.subjectCode && item.subjectCode !== 'OTHER' ? `${item.subjectCode} • ` : ''}Max Marks: {item.maxMarks}</p>
+                          <div className="text-sm font-semibold text-foreground">
+                            {parsed ? parsed.toLocaleDateString(undefined, { weekday: 'long' }) : 'Date to be confirmed'}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {items.length} {items.length === 1 ? 'paper' : 'papers'}
+                          </div>
                         </div>
+                      </div>
 
-                        <div className="rounded-md bg-muted/40 p-2 text-xs space-y-1 border border-border/40">
-                          <div className="flex items-center justify-between text-muted-foreground">
-                            <span>Time:</span>
-                            <strong className="text-foreground">{item.startTime} – {item.endTime}</strong>
-                          </div>
-                          <div className="flex items-center justify-between text-muted-foreground">
-                            <span>Venue:</span>
-                            <strong className="text-foreground truncate max-w-[150px]">{item.room || 'Classroom'}</strong>
-                          </div>
-                          <div className="flex items-center justify-between text-muted-foreground">
-                            <span>Chief Invigilator:</span>
-                            <strong className="text-foreground truncate max-w-[150px]">{item.invigilatorName}</strong>
-                          </div>
-                          {item.coInvigilatorName && (
-                            <div className="flex items-center justify-between text-muted-foreground">
-                              <span>Assistant:</span>
-                              <strong className="text-foreground truncate max-w-[150px]">{item.coInvigilatorName}</strong>
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {items.map((item) => {
+                          const isMyDuty = isTeacher && userProfile && (
+                            (item.invigilatorId && String(item.invigilatorId) === String(userProfile.id)) ||
+                            (item.coInvigilatorId && String(item.coInvigilatorId) === String(userProfile.id)) ||
+                            (userProfile.firstName && item.invigilatorName && item.invigilatorName.toLowerCase().includes(userProfile.firstName.toLowerCase()))
+                          )
+
+                          return (
+                            <div
+                              key={item.id}
+                              className={`flex flex-col rounded-[12px] border bg-surface p-4 shadow-card transition-shadow hover:shadow-pop ${isMyDuty ? 'border-success/50 ring-1 ring-success/30' : 'border-border'}`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <h4 className="flex items-center gap-1.5 truncate text-sm font-semibold text-foreground">
+                                    <span className="truncate">{item.subjectName || item.customSubjectName || 'Assessment'}</span>
+                                    {(!item.subjectId || item.customSubjectName) && (
+                                      <Badge variant="info" className="px-1.5 py-0 text-[10px]">Custom</Badge>
+                                    )}
+                                  </h4>
+                                  <p className="text-xs text-muted-foreground">
+                                    {item.subjectCode && item.subjectCode !== 'OTHER' ? `${item.subjectCode} · ` : ''}Max {item.maxMarks} marks
+                                  </p>
+                                </div>
+                                {item.classId ? (
+                                  <Badge variant="secondary" className="shrink-0">{item.className}</Badge>
+                                ) : (
+                                  <Badge variant="warning" className="shrink-0">School-wide</Badge>
+                                )}
+                              </div>
+
+                              <dl className="mt-3 space-y-1.5 text-[13px]">
+                                <div className="flex items-center gap-2 text-foreground-2">
+                                  <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                  <dt className="sr-only">Time</dt>
+                                  <dd className="tabular font-medium text-foreground">
+                                    {formatTime(item.startTime)}–{formatTime(item.endTime)}
+                                  </dd>
+                                  {item.term && (
+                                    <span className="ml-auto text-[11px] text-muted-foreground">
+                                      {getExamTermLabel(item.term)}{item.academicYear ? ` · ${item.academicYear}` : ''}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 text-foreground-2">
+                                  <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                  <dt className="sr-only">Venue</dt>
+                                  <dd className="truncate">{item.room || 'Classroom'}</dd>
+                                </div>
+                                <div className="flex items-center gap-2 text-foreground-2">
+                                  <UserCheck className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                  <dt className="sr-only">Chief invigilator</dt>
+                                  <dd className="truncate">
+                                    {item.invigilatorName}
+                                    {item.coInvigilatorName && (
+                                      <span className="text-muted-foreground"> · with {item.coInvigilatorName}</span>
+                                    )}
+                                  </dd>
+                                  {isMyDuty && (
+                                    <Badge variant="success" className="ml-auto shrink-0 px-1.5 py-0 text-[10px]">Your duty</Badge>
+                                  )}
+                                </div>
+                              </dl>
+
+                              {item.instructions && (
+                                <p className="mt-3 border-l-2 border-accent-blue/40 pl-2 text-xs italic text-muted-foreground">
+                                  {item.instructions}
+                                </p>
+                              )}
+
+                              {isAdmin && (
+                                <div className="mt-3 flex justify-end gap-1 border-t border-border pt-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="xs"
+                                    onClick={() => {
+                                      setExamScheduleToEdit(item)
+                                      setIsExamModalOpen(true)
+                                    }}
+                                  >
+                                    Edit
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="xs"
+                                    onClick={() => handleDeleteExamSlot(item.id)}
+                                    className="text-danger hover:bg-danger-soft hover:text-danger"
+                                  >
+                                    Delete
+                                  </Button>
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-
-                        {item.instructions && (
-                          <p className="text-[11px] text-muted-foreground italic border-l-2 border-primary/40 pl-2">
-                            {item.instructions}
-                          </p>
-                        )}
-
-                        {isAdmin && (
-                          <div className="flex justify-end gap-2 pt-2 border-t border-border/40">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setExamScheduleToEdit(item)
-                                setIsExamModalOpen(true)
-                              }}
-                              className="h-7 text-xs px-2"
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteExamSlot(item.id)}
-                              className="h-7 text-xs px-2 text-destructive hover:bg-destructive/10"
-                            >
-                              Delete
-                            </Button>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
+                          )
+                        })}
+                      </div>
+                    </section>
                   )
                 })}
-                </div>
                 {displayedExamSchedules.length > visibleExamCount && (
                   <Button variant="outline" className="w-full" onClick={() => setVisibleExamCount((count) => count + 48)}>
                     Show more papers ({displayedExamSchedules.length - visibleExamCount} remaining)

@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useAuthUser } from "@/context/AuthUserContext"
+import { useToast } from "@/context/ToastContext"
 import { useUser } from "@clerk/react"
 import {
   Dialog,
@@ -9,34 +10,27 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
-import {
-  User,
-  CheckCircle2,
-  AlertCircle,
-  Save,
-} from "lucide-react"
+import { AlertCircle, Save } from "lucide-react"
+import { ROLE_LABELS } from "@/lib/modules"
+import { EMPTY_PROFILE, toProfilePayload, validateStaffProfile } from "@/lib/staffProfile"
+import { shake } from "@/lib/motion"
+import { StaffProfileFields } from "./common/StaffProfileFields"
+
+const ALL_SHOWN = Object.fromEntries(Object.keys(EMPTY_PROFILE).map((k) => [k, true]))
 
 export default function StaffProfileModal({ isOpen, onClose, required = false }) {
   const { userProfile, updateProfile, role } = useAuthUser()
   const { user: clerkUser } = useUser()
+  const toast = useToast()
 
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phoneNumber: "",
-    nicNumber: "",
-    address: "",
-  })
+  const [formData, setFormData] = useState(EMPTY_PROFILE)
+  const [shown, setShown] = useState({})
   const [saving, setSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState(null)
-  const [successMsg, setSuccessMsg] = useState(null)
+  const formRef = useRef(null)
 
   useEffect(() => {
     if (userProfile) {
@@ -53,50 +47,37 @@ export default function StaffProfileModal({ isOpen, onClose, required = false })
         address: userProfile.address || "",
       })
     }
-  }, [userProfile, clerkUser])
+  }, [userProfile, clerkUser, isOpen])
+
+  // Start each opening fresh
+  useEffect(() => {
+    if (isOpen) {
+      setShown({})
+      setErrorMsg(null)
+    }
+  }, [isOpen])
 
   if (!isOpen) return null
 
+  const errors = validateStaffProfile(formData)
+
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setSaving(true)
     setErrorMsg(null)
-    setSuccessMsg(null)
 
+    if (Object.keys(errors).length > 0) {
+      setShown(ALL_SHOWN)
+      shake(formRef.current)
+      const first = Object.keys(EMPTY_PROFILE).find((name) => errors[name])
+      formRef.current?.querySelector(`[name="${first}"]`)?.focus()
+      return
+    }
+
+    setSaving(true)
     try {
-      if (!formData.email || !formData.email.includes("@")) {
-        throw new Error("Please enter a valid official email address.")
-      }
-      let cleanPhone = formData.phoneNumber
-      if (formData.phoneNumber) {
-        cleanPhone = formData.phoneNumber.trim().replaceAll(/[\s\-()]/g, "")
-        if (!/^[0-9]{10}$/.test(cleanPhone)) {
-          throw new Error(
-            "Phone number must contain exactly 10 digits with no special symbols (e.g. 0771234567)."
-          )
-        }
-      }
-
-      if (!formData.nicNumber || !formData.nicNumber.trim()) {
-        throw new Error("National Identity Card (NIC) number is required.")
-      }
-
-      const cleanNic = formData.nicNumber.trim().toUpperCase()
-      if (!/^([0-9]{12}|[0-9]{9}V)$/.test(cleanNic)) {
-        throw new Error(
-          "NIC number must be either 12 digits (e.g. 199012345678) or 9 digits followed by 'V' (e.g. 901234567V)."
-        )
-      }
-
-      await updateProfile({
-        ...formData,
-        phoneNumber: cleanPhone,
-        nicNumber: cleanNic,
-      })
-      setSuccessMsg("Staff profile details updated successfully.")
-      setTimeout(() => {
-        if (onClose) onClose()
-      }, 1200)
+      await updateProfile(toProfilePayload(formData))
+      toast.success("Staff profile details updated successfully.")
+      onClose?.()
     } catch (err) {
       setErrorMsg(err.message)
     } finally {
@@ -106,145 +87,45 @@ export default function StaffProfileModal({ isOpen, onClose, required = false })
 
   return (
     <Dialog open={isOpen} onOpenChange={!required ? onClose : undefined}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg" hideClose={required}>
         <DialogHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#1f1f21] border-[0.5px] border-white/10 text-[#3b82f6]">
-              <User className="h-4 w-4" />
-            </div>
-            <div>
-              <DialogTitle className="text-lg font-normal tracking-tight text-white">
-                {required ? "Complete Staff Profile" : "Staff Profile & Credentials"}
-              </DialogTitle>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge variant="default" className="font-normal text-[10px]">
-                  Role: {role}
-                </Badge>
-                <Badge variant="secondary" className="font-normal text-[10px]">
-                  ID: {userProfile?.id ? `#${userProfile.id}` : "Registered"}
-                </Badge>
-              </div>
-            </div>
-          </div>
-          <DialogDescription className="text-[#858687] text-xs mt-2">
-            View and update your registered identification and contact details in the school operational database.
+          <DialogTitle>{required ? "Complete Staff Profile" : "Your profile"}</DialogTitle>
+          <DialogDescription>
+            Keep your contact and identity details up to date for school records.
           </DialogDescription>
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <Badge variant="secondary">{ROLE_LABELS[role] || role}</Badge>
+            {userProfile?.id && <Badge variant="outline" className="tabular">Staff #{userProfile.id}</Badge>}
+          </div>
         </DialogHeader>
 
         {errorMsg && (
-          <Alert variant="destructive" className="my-2">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
+          <Alert variant="destructive">
+            <AlertCircle />
+            <AlertTitle>We couldn't save your profile</AlertTitle>
             <AlertDescription>{errorMsg}</AlertDescription>
           </Alert>
         )}
 
-        {successMsg && (
-          <Alert variant="success" className="my-2">
-            <CheckCircle2 className="h-4 w-4" />
-            <AlertTitle>Saved</AlertTitle>
-            <AlertDescription>{successMsg}</AlertDescription>
-          </Alert>
-        )}
+        <form ref={formRef} onSubmit={handleSubmit} noValidate className="space-y-5">
+          <StaffProfileFields
+            idPrefix="prof-"
+            value={formData}
+            onChange={setFormData}
+            errors={errors}
+            shown={shown}
+            onBlur={(name) => setShown((s) => ({ ...s, [name]: true }))}
+          />
 
-        <form onSubmit={handleSubmit} className="space-y-3.5 my-2">
-          {/* First & Last Name */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="space-y-1">
-              <Label htmlFor="prof-firstName" className="text-xs text-[#cececf]">First Name *</Label>
-              <Input
-                id="prof-firstName"
-                type="text"
-                required
-                value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                placeholder="John"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="prof-lastName" className="text-xs text-[#cececf]">Last Name *</Label>
-              <Input
-                id="prof-lastName"
-                type="text"
-                required
-                value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                placeholder="Silva"
-              />
-            </div>
-          </div>
-
-          {/* Email */}
-          <div className="space-y-1">
-            <Label htmlFor="prof-email" className="text-xs text-[#cececf]">Official Email Address *</Label>
-            <Input
-              id="prof-email"
-              type="email"
-              required
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="john.silva@ascentric.lk"
-            />
-          </div>
-
-          {/* Phone & NIC */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="space-y-1">
-              <Label htmlFor="prof-phone" className="text-xs text-[#cececf]">Phone (10 Digits) *</Label>
-              <Input
-                id="prof-phone"
-                type="tel"
-                required
-                maxLength={10}
-                value={formData.phoneNumber}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    phoneNumber: e.target.value.replace(/[^0-9]/g, ""),
-                  })
-                }
-                placeholder="0771234567"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="prof-nic" className="text-xs text-[#cececf]">National ID (NIC) *</Label>
-              <Input
-                id="prof-nic"
-                type="text"
-                required
-                value={formData.nicNumber}
-                onChange={(e) =>
-                  setFormData({ ...formData, nicNumber: e.target.value.toUpperCase() })
-                }
-                placeholder="199012345678"
-              />
-            </div>
-          </div>
-
-          {/* Address */}
-          <div className="space-y-1">
-            <Label htmlFor="prof-address" className="text-xs text-[#cececf]">Residential Address *</Label>
-            <Textarea
-              id="prof-address"
-              required
-              rows={2}
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              placeholder="No. 45, Temple Road, Colombo"
-            />
-          </div>
-
-          <DialogFooter className="pt-2 gap-2 sm:gap-0">
+          <DialogFooter>
             {!required && onClose && (
-              <Button type="button" variant="ghost" onClick={onClose} className="text-xs">
+              <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
             )}
-            <Button type="submit" disabled={saving} className="gap-2 text-xs">
-              <Save className="h-3.5 w-3.5" />
-              {saving ? "Saving..." : "Save Profile Details"}
+            <Button type="submit" loading={saving} className="gap-2">
+              <Save className="h-4 w-4" />
+              Save Profile Details
             </Button>
           </DialogFooter>
         </form>

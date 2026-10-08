@@ -1,33 +1,35 @@
 import { useState } from "react"
 import { useAuthUser } from "@/context/AuthUserContext"
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card"
+import { useToast } from "@/context/ToastContext"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import {
-  Clock,
-  RefreshCw,
-  Edit,
-  UserCheck,
-  Mail,
-  Phone,
-  CreditCard,
-  MapPin,
-} from "lucide-react"
+import { Clock, RefreshCw, Edit, Mail, Phone, CreditCard, MapPin, User } from "lucide-react"
+import { useFadeRise } from "@/hooks/useMotion"
+import { RegistrationSteps } from "./common/RegistrationSteps"
+
+function Detail({ icon: Icon, label, children, wide }) {
+  return (
+    <div className={wide ? "sm:col-span-2" : undefined}>
+      <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Icon className="h-3.5 w-3.5" /> {label}
+      </dt>
+      <dd className="mt-0.5 truncate text-sm text-foreground">{children || "—"}</dd>
+    </div>
+  )
+}
 
 export default function PendingApprovalView({ onEditProfile }) {
   const { userProfile, refreshUser, loading } = useAuthUser()
+  const toast = useToast()
   const [checking, setChecking] = useState(false)
+  const cardRef = useFadeRise([], { y: 12 })
 
   const handleCheckStatus = async () => {
     setChecking(true)
-    await refreshUser()
+    const fresh = await refreshUser()
     setChecking(false)
+    const stillPending = !fresh || !fresh.role || fresh.role === "PENDING" || fresh.status === "PENDING_APPROVAL"
+    if (stillPending) toast.info("Not approved yet — an administrator still needs to assign your role.")
   }
 
   const fullName =
@@ -35,108 +37,47 @@ export default function PendingApprovalView({ onEditProfile }) {
     "Staff Member"
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-12">
-      <Card className="p-2">
-        <CardHeader className="text-center pb-6">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[10px] bg-[#1f1f21] border-[0.5px] border-white/10 text-[#ea580c]">
+    <div className="mx-auto max-w-xl px-4 py-10 sm:py-14">
+      <RegistrationSteps current={1} className="mb-8" />
+
+      <div ref={cardRef} className="rounded-[16px] border border-border bg-surface p-6 shadow-pop sm:p-8">
+        <div className="text-center">
+          <div className="relative mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-warning-soft text-warning">
             <Clock className="h-6 w-6" />
+            <span className="absolute inset-0 animate-ping rounded-full bg-warning/15 [animation-duration:2.4s]" />
           </div>
-
-          <div className="flex justify-center mb-2">
-            <Badge variant="warning" className="font-normal">
-              Status: Awaiting Role Assignment
-            </Badge>
-          </div>
-
-          <CardTitle className="text-xl font-normal tracking-tight text-[#ffffff]">
-            Registration Submitted, {fullName}
-          </CardTitle>
-          <CardDescription className="text-xs text-[#858687] max-w-md mx-auto">
-            Your staff identification details are logged in the school database. An Administrator will review your credentials and assign your operational role.
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent className="space-y-6">
-          {/* Submitted Staff Summary Record */}
-          <div className="rounded-[10px] border-[0.5px] border-white/10 bg-[#1f1f21] p-4">
-            <div className="flex items-center justify-between border-b-[0.5px] border-white/10 pb-3 mb-3">
-              <div className="flex items-center gap-2 text-xs font-medium text-white">
-                <UserCheck className="h-3.5 w-3.5 text-[#3b82f6]" />
-                Submitted Staff Record
-              </div>
-              {onEditProfile && (
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  onClick={onEditProfile}
-                  className="gap-1 text-xs text-[#3b82f6] hover:text-white"
-                >
-                  <Edit className="h-3 w-3" /> Edit Details
-                </Button>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 text-xs">
-              <div className="space-y-1">
-                <span className="text-[#858687] flex items-center gap-1.5 text-[11px]">
-                  <UserCheck className="h-3 w-3 text-[#858687]" /> Full Name
-                </span>
-                <div className="text-[#ffffff] font-normal">{fullName}</div>
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-[#858687] flex items-center gap-1.5 text-[11px]">
-                  <Mail className="h-3 w-3 text-[#858687]" /> Official Email
-                </span>
-                <div className="text-[#ffffff] font-normal truncate">
-                  {userProfile?.email || "N/A"}
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-[#858687] flex items-center gap-1.5 text-[11px]">
-                  <CreditCard className="h-3 w-3 text-[#858687]" /> National ID (NIC)
-                </span>
-                <div className="font-mono text-[#ffffff]">
-                  {userProfile?.nicNumber || "N/A"}
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-[#858687] flex items-center gap-1.5 text-[11px]">
-                  <Phone className="h-3 w-3 text-[#858687]" /> Phone Number
-                </span>
-                <div className="text-[#ffffff] font-normal">
-                  {userProfile?.phoneNumber || "N/A"}
-                </div>
-              </div>
-
-              <div className="sm:col-span-2 space-y-1 pt-2 border-t-[0.5px] border-white/[0.05]">
-                <span className="text-[#858687] flex items-center gap-1.5 text-[11px]">
-                  <MapPin className="h-3 w-3 text-[#858687]" /> Residential Address
-                </span>
-                <div className="text-[#cececf]">
-                  {userProfile?.address || "N/A"}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <Button
-            onClick={handleCheckStatus}
-            disabled={checking || loading}
-            size="lg"
-            className="w-full gap-2 text-sm"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${checking ? "animate-spin" : ""}`} />
-            {checking ? "Verifying Approval Status..." : "Check Approval Status"}
-          </Button>
-
-          <p className="text-center text-[11px] text-[#858687] leading-relaxed">
-            Once an Administrator assigns your role in User Management, checking approval status will unlock your operational modules.
+          <Badge variant="warning" dot>
+            Status: Awaiting Role Assignment
+          </Badge>
+          <h1 className="mt-3 text-title text-foreground">Thanks, {fullName} — you're registered</h1>
+          <p className="mx-auto mt-1.5 max-w-md text-sm text-muted-foreground">
+            An administrator will check your details and assign your role. Once that's done, your modules unlock here.
           </p>
-        </CardContent>
-      </Card>
+        </div>
+
+        <div className="mt-6 rounded-[12px] border border-border bg-surface-2/60 p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">Submitted details</span>
+            {onEditProfile && (
+              <Button variant="ghost" size="xs" onClick={onEditProfile} className="gap-1.5">
+                <Edit className="h-3.5 w-3.5" /> Edit Details
+              </Button>
+            )}
+          </div>
+          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Detail icon={User} label="Full name">{fullName}</Detail>
+            <Detail icon={Mail} label="Email">{userProfile?.email}</Detail>
+            <Detail icon={CreditCard} label="NIC"><span className="tabular">{userProfile?.nicNumber}</span></Detail>
+            <Detail icon={Phone} label="Phone"><span className="tabular">{userProfile?.phoneNumber}</span></Detail>
+            <Detail icon={MapPin} label="Address" wide>{userProfile?.address}</Detail>
+          </dl>
+        </div>
+
+        <Button onClick={handleCheckStatus} loading={checking} disabled={loading} size="lg" className="mt-6 w-full gap-2">
+          <RefreshCw className="h-4 w-4" />
+          Check Approval Status
+        </Button>
+      </div>
     </div>
   )
 }

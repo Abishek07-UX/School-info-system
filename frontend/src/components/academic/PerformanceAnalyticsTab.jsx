@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { academicService } from "@/services/academicService"
 import { useAuthUser } from "@/context/AuthUserContext"
-import { Card } from "@/components/ui/card"
 import {
   Table,
   TableHeader,
@@ -10,16 +9,31 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import { Skeleton } from "@/components/ui/skeleton"
+import { StatTile } from "@/components/ui/stat-tile"
+import { EmptyState } from "@/components/ui/empty-state"
+import { SegmentedControl } from "@/components/ui/segmented-control"
+import { FilterBar, FilterField } from "@/components/ui/filter-bar"
+import { GRADE_FILL, GRADE_TEXT, calculateGrade } from "@/lib/grades"
+import { cn } from "@/lib/utils"
+import { GradeBadge } from "./GradeBadge"
+import { GradeDistribution } from "./GradeDistribution"
 import {
   TrendingUp,
+  TrendingDown,
+  ArrowRight,
+  ArrowUp,
+  ArrowDown,
   BarChart3,
   Star,
+  Target,
   AlertTriangle,
-  RefreshCw,
   Trophy,
+  Gauge,
+  CheckCircle2,
+  Users,
 } from "lucide-react"
 
 export default function PerformanceAnalyticsTab({ classes = [] }) {
@@ -126,415 +140,296 @@ export default function PerformanceAnalyticsTab({ classes = [] }) {
     fetchAnalytics()
   }, [fetchAnalytics])
 
+  const isYourClass = assignedClass && String(assignedClass.id) === String(selectedClassId)
+  const trendInfo = {
+    IMPROVING: { variant: "success", label: "Improving", icon: TrendingUp },
+    DECLINING: { variant: "destructive", label: "Declining", icon: TrendingDown },
+  }[studentTrend?.progressTrajectory] || { variant: "info", label: "Consistent", icon: ArrowRight }
+  const TrendIcon = trendInfo.icon
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-xl font-bold font-heading text-white flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-emerald-400" />
-          Academic Performance & Trend Analytics
-        </h2>
-        <p className="text-xs text-slate-400">
-          Analyze class-level subject performance, pass rates, score spreads, and individual 3-term student progression.
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          Subject pass rates and grade spread for a class, or one student's progress across the three terms.
         </p>
+        <SegmentedControl
+          label="Analytics Mode"
+          value={analyticsMode}
+          onChange={setAnalyticsMode}
+          options={[
+            { value: "CLASS_METRICS", label: "Class Subject Metrics", icon: BarChart3 },
+            { value: "STUDENT_TRAJECTORY", label: "Student 3-Term Trajectory", icon: TrendingUp },
+          ]}
+        />
       </div>
 
-      {/* Control Panel */}
-      <Card className="p-4 border-white/10">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Class */}
-          <div className="min-w-0 space-y-1.5">
-            <div className="flex h-5 items-center justify-between gap-2">
-              <label className="text-xs font-semibold text-slate-400">Class / Grade</label>
-              {assignedClass && String(assignedClass.id) === String(selectedClassId) && (
-                <Badge variant="default" className="shrink-0 text-[9px] py-0 px-1.5">
-                  Your Class
-                </Badge>
-              )}
-            </div>
+      <FilterBar>
+        <FilterField
+          label={
+            <span className="flex items-center gap-1.5">
+              Class / Grade
+              {isYourClass && <Badge className="px-1.5 py-0 text-[10px]">Your class</Badge>}
+            </span>
+          }
+          htmlFor="analytics-class"
+          className="sm:w-52"
+        >
+          <select
+            id="analytics-class"
+            value={selectedClassId}
+            onChange={(e) => setSelectedClassId(e.target.value)}
+            className="h-9 w-full px-3 text-sm"
+          >
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name} {assignedClass && c.id === assignedClass.id ? "★ (Your Assigned Class)" : ""}
+              </option>
+            ))}
+          </select>
+        </FilterField>
+
+        <FilterField label="Academic Year" htmlFor="analytics-year" className="sm:w-28">
+          <select
+            id="analytics-year"
+            value={academicYear}
+            onChange={(e) => setAcademicYear(e.target.value)}
+            className="h-9 w-full px-3 text-sm"
+          >
+            <option value="2026">2026</option>
+            <option value="2025">2025</option>
+            <option value="2024">2024</option>
+          </select>
+        </FilterField>
+
+        {analyticsMode === "CLASS_METRICS" ? (
+          <FilterField label="Target Examination" htmlFor="analytics-exam" className="sm:w-80">
             <select
-              value={selectedClassId}
-              onChange={(e) => setSelectedClassId(e.target.value)}
-              className="h-10 w-full min-w-0 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              id="analytics-exam"
+              value={selectedExamId}
+              onChange={(e) => setSelectedExamId(e.target.value)}
+              disabled={exams.length === 0}
+              className="h-9 w-full px-3 text-sm"
             >
-              {classes.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} {assignedClass && c.id === assignedClass.id ? "★ (Your Assigned Class)" : ""}
+              {exams.length === 0 && <option value="">No exams this year</option>}
+              {exams.map((ex) => (
+                <option key={ex.id} value={ex.id}>
+                  {ex.name} ({ex.termDisplayName || ex.term})
                 </option>
               ))}
             </select>
-          </div>
-
-          {/* Academic Year */}
-          <div className="min-w-0 space-y-1.5">
-            <label className="flex h-5 items-center text-xs font-semibold text-slate-400">Academic Year</label>
+          </FilterField>
+        ) : (
+          <FilterField label="Select Student" htmlFor="analytics-student" className="sm:w-72">
             <select
-              value={academicYear}
-              onChange={(e) => setAcademicYear(e.target.value)}
-              className="h-10 w-full min-w-0 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              id="analytics-student"
+              value={selectedStudentId}
+              onChange={(e) => setSelectedStudentId(e.target.value)}
+              disabled={students.length === 0}
+              className="h-9 w-full px-3 text-sm"
             >
-              <option value="2026">2026</option>
-              <option value="2025">2025</option>
-              <option value="2024">2024</option>
+              {students.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.fullName} ({s.admissionNumber})
+                </option>
+              ))}
             </select>
-          </div>
+          </FilterField>
+        )}
+      </FilterBar>
 
-          {/* Exam Selector */}
-          {analyticsMode === "CLASS_METRICS" && (
-            <div className="min-w-0 space-y-1.5 sm:col-span-2 lg:col-span-2">
-              <label className="flex h-5 items-center text-xs font-semibold text-slate-400">
-                Target Examination
-              </label>
-              <select
-                value={selectedExamId}
-                onChange={(e) => setSelectedExamId(e.target.value)}
-                className="h-10 w-full min-w-0 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              >
-                {exams.map((ex) => (
-                  <option key={ex.id} value={ex.id}>
-                    {ex.name} ({ex.termDisplayName || ex.term})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Student Selector */}
-          {analyticsMode === "STUDENT_TRAJECTORY" && (
-            <div className="min-w-0 space-y-1.5 sm:col-span-2 lg:col-span-2">
-              <label className="flex h-5 items-center text-xs font-semibold text-slate-400">Select Student</label>
-              <select
-                value={selectedStudentId}
-                onChange={(e) => setSelectedStudentId(e.target.value)}
-                className="h-10 w-full min-w-0 rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              >
-                {students.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.fullName} ({s.admissionNumber})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
-
-        {/* Mode Switcher */}
-        <div className="mt-4 space-y-1.5 border-t border-white/10 pt-4">
-          <label className="flex h-5 items-center text-xs font-semibold text-slate-400">Analytics Mode</label>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="group" aria-label="Analytics Mode">
-            <Button
-              variant={analyticsMode === "CLASS_METRICS" ? "default" : "outline"}
-              size="xs"
-              onClick={() => setAnalyticsMode("CLASS_METRICS")}
-              aria-pressed={analyticsMode === "CLASS_METRICS"}
-              className="h-10 w-full gap-1.5 text-xs"
-            >
-              <BarChart3 className="h-3.5 w-3.5" /> Class Subject Metrics
-            </Button>
-            <Button
-              variant={analyticsMode === "STUDENT_TRAJECTORY" ? "default" : "outline"}
-              size="xs"
-              onClick={() => setAnalyticsMode("STUDENT_TRAJECTORY")}
-              aria-pressed={analyticsMode === "STUDENT_TRAJECTORY"}
-              className="h-10 w-full gap-1.5 text-xs"
-            >
-              <TrendingUp className="h-3.5 w-3.5" /> Student 3-Term Trajectory
-            </Button>
-          </div>
-        </div>
-      </Card>
-
-      {/* Feedback Toast */}
       {feedback && (
-        <Alert variant="destructive" className="animate-in fade-in-0 zoom-in-95">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Notice</AlertTitle>
+        <Alert variant="warning">
+          <AlertTriangle />
+          <AlertTitle>Couldn't load analytics</AlertTitle>
           <AlertDescription>{feedback.message}</AlertDescription>
         </Alert>
       )}
 
-      {/* ========================================================================= */}
-      {/* MODE A: CLASS-WIDE SUBJECT ANALYTICS                                      */}
-      {/* ========================================================================= */}
+      {/* MODE A: class-wide subject analytics */}
       {analyticsMode === "CLASS_METRICS" && (
-        <div>
-          {loading ? (
-            <Card className="p-12 text-center text-slate-400 border-white/10">
-              <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-indigo-400" />
-              Analyzing class cohort metrics and subject pass rates...
-            </Card>
-          ) : !classAnalytics ? (
-            <Card className="p-12 text-center text-slate-400 border-white/10">
-              No evaluation data found for the selected examination.
-            </Card>
-          ) : (
-            <Card className="p-6 border-white/10 space-y-6">
-              <div>
-                <div className="text-xl font-bold font-heading text-white">
-                  Class Academic Performance — {classAnalytics.className}
-                </div>
-                <div className="text-xs text-slate-400 mt-0.5">
-                  {classAnalytics.examName} &bull; {classAnalytics.termDisplayName || classAnalytics.term} ({classAnalytics.academicYear})
-                </div>
-              </div>
+        loading ? (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+              {Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className="h-[74px]" />)}
+            </div>
+            <Skeleton className="h-28" />
+            <Skeleton className="h-64" />
+          </div>
+        ) : !classAnalytics ? (
+          <div className="rounded-[12px] border border-border bg-surface shadow-card">
+            <EmptyState
+              icon={BarChart3}
+              title="No evaluation data found for the selected examination."
+              description="Once marks are entered for this exam, class averages and grade spreads appear here."
+            />
+          </div>
+        ) : (
+          <div className="space-y-5">
+            <div>
+              <h3 className="text-section text-foreground">{classAnalytics.className}</h3>
+              <p className="text-xs text-muted-foreground">
+                {classAnalytics.examName} · {classAnalytics.termDisplayName || classAnalytics.term} · {classAnalytics.academicYear}
+              </p>
+            </div>
 
-              {/* Class Summary Metric Cards */}
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
-                  <div className="text-xs text-slate-400 font-semibold">Class Average Score</div>
-                  <div className="text-2xl font-normal text-white mt-1">
-                    {classAnalytics.overallClassAverage}%
-                  </div>
-                </div>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+              <StatTile icon={Gauge} label="Class average" value={Number(classAnalytics.overallClassAverage) || 0} suffix="%" decimals={1} tone="blue" />
+              <StatTile
+                icon={CheckCircle2}
+                label="Pass rate"
+                value={Number(classAnalytics.overallPassRate) || 0}
+                suffix="%"
+                decimals={1}
+                tone={Number(classAnalytics.overallPassRate) >= 80 ? "green" : "amber"}
+              />
+              <StatTile icon={ArrowUp} label="Highest average" value={Number(classAnalytics.highestAverage) || 0} suffix="%" decimals={1} tone="green" />
+              <StatTile icon={ArrowDown} label="Lowest average" value={Number(classAnalytics.lowestAverage) || 0} suffix="%" decimals={1} tone="red" />
+              <StatTile icon={Users} label="Students" value={Number(classAnalytics.totalStudents) || 0} tone="neutral" />
+            </div>
 
-                <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
-                  <div className="text-xs text-slate-400 font-semibold">Overall Pass Rate</div>
-                  <div className="text-2xl font-normal text-white mt-1">
-                    {classAnalytics.overallPassRate}%
-                  </div>
-                </div>
+            <div className="rounded-[12px] border border-border bg-surface p-5 shadow-card">
+              <h4 className="mb-4 text-sm font-semibold text-foreground">Overall grade distribution</h4>
+              <GradeDistribution distribution={classAnalytics.overallGradeDistribution} total={classAnalytics.totalStudents} />
+            </div>
 
-                <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
-                  <div className="text-xs text-slate-400 font-semibold">Highest Average</div>
-                  <div className="text-2xl font-normal text-white mt-1">
-                    {classAnalytics.highestAverage}%
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
-                  <div className="text-xs text-slate-400 font-semibold">Lowest Average</div>
-                  <div className="text-2xl font-normal text-white mt-1">
-                    {classAnalytics.lowestAverage}%
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
-                  <div className="text-xs text-slate-400 font-semibold">Cohort Size</div>
-                  <div className="text-2xl font-normal text-white mt-1">
-                    {classAnalytics.totalStudents} Students
-                  </div>
-                </div>
-              </div>
-
-              {/* Overall Grade Distribution Bar */}
-              <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-5">
-                <h4 className="text-sm font-bold font-heading text-white mb-4">
-                  Overall Class Grade Distribution
-                </h4>
-
-                <div className="grid grid-cols-5 gap-3 text-center">
-                  {["A", "B", "C", "S", "F"].map((g) => {
-                    const count = classAnalytics.overallGradeDistribution?.[g] || 0
-                    const pct =
-                      classAnalytics.totalStudents > 0
-                        ? ((count / classAnalytics.totalStudents) * 100).toFixed(1)
-                        : 0
-                    return (
-                      <div
-                        key={g}
-                        className={`rounded-xl border p-3.5 backdrop-blur-md ${
-                          g === "A"
-                            ? "bg-emerald-500/10 border-emerald-500/30"
-                            : g === "B"
-                            ? "bg-sky-500/10 border-sky-500/30"
-                            : g === "C"
-                            ? "bg-amber-500/10 border-amber-500/30"
-                            : g === "S"
-                            ? "bg-purple-500/10 border-purple-500/30"
-                            : "bg-rose-500/10 border-rose-500/30"
-                        }`}
-                      >
-                        <div
-                          className={`text-sm font-bold ${
-                            g === "A"
-                              ? "text-emerald-400"
-                              : g === "B"
-                              ? "text-sky-400"
-                              : g === "C"
-                              ? "text-amber-400"
-                              : g === "S"
-                              ? "text-purple-400"
-                              : "text-rose-400"
-                          }`}
-                        >
-                          Grade {g}
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold text-foreground">By subject</h4>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Subject</TableHead>
+                    <TableHead className="w-48">Average</TableHead>
+                    <TableHead className="w-24 text-center">Pass rate</TableHead>
+                    <TableHead className="w-28 text-center">High / Low</TableHead>
+                    {["A", "B", "C", "S", "F"].map((g) => (
+                      <TableHead key={g} className={cn("w-12 text-center", GRADE_TEXT[g])}>{g}</TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {classAnalytics.subjectPerformances.map((sp) => (
+                    <TableRow key={sp.subjectId}>
+                      <TableCell className="whitespace-nowrap font-medium text-foreground">
+                        {sp.subjectName} <span className="text-xs font-normal text-muted-foreground">{sp.subjectCode}</span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2.5">
+                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2">
+                            <div
+                              className={cn("h-full rounded-full", GRADE_FILL[calculateGrade(sp.averageScore)] || "bg-accent-blue")}
+                              style={{ width: `${Math.min(Number(sp.averageScore) || 0, 100)}%` }}
+                            />
+                          </div>
+                          <span className="tabular w-12 text-right font-semibold text-foreground">{sp.averageScore}%</span>
                         </div>
-                        <div className="text-2xl font-extrabold font-heading text-white my-1">
-                          {count}
-                        </div>
-                        <div className="text-[11px] text-slate-400">{pct}% cohort</div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* Curriculum Subject Metrics Table */}
-              <div className="space-y-2">
-                <h4 className="text-sm font-bold font-heading text-white">
-                  Curriculum Subject Performance Metrics
-                </h4>
-                <div className="rounded-xl border border-white/10 overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Curriculum Subject</TableHead>
-                        <TableHead className="text-center w-28">Subject Avg</TableHead>
-                        <TableHead className="text-center w-28">Pass Rate</TableHead>
-                        <TableHead className="text-center w-36">High / Low</TableHead>
-                        <TableHead className="text-center w-14">A</TableHead>
-                        <TableHead className="text-center w-14">B</TableHead>
-                        <TableHead className="text-center w-14">C</TableHead>
-                        <TableHead className="text-center w-14">S</TableHead>
-                        <TableHead className="text-center w-14">F</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {classAnalytics.subjectPerformances.map((sp) => (
-                        <TableRow key={sp.subjectId} className="hover:bg-slate-800/30">
-                          <TableCell className="font-semibold text-white">
-                            {sp.subjectName}{" "}
-                            <span className="text-xs text-slate-400 font-normal">
-                              ({sp.subjectCode})
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-center font-bold text-indigo-300">
-                            {sp.averageScore}%
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge
-                              variant={sp.passRate >= 80 ? "success" : "warning"}
-                              className="text-xs font-bold"
-                            >
-                              {sp.passRate}%
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-center text-xs text-slate-300">
-                            <span className="text-emerald-400 font-bold">{sp.highestScore}</span> /{" "}
-                            <span className="text-rose-400 font-bold">{sp.lowestScore}</span>
-                          </TableCell>
-                          <TableCell className="text-center font-bold text-emerald-400">
-                            {sp.gradeDistribution?.A || 0}
-                          </TableCell>
-                          <TableCell className="text-center font-bold text-sky-400">
-                            {sp.gradeDistribution?.B || 0}
-                          </TableCell>
-                          <TableCell className="text-center font-bold text-amber-400">
-                            {sp.gradeDistribution?.C || 0}
-                          </TableCell>
-                          <TableCell className="text-center font-bold text-purple-400">
-                            {sp.gradeDistribution?.S || 0}
-                          </TableCell>
-                          <TableCell className="text-center font-bold text-rose-400">
-                            {sp.gradeDistribution?.F || 0}
-                          </TableCell>
-                        </TableRow>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={sp.passRate >= 80 ? "success" : "warning"} className="tabular">
+                          {sp.passRate}%
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="tabular text-center text-xs">
+                        <span className="font-semibold text-success">{sp.highestScore}</span>
+                        <span className="text-muted-foreground"> / </span>
+                        <span className="font-semibold text-danger">{sp.lowestScore}</span>
+                      </TableCell>
+                      {["A", "B", "C", "S", "F"].map((g) => (
+                        <TableCell key={g} className={cn("tabular text-center font-semibold", (sp.gradeDistribution?.[g] || 0) ? GRADE_TEXT[g] : "text-muted-foreground/50")}>
+                          {sp.gradeDistribution?.[g] || 0}
+                        </TableCell>
                       ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            </Card>
-          )}
-        </div>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )
       )}
 
-      {/* ========================================================================= */}
-      {/* MODE B: INDIVIDUAL STUDENT 3-TERM TRAJECTORY                              */}
-      {/* ========================================================================= */}
+      {/* MODE B: individual student 3-term trajectory */}
       {analyticsMode === "STUDENT_TRAJECTORY" && (
-        <div>
-          {loading ? (
-            <Card className="p-12 text-center text-slate-400 border-white/10">
-              <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-indigo-400" />
-              Loading student progression trends...
-            </Card>
-          ) : !studentTrend ? (
-            <Card className="p-12 text-center text-slate-400 border-white/10">
-              No historical evaluation records found for the selected student.
-            </Card>
-          ) : (
-            <Card className="p-6 border-white/10 space-y-6">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-white/10 pb-4">
-                <div>
-                  <div className="text-xl font-bold font-heading text-white">
-                    Student Progress Trajectory: {studentTrend.studentName}
-                  </div>
-                  <div className="text-xs text-indigo-300 mt-1">
-                    Admission No: <code>{studentTrend.admissionNumber}</code> &bull; Class: <strong>{studentTrend.currentClassName}</strong>
-                  </div>
-                </div>
-
-                <Badge
-                  variant={
-                    studentTrend.progressTrajectory === "IMPROVING"
-                      ? "success"
-                      : studentTrend.progressTrajectory === "DECLINING"
-                      ? "destructive"
-                      : "info"
-                  }
-                  className="text-xs font-bold px-3 py-1 self-start sm:self-auto"
-                >
-                  {studentTrend.progressTrajectory === "IMPROVING"
-                    ? "📈 Improving Trend"
-                    : studentTrend.progressTrajectory === "DECLINING"
-                    ? "📉 Declining Trend"
-                    : "➡️ Consistent Performance"}
-                </Badge>
+        loading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-16" />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-32" />)}
+            </div>
+          </div>
+        ) : !studentTrend ? (
+          <div className="rounded-[12px] border border-border bg-surface shadow-card">
+            <EmptyState
+              icon={TrendingUp}
+              title="No historical evaluation records found for the selected student."
+              description="Progress appears after the student has marks in at least one term exam."
+            />
+          </div>
+        ) : (
+          <div className="space-y-5">
+            <div className="flex flex-col gap-3 rounded-[12px] border border-border bg-surface p-5 shadow-card sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-section text-foreground">{studentTrend.studentName}</h3>
+                <p className="text-xs text-muted-foreground">
+                  <span className="tabular">{studentTrend.admissionNumber}</span> · {studentTrend.currentClassName}
+                </p>
               </div>
+              <Badge variant={trendInfo.variant} className="gap-1.5 self-start px-2.5 py-1 text-xs sm:self-auto">
+                <TrendIcon className="h-3.5 w-3.5" />
+                {trendInfo.label}
+              </Badge>
+            </div>
 
-              {/* Strengths & Focus Areas */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-4">
-                  <div className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 mb-1">
-                    <Star className="h-4 w-4" /> Strongest Subject
-                  </div>
-                  <div className="text-lg font-bold text-white font-heading">
-                    {studentTrend.strongestSubject}
-                  </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="rounded-[12px] border border-success/25 bg-success-soft p-4">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-success">
+                  <Star className="h-4 w-4" /> Strongest subject
                 </div>
-
-                <div className="rounded-2xl border border-amber-500/30 bg-amber-950/20 p-4">
-                  <div className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5 mb-1">
-                    <AlertTriangle className="h-4 w-4" /> Focus Recommended Subject
-                  </div>
-                  <div className="text-lg font-bold text-white font-heading">
-                    {studentTrend.weakestSubject}
-                  </div>
-                </div>
+                <div className="mt-1 text-base font-semibold text-foreground">{studentTrend.strongestSubject}</div>
               </div>
+              <div className="rounded-[12px] border border-warning/25 bg-warning-soft p-4">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-warning">
+                  <Target className="h-4 w-4" /> Needs focus
+                </div>
+                <div className="mt-1 text-base font-semibold text-foreground">{studentTrend.weakestSubject}</div>
+              </div>
+            </div>
 
-              {/* Term-by-Term Score & Rank History */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-bold font-heading text-white">
-                  Term-by-Term Score & Rank Trajectory
-                </h4>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                  {studentTrend.termTrends.map((tt) => (
-                    <div
-                      key={tt.examId}
-                      className="rounded-2xl border border-white/10 bg-slate-950/60 p-5 backdrop-blur-md"
-                    >
-                      <div className="text-xs font-bold text-indigo-300 mb-2">
-                        {tt.termDisplayName || tt.term} ({tt.academicYear})
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold text-foreground">Term by term</h4>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {studentTrend.termTrends.map((tt, i) => {
+                  const previous = studentTrend.termTrends[i - 1]
+                  const delta = previous ? Number(tt.averageScore) - Number(previous.averageScore) : null
+                  return (
+                    <div key={tt.examId} className="rounded-[12px] border border-border bg-surface p-5 shadow-card">
+                      <div className="text-xs font-medium text-muted-foreground">
+                        {tt.termDisplayName || tt.term} · {tt.academicYear}
                       </div>
-                      <div className="text-3xl font-extrabold font-heading text-white">
-                        {tt.averageScore}%
+                      <div className="mt-1 flex items-baseline gap-2">
+                        <span className="tabular text-3xl font-semibold tracking-tight text-foreground">{tt.averageScore}%</span>
+                        {delta !== null && Number.isFinite(delta) && delta !== 0 && (
+                          <span className={cn("tabular flex items-center text-xs font-semibold", delta > 0 ? "text-success" : "text-danger")}>
+                            {delta > 0 ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
+                            {Math.abs(delta).toFixed(1)}
+                          </span>
+                        )}
                       </div>
-                      <div className="text-xs font-semibold text-amber-400 mt-2 flex items-center gap-1">
-                        <Trophy className="h-3.5 w-3.5" /> Rank {tt.classRank} of {tt.totalStudentsInClass}
+                      <div className="mt-3 flex items-center justify-between text-xs">
+                        <span className="flex items-center gap-1 text-foreground-2">
+                          <Trophy className="h-3.5 w-3.5 text-warning" />
+                          Rank {tt.classRank} of {tt.totalStudentsInClass}
+                        </span>
+                        <GradeBadge grade={tt.overallGrade} showLabel={false} />
                       </div>
-                      <div className="text-[11px] text-slate-400 mt-1">
-                        Total: {tt.totalMarks} &bull; Grade: {tt.overallGrade}
-                      </div>
+                      <div className="mt-1 text-[11px] text-muted-foreground">Total {tt.totalMarks} marks</div>
                     </div>
-                  ))}
-                </div>
+                  )
+                })}
               </div>
-            </Card>
-          )}
-        </div>
+            </div>
+          </div>
+        )
       )}
     </div>
   )
