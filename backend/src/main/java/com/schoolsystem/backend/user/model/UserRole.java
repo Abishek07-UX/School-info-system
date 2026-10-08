@@ -1,7 +1,7 @@
 package com.schoolsystem.backend.user.model;
 
 /**
- * Strongly-typed domain enum representing all user roles within the School Information System.
+ * Strongly-typed domain enum representing all user roles within the Ascentric College Information System.
  */
 public enum UserRole {
     ADMIN("Administrator"),

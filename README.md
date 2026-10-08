@@ -12,7 +12,6 @@ Detailed requirements and design specifications are documented in [PRD-SE.md](PR
 - **Backend**: Java 21, Spring Boot 3.5, Spring Data JPA, Spring Validation, Lombok
 - **Database**: PostgreSQL (Neon DB)
 - **API Specification**: RESTful API (JSON response envelope)
-- **API Testing**: Bruno Collections (`api-tests/`)
 
 ---
 
@@ -83,7 +82,6 @@ Make sure you have installed:
 ```text
 School-info-system/
 ├── PRD-SE.md                   # Product Requirements Document & API Specifications
-├── api-tests/                  # Bruno API Testing Collections per module
 ├── frontend/                   # React + Vite Frontend application
 │   ├── .env.example            # Template for Clerk auth env variables
 │   └── src/                    # Frontend source code

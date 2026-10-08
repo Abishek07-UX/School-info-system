@@ -1,379 +1,168 @@
-import { useState } from 'react'
-import { Show, SignInButton, UserButton, useUser } from '@clerk/react'
-import { AuthUserProvider, useAuthUser } from './context/AuthUserContext'
-import OnboardingView from './components/OnboardingView'
-import PendingApprovalView from './components/PendingApprovalView'
-import UserRoleManagement from './components/admin/UserRoleManagement'
-import StaffProfileModal from './components/StaffProfileModal'
+import { useEffect, useState } from "react"
+import { Show } from "@clerk/react"
+import { AuthUserProvider, useAuthUser } from "./context/AuthUserContext"
+import { ToastProvider, useToast } from "./context/ToastContext"
+import { ConfirmProvider } from "./context/ConfirmContext"
+import { BrowserRouter, Navigate, useRoutes } from "./lib/router"
+import { getAllowedModules } from "./lib/modules"
+import { PORTAL_NAME } from "@/lib/branding"
+import Navbar from "./components/common/Navbar"
+import { AppShell } from "./components/layout/AppShell"
+import OnboardingView from "./components/OnboardingView"
+import PendingApprovalView from "./components/PendingApprovalView"
+import DeactivatedAccountView from "./components/DeactivatedAccountView"
+import UserRoleManagement from "./components/admin/UserRoleManagement"
+import StaffProfileModal from "./components/StaffProfileModal"
+import AcademicDashboard from "./components/academic/AcademicDashboard"
+import { TimetableHub } from "./components/timetable/TimetableHub"
+import LandingPage from "./pages/LandingPage"
+import OverviewPage from "./pages/OverviewPage"
+import ModulePreviewPage from "./pages/ModulePreviewPage"
+import NotFoundPage from "./pages/NotFoundPage"
+import { Skeleton } from "@/components/ui/skeleton"
 
-function DashboardView({ onOpenProfile }) {
-  const { user } = useUser()
-  const { userProfile, role, isAdmin, loading } = useAuthUser()
-  const [activeTab, setActiveTab] = useState('overview')
+/** Sends the user home with a short explanation when their role can't open a page. */
+function NoAccess() {
+  const toast = useToast()
+  useEffect(() => {
+    toast.info("Your role doesn't have access to that page.")
+  }, [toast])
+  return <Navigate to="/" />
+}
 
-  const allModules = [
-    { id: 'students', name: 'Student Management', icon: '🎓', count: '1,248 Students', desc: 'Register students, manage profiles & academic history', roles: ['ADMIN', 'PRINCIPAL', 'TEACHER'] },
-    { id: 'teachers', name: 'Teacher Management', icon: '👨‍🏫', count: '64 Staff Members', desc: 'Teacher profiles & subject-class assignments', roles: ['ADMIN', 'PRINCIPAL'] },
-    { id: 'attendance', name: 'Attendance Management', icon: '📋', count: '96.4% Today', desc: 'Daily student & teacher attendance tracking', roles: ['ADMIN', 'PRINCIPAL', 'TEACHER'] },
-    { id: 'academics', name: 'Academics & Exams', icon: '📊', count: '12 Active Exams', desc: 'Mark entry, auto-grade conversion & report cards', roles: ['ADMIN', 'PRINCIPAL', 'TEACHER'] },
-    { id: 'finance', name: 'Finance Management', icon: '💰', count: '$42.5k Collected', desc: 'Fee structures & offline payment logging', roles: ['ADMIN', 'PRINCIPAL', 'FINANCE_STAFF'] },
-    { id: 'admin', name: 'Administration & Roles', icon: '⚙️', count: 'Staff & Roles', desc: 'User & Role Management, staff onboarding & timetable permissions', roles: ['ADMIN', 'PRINCIPAL'] },
-    { id: 'tickets', name: 'Support Tickets', icon: '🎫', count: '3 Pending', desc: 'Internal operational issue reporting & tracking', roles: ['ADMIN', 'PRINCIPAL', 'TEACHER', 'FINANCE_STAFF'] },
-  ]
+function PortalRoutes() {
+  const { role, isAdmin, isPrincipal, userProfile, getToken } = useAuthUser()
+  const allowed = getAllowedModules(role, { isPrincipal })
+  const can = (id) => allowed.some((mod) => mod.id === id)
 
-  const allowedModules = allModules.filter(mod => mod.roles.includes(role))
-
-  const getRoleBadgeStyle = (r) => {
-    switch (r) {
-      case 'ADMIN': return { bg: 'rgba(236, 72, 153, 0.2)', border: 'rgba(236, 72, 153, 0.5)', color: '#f472b6', label: '👑 Administrator' }
-      case 'PRINCIPAL': return { bg: 'rgba(192, 132, 252, 0.2)', border: 'rgba(192, 132, 252, 0.5)', color: '#c084fc', label: '🎓 Principal' }
-      case 'TEACHER': return { bg: 'rgba(129, 140, 248, 0.2)', border: 'rgba(129, 140, 248, 0.5)', color: '#818cf8', label: '👨‍🏫 Teaching Staff' }
-      case 'FINANCE_STAFF': return { bg: 'rgba(52, 211, 153, 0.2)', border: 'rgba(52, 211, 153, 0.5)', color: '#34d399', label: '💰 Finance Staff' }
-      default: return { bg: 'rgba(245, 158, 11, 0.2)', border: 'rgba(245, 158, 11, 0.5)', color: '#fcd34d', label: '⏳ Pending Assignment' }
-    }
-  }
-
-  const badge = getRoleBadgeStyle(role)
-  const displayName = userProfile?.firstName ? `${userProfile.firstName} ${userProfile.lastName || ''}`.trim() : (user?.firstName || 'Staff Member')
-
-  if (loading) {
-    return (
-      <div style={{ textAlign: 'center', padding: '4rem 1rem', color: 'var(--text-muted)' }}>
-        <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
-        <div>Loading your staff profile & permissions...</div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="dashboard-container">
-      {/* Header Banner */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-            <h1 style={{ fontSize: '2rem', fontFamily: 'var(--font-heading)', margin: 0 }}>
-              Welcome back, {displayName} 👋
-            </h1>
-            <span style={{
-              padding: '0.25rem 0.75rem',
-              borderRadius: '20px',
-              fontSize: '0.8rem',
-              fontWeight: '700',
-              background: badge.bg,
-              border: `1px solid ${badge.border}`,
-              color: badge.color
-            }}>
-              {badge.label}
-            </span>
-          </div>
-          <p style={{ color: 'var(--text-muted)' }}>
-            School Information System — Operational Portal
-          </p>
-        </div>
-
-        {/* Action buttons */}
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button
-            onClick={onOpenProfile}
-            style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid var(--border-glass)',
-              color: '#cbd5e1',
-              padding: '0.5rem 1rem',
-              borderRadius: '10px',
-              fontSize: '0.9rem',
-              fontWeight: '600',
-              cursor: 'pointer'
-            }}
-          >
-            🪪 My Profile
-          </button>
-
-          <button
-            onClick={() => setActiveTab('overview')}
-            style={{
-              background: activeTab === 'overview' ? 'var(--accent-primary)' : 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid var(--border-glass)',
-              color: activeTab === 'overview' ? '#fff' : 'var(--text-muted)',
-              padding: '0.5rem 1rem',
-              borderRadius: '10px',
-              fontSize: '0.9rem',
-              fontWeight: '600',
-              cursor: 'pointer'
-            }}
-          >
-            📊 Modules Overview
-          </button>
-
-          {isAdmin && (
-            <button
-              onClick={() => setActiveTab('admin')}
-              style={{
-                background: activeTab === 'admin' ? 'var(--accent-primary)' : 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid var(--border-glass)',
-                color: activeTab === 'admin' ? '#fff' : 'var(--text-muted)',
-                padding: '0.5rem 1rem',
-                borderRadius: '10px',
-                fontSize: '0.9rem',
-                fontWeight: '600',
-                cursor: 'pointer'
-              }}
-            >
-              ⚙️ User & Role Management
-            </button>
-          )}
-        </div>
-      </div>
-
-      {activeTab === 'admin' && isAdmin ? (
-        <UserRoleManagement />
+  return useRoutes([
+    { path: "/", element: <OverviewPage /> },
+    {
+      path: "/timetable/:tab?",
+      element: can("timetable") ? (
+        <TimetableHub userRole={role} userProfile={userProfile} getToken={getToken} />
       ) : (
-        <>
-          {/* Stats Quick Overview */}
-          <div className="stats-grid">
-            <div className="glass-panel stat-card">
-              <div className="stat-icon-wrapper" style={{ color: '#818cf8' }}>🎓</div>
-              <div>
-                <div className="stat-value">1,248</div>
-                <div className="stat-label">Enrolled Students</div>
-              </div>
-            </div>
+        <NoAccess />
+      ),
+    },
+    { path: "/academics/:tab?", element: can("academics") ? <AcademicDashboard /> : <NoAccess /> },
+    { path: "/staff", element: isAdmin || isPrincipal ? <UserRoleManagement /> : <NoAccess /> },
+    { path: "/modules/:id", element: <ModulePreviewPage /> },
+    { path: "*", element: <NotFoundPage /> },
+  ])
+}
 
-            <div className="glass-panel stat-card">
-              <div className="stat-icon-wrapper" style={{ color: '#c084fc' }}>👨‍🏫</div>
-              <div>
-                <div className="stat-value">64</div>
-                <div className="stat-label">Teaching Staff</div>
-              </div>
-            </div>
+/** Header + footer frame for everything outside the signed-in app shell. */
+function PublicLayout({ isClerkConfigured = true, onOpenProfile, children }) {
+  return (
+    <div className="flex min-h-screen flex-col">
+      <Navbar isClerkConfigured={isClerkConfigured} onOpenProfile={onOpenProfile} />
+      <main id="main" className="flex-1">
+        {children}
+      </main>
+      <footer className="border-t border-border py-8 text-xs text-muted-foreground">
+        <div className="mx-auto flex max-w-[1120px] flex-col items-center justify-between gap-2 px-4 sm:flex-row sm:px-6">
+          <div>{PORTAL_NAME} · Internal staff operations portal</div>
+          <div>&copy; {new Date().getFullYear()} All rights reserved.</div>
+        </div>
+      </footer>
+    </div>
+  )
+}
 
-            <div className="glass-panel stat-card">
-              <div className="stat-icon-wrapper" style={{ color: '#34d399' }}>📋</div>
-              <div>
-                <div className="stat-value">96.4%</div>
-                <div className="stat-label">Today's Attendance</div>
-              </div>
-            </div>
-
-            <div className="glass-panel stat-card">
-              <div className="stat-icon-wrapper" style={{ color: '#fbbf24' }}>🎫</div>
-              <div>
-                <div className="stat-value">3</div>
-                <div className="stat-label">Open Support Tickets</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Module Selector & Navigation */}
-          <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.4rem', marginBottom: '1rem' }}>
-            Your Accessible Modules ({role})
-          </h2>
-
-          <div className="modules-grid">
-            {allowedModules.map((mod) => (
-              <div
-                key={mod.id}
-                className="glass-panel module-card"
-                style={{
-                  cursor: mod.id === 'admin' && isAdmin ? 'pointer' : 'default',
-                  border: mod.id === 'admin' && isAdmin ? '1px solid rgba(236, 72, 153, 0.4)' : '1px solid var(--border-glass)'
-                }}
-                onClick={() => {
-                  if (mod.id === 'admin' && isAdmin) {
-                    setActiveTab('admin')
-                  }
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span className="module-icon">{mod.icon}</span>
-                  <span className="role-badge">{mod.count}</span>
-                </div>
-                <div className="module-title">{mod.name}</div>
-                <div className="module-desc">{mod.desc}</div>
-                {mod.id === 'admin' && isAdmin && (
-                  <div style={{ marginTop: '0.5rem', color: '#f472b6', fontSize: '0.85rem', fontWeight: '600' }}>
-                    Click to manage staff accounts →
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+function PortalLoading() {
+  return (
+    <div className="flex min-h-screen w-full" aria-busy="true" aria-label="Loading your account">
+      <div className="hidden w-[248px] shrink-0 space-y-3 border-r border-border p-4 md:block">
+        <Skeleton className="h-9 w-40" />
+        <div className="space-y-2 pt-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <Skeleton key={i} className="h-8 w-full" />
+          ))}
+        </div>
+      </div>
+      <div className="flex-1 space-y-6 p-6 lg:p-8">
+        <Skeleton className="h-8 w-72" />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {Array.from({ length: 3 }, (_, i) => (
+            <Skeleton key={i} className="h-[72px]" />
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <Skeleton key={i} className="h-[74px]" />
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
 
 function AuthenticatedPortal({ onOpenProfile }) {
-  const { isProfileComplete, isPending, loading } = useAuthUser()
+  const { userProfile, isProfileComplete, isPending, loading } = useAuthUser()
 
-  if (loading) {
+  // Only the first load blocks the screen; later refreshes keep the current view
+  if (loading && !userProfile) return <PortalLoading />
+
+  // A deactivated account keeps its login but can't use any module
+  if (userProfile?.status === "INACTIVE") {
     return (
-      <div style={{ textAlign: 'center', padding: '5rem 1rem', color: 'var(--text-muted)' }}>
-        <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>⏳</div>
-        <div style={{ fontSize: '1.1rem' }}>Loading your staff account details...</div>
-      </div>
+      <PublicLayout onOpenProfile={onOpenProfile}>
+        <DeactivatedAccountView />
+      </PublicLayout>
     )
   }
 
-  // Step 1: User MUST complete mandatory profile details before anything else
+  // Step 1: Complete mandatory profile details
   if (!isProfileComplete) {
-    return <OnboardingView />
+    return (
+      <PublicLayout>
+        <OnboardingView />
+      </PublicLayout>
+    )
   }
 
-  // Step 2: Once details are in DB, if role is PENDING, show Pending Approval waiting screen
+  // Step 2: Once details exist, if role is PENDING, show Pending Approval waiting screen
   if (isPending) {
-    return <PendingApprovalView onEditProfile={onOpenProfile} />
+    return (
+      <PublicLayout onOpenProfile={onOpenProfile}>
+        <PendingApprovalView onEditProfile={onOpenProfile} />
+      </PublicLayout>
+    )
   }
 
-  // Step 3: Approved user enters full dashboard
-  return <DashboardView onOpenProfile={onOpenProfile} />
-}
-
-function LandingView({ isClerkConfigured }) {
+  // Step 3: Approved user enters the app
   return (
-    <div className="hero-container">
-      {!isClerkConfigured && (
-        <div className="warning-banner">
-          <span>⚠️</span>
-          <div>
-            <strong>Clerk Key Notice:</strong> Please copy <code>.env.example</code> to <code>.env</code> inside the <code>frontend/</code> directory and add your <code>VITE_CLERK_PUBLISHABLE_KEY</code> to enable live login authentication.
-          </div>
-        </div>
-      )}
-
-      <div style={{ display: 'inline-block', marginBottom: '1rem' }}>
-        <span className="role-badge" style={{ fontSize: '0.9rem', padding: '0.4rem 1rem' }}>
-          🏫 Staff-Facing Academic Platform
-        </span>
-      </div>
-
-      <h1 className="hero-title">
-        School Information System
-      </h1>
-      <p className="hero-subtitle">
-        Centralized operations for school staff — manage student records, daily attendance, academic exams, fee records, and timetables in one place.
-      </p>
-
-      {isClerkConfigured ? (
-        <SignInButton mode="modal">
-          <button className="btn-primary">
-            🔐 Sign In to Staff Portal
-          </button>
-        </SignInButton>
-      ) : (
-        <button className="btn-primary" onClick={() => alert('Add your VITE_CLERK_PUBLISHABLE_KEY in frontend/.env to enable login!')}>
-          🔐 Sign In Demo (Setup .env required)
-        </button>
-      )}
-
-      <div className="modules-grid">
-        <div className="glass-panel module-card">
-          <div className="module-icon">🎓</div>
-          <div className="module-title">Student Management</div>
-          <div className="module-desc">Centralized student records, enrollment profiles, and multi-filter search.</div>
-        </div>
-
-        <div className="glass-panel module-card">
-          <div className="module-icon">📋</div>
-          <div className="module-title">Attendance Tracking</div>
-          <div className="module-desc">Fast daily student & teacher attendance recording with historical reporting.</div>
-        </div>
-
-        <div className="glass-panel module-card">
-          <div className="module-icon">📊</div>
-          <div className="module-title">Exams & Report Cards</div>
-          <div className="module-desc">Numerical mark entry with automatic letter grade conversion and transcript generation.</div>
-        </div>
-
-        <div className="glass-panel module-card">
-          <div className="module-icon">💰</div>
-          <div className="module-title">Finance & Fee Ledger</div>
-          <div className="module-desc">Track fee structures, record offline payment collections, and manage outstanding balances.</div>
-        </div>
-      </div>
-    </div>
+    <AppShell onOpenProfile={onOpenProfile}>
+      <PortalRoutes />
+    </AppShell>
   )
 }
 
 function MainApp({ isClerkConfigured = true }) {
   const [showProfileModal, setShowProfileModal] = useState(false)
+  const openProfile = () => setShowProfileModal(true)
 
   return (
     <>
-      <header className="app-header">
-        <div className="brand-logo">
-          <div className="brand-icon">🏫</div>
-          SchoolInfo System
-        </div>
+      {isClerkConfigured ? (
+        <>
+          <Show when="signed-in">
+            <AuthenticatedPortal onOpenProfile={openProfile} />
+          </Show>
+          <Show when="signed-out">
+            <PublicLayout>
+              <LandingPage isClerkConfigured />
+            </PublicLayout>
+          </Show>
+        </>
+      ) : (
+        <PublicLayout isClerkConfigured={false}>
+          <LandingPage isClerkConfigured={false} />
+        </PublicLayout>
+      )}
 
-        <div className="user-nav">
-          {isClerkConfigured ? (
-            <>
-              <Show when="signed-in">
-                <button
-                  onClick={() => setShowProfileModal(true)}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    border: '1px solid var(--border-glass)',
-                    color: '#cbd5e1',
-                    padding: '0.4rem 0.8rem',
-                    borderRadius: '8px',
-                    fontSize: '0.85rem',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
-                >
-                  🪪 Profile
-                </button>
-                <UserButton afterSignOutUrl="/" />
-              </Show>
-
-              <Show when="signed-out">
-                <SignInButton mode="modal">
-                  <button className="btn-primary" style={{ padding: '0.5rem 1.2rem', fontSize: '0.9rem' }}>
-                    Sign In
-                  </button>
-                </SignInButton>
-              </Show>
-            </>
-          ) : (
-            <span className="role-badge" style={{ borderColor: 'rgba(245, 158, 11, 0.4)', color: '#fcd34d' }}>
-              Preview Mode
-            </span>
-          )}
-        </div>
-      </header>
-
-      <main style={{ flex: 1 }}>
-        {isClerkConfigured ? (
-          <>
-            <Show when="signed-in">
-              <AuthenticatedPortal onOpenProfile={() => setShowProfileModal(true)} />
-            </Show>
-            <Show when="signed-out">
-              <LandingView isClerkConfigured={isClerkConfigured} />
-            </Show>
-          </>
-        ) : (
-          <LandingView isClerkConfigured={false} />
-        )}
-      </main>
-
-      <StaffProfileModal
-        isOpen={showProfileModal}
-        onClose={() => setShowProfileModal(false)}
-      />
-
-      <footer style={{
-        textAlign: 'center',
-        padding: '2rem 1rem',
-        color: 'var(--text-dim)',
-        fontSize: '0.85rem',
-        borderTop: '1px solid var(--border-glass)'
-      }}>
-        School Information System &copy; {new Date().getFullYear()} — Internal Staff Portal
-      </footer>
+      <StaffProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
     </>
   )
 }
@@ -381,7 +170,13 @@ function MainApp({ isClerkConfigured = true }) {
 export default function App({ isClerkConfigured = true }) {
   return (
     <AuthUserProvider>
-      <MainApp isClerkConfigured={isClerkConfigured} />
+      <BrowserRouter>
+        <ToastProvider>
+          <ConfirmProvider>
+            <MainApp isClerkConfigured={isClerkConfigured} />
+          </ConfirmProvider>
+        </ToastProvider>
+      </BrowserRouter>
     </AuthUserProvider>
   )
 }

@@ -1,123 +1,82 @@
-import { useState } from 'react'
-import { useAuthUser } from '../context/AuthUserContext'
+import { useState } from "react"
+import { useAuthUser } from "@/context/AuthUserContext"
+import { useToast } from "@/context/ToastContext"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Clock, RefreshCw, Edit, Mail, Phone, CreditCard, MapPin, User } from "lucide-react"
+import { useFadeRise } from "@/hooks/useMotion"
+import { RegistrationSteps } from "./common/RegistrationSteps"
+
+function Detail({ icon: Icon, label, children, wide }) {
+  return (
+    <div className={wide ? "sm:col-span-2" : undefined}>
+      <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Icon className="h-3.5 w-3.5" /> {label}
+      </dt>
+      <dd className="mt-0.5 truncate text-sm text-foreground">{children || "—"}</dd>
+    </div>
+  )
+}
 
 export default function PendingApprovalView({ onEditProfile }) {
   const { userProfile, refreshUser, loading } = useAuthUser()
+  const toast = useToast()
   const [checking, setChecking] = useState(false)
+  const cardRef = useFadeRise([], { y: 12 })
 
   const handleCheckStatus = async () => {
     setChecking(true)
-    await refreshUser()
+    const fresh = await refreshUser()
     setChecking(false)
+    const stillPending = !fresh || !fresh.role || fresh.role === "PENDING" || fresh.status === "PENDING_APPROVAL"
+    if (stillPending) toast.info("Not approved yet — an administrator still needs to assign your role.")
   }
 
-  const fullName = `${userProfile?.firstName || ''} ${userProfile?.lastName || ''}`.trim() || 'Staff Member'
+  const fullName =
+    `${userProfile?.firstName || ""} ${userProfile?.lastName || ""}`.trim() ||
+    "Staff Member"
 
   return (
-    <div style={{ maxWidth: '720px', margin: '3rem auto', padding: '0 1.5rem' }}>
-      <div className="glass-panel" style={{ padding: '2.5rem', textAlign: 'center' }}>
-        <div style={{
-          width: '72px',
-          height: '72px',
-          borderRadius: '50%',
-          background: 'rgba(245, 158, 11, 0.15)',
-          border: '2px solid rgba(245, 158, 11, 0.4)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '2.2rem',
-          margin: '0 auto 1.25rem auto'
-        }}>
-          ⏳
+    <div className="mx-auto max-w-xl px-4 py-10 sm:py-14">
+      <RegistrationSteps current={1} className="mb-8" />
+
+      <div ref={cardRef} className="rounded-[16px] border border-border bg-surface p-6 shadow-pop sm:p-8">
+        <div className="text-center">
+          <div className="relative mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-warning-soft text-warning">
+            <Clock className="h-6 w-6" />
+            <span className="absolute inset-0 animate-ping rounded-full bg-warning/15 [animation-duration:2.4s]" />
+          </div>
+          <Badge variant="warning" dot>
+            Status: Awaiting Role Assignment
+          </Badge>
+          <h1 className="mt-3 text-title text-foreground">Thanks, {fullName} — you're registered</h1>
+          <p className="mx-auto mt-1.5 max-w-md text-sm text-muted-foreground">
+            An administrator will check your details and assign your role. Once that's done, your modules unlock here.
+          </p>
         </div>
 
-        <span className="role-badge" style={{
-          background: 'rgba(245, 158, 11, 0.2)',
-          borderColor: 'rgba(245, 158, 11, 0.5)',
-          color: '#fcd34d',
-          marginBottom: '1rem',
-          display: 'inline-block'
-        }}>
-          Status: Awaiting Role Assignment
-        </span>
-
-        <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.85rem', margin: '0.5rem 0 0.5rem 0' }}>
-          Registration Submitted, {fullName}!
-        </h1>
-
-        <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', fontSize: '0.98rem', marginBottom: '2rem' }}>
-          Your staff identification details are saved in the database. A School Administrator can now review your verified details in the management portal and assign your role (Teacher, Finance Staff, Principal, or Admin).
-        </p>
-
-        {/* Submitted Details Card */}
-        <div style={{
-          background: 'rgba(15, 23, 42, 0.6)',
-          border: '1px solid var(--border-glass)',
-          borderRadius: '14px',
-          padding: '1.5rem',
-          textAlign: 'left',
-          marginBottom: '2rem',
-          fontSize: '0.9rem'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
-            <span style={{ fontWeight: '700', color: 'var(--text-main)', fontSize: '0.95rem' }}>🪪 Submitted Staff Record</span>
+        <div className="mt-6 rounded-[12px] border border-border bg-surface-2/60 p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">Submitted details</span>
             {onEditProfile && (
-              <button
-                onClick={onEditProfile}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#818cf8',
-                  fontSize: '0.85rem',
-                  fontWeight: '600',
-                  cursor: 'pointer'
-                }}
-              >
-                ✏️ Edit Details
-              </button>
+              <Button variant="ghost" size="xs" onClick={onEditProfile} className="gap-1.5">
+                <Edit className="h-3.5 w-3.5" /> Edit Details
+              </Button>
             )}
           </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
-            <div>
-              <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem', display: 'block' }}>Full Name</span>
-              <strong style={{ color: 'var(--text-main)' }}>{fullName}</strong>
-            </div>
-
-            <div>
-              <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem', display: 'block' }}>Official Email</span>
-              <strong style={{ color: '#93c5fd' }}>{userProfile?.email || 'N/A'}</strong>
-            </div>
-
-            <div>
-              <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem', display: 'block' }}>National ID (NIC)</span>
-              <strong style={{ color: '#fcd34d', fontFamily: 'monospace' }}>{userProfile?.nicNumber || 'N/A'}</strong>
-            </div>
-
-            <div>
-              <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem', display: 'block' }}>Phone Number</span>
-              <strong style={{ color: 'var(--text-main)' }}>{userProfile?.phoneNumber || 'N/A'}</strong>
-            </div>
-
-            <div style={{ gridColumn: 'span 2' }}>
-              <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem', display: 'block' }}>Residential Address</span>
-              <span style={{ color: 'var(--text-muted)' }}>{userProfile?.address || 'N/A'}</span>
-            </div>
-          </div>
+          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Detail icon={User} label="Full name">{fullName}</Detail>
+            <Detail icon={Mail} label="Email">{userProfile?.email}</Detail>
+            <Detail icon={CreditCard} label="NIC"><span className="tabular">{userProfile?.nicNumber}</span></Detail>
+            <Detail icon={Phone} label="Phone"><span className="tabular">{userProfile?.phoneNumber}</span></Detail>
+            <Detail icon={MapPin} label="Address" wide>{userProfile?.address}</Detail>
+          </dl>
         </div>
 
-        <button
-          onClick={handleCheckStatus}
-          disabled={checking || loading}
-          className="btn-primary"
-          style={{ width: '100%', justifyContent: 'center', opacity: checking ? 0.7 : 1, padding: '0.85rem' }}
-        >
-          {checking ? '🔄 Checking Status...' : '🔄 Check Approval Status'}
-        </button>
-
-        <p style={{ fontSize: '0.85rem', color: 'var(--text-dim)', marginTop: '1.5rem' }}>
-          💡 Once an Administrator assigns your role, clicking "Check Approval Status" will immediately unlock your portal.
-        </p>
+        <Button onClick={handleCheckStatus} loading={checking} disabled={loading} size="lg" className="mt-6 w-full gap-2">
+          <RefreshCw className="h-4 w-4" />
+          Check Approval Status
+        </Button>
       </div>
     </div>
   )

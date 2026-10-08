@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Abstract Base Entity representing a staff member in the School Information System.
+ * Abstract Base Entity representing a staff member in the Ascentric College Information System.
  * Uses JPA Single Table Inheritance with 'role' as the discriminator column.
  */
 @Entity

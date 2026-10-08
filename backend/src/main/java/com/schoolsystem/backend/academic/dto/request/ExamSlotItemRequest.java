@@ -1,0 +1,107 @@
+package com.schoolsystem.backend.academic.dto.request;
+
+import jakarta.validation.constraints.NotNull;
+import java.time.LocalDate;
+import java.time.LocalTime;
+
+public class ExamSlotItemRequest {
+
+    @NotNull(message = "Subject ID is required")
+    private Long subjectId;
+
+    @NotNull(message = "Exam date is required")
+    private LocalDate examDate;
+
+    @NotNull(message = "Start time is required")
+    private LocalTime startTime;
+
+    @NotNull(message = "End time is required")
+    private LocalTime endTime;
+
+    private Long invigilatorId;
+
+    private Long coInvigilatorId;
+
+    private Integer maxMarks = 100;
+
+    private String instructions;
+
+    public ExamSlotItemRequest() {
+    }
+
+    public ExamSlotItemRequest(Long subjectId, LocalDate examDate, LocalTime startTime, LocalTime endTime,
+                               Long invigilatorId, Long coInvigilatorId, Integer maxMarks, String instructions) {
+        this.subjectId = subjectId;
+        this.examDate = examDate;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.invigilatorId = invigilatorId;
+        this.coInvigilatorId = coInvigilatorId;
+        this.maxMarks = maxMarks != null ? maxMarks : 100;
+        this.instructions = instructions;
+    }
+
+    public Long getSubjectId() {
+        return subjectId;
+    }
+
+    public void setSubjectId(Long subjectId) {
+        this.subjectId = subjectId;
+    }
+
+    public LocalDate getExamDate() {
+        return examDate;
+    }
+
+    public void setExamDate(LocalDate examDate) {
+        this.examDate = examDate;
+    }
+
+    public LocalTime getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(LocalTime startTime) {
+        this.startTime = startTime;
+    }
+
+    public LocalTime getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(LocalTime endTime) {
+        this.endTime = endTime;
+    }
+
+    public Long getInvigilatorId() {
+        return invigilatorId;
+    }
+
+    public void setInvigilatorId(Long invigilatorId) {
+        this.invigilatorId = invigilatorId;
+    }
+
+    public Long getCoInvigilatorId() {
+        return coInvigilatorId;
+    }
+
+    public void setCoInvigilatorId(Long coInvigilatorId) {
+        this.coInvigilatorId = coInvigilatorId;
+    }
+
+    public Integer getMaxMarks() {
+        return maxMarks;
+    }
+
+    public void setMaxMarks(Integer maxMarks) {
+        this.maxMarks = maxMarks;
+    }
+
+    public String getInstructions() {
+        return instructions;
+    }
+
+    public void setInstructions(String instructions) {
+        this.instructions = instructions;
+    }
+}
